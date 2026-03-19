@@ -1,0 +1,180 @@
+import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { testimonials } from '@/data/mockData';
+import { Quote, ChevronLeft, ChevronRight, Star } from 'lucide-react';
+
+gsap.registerPlugin(ScrollTrigger);
+
+export default function Testimonials() {
+  const { t } = useTranslation();
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  };
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        titleRef.current,
+        { opacity: 0, y: 50 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: titleRef.current,
+            start: 'top 80%',
+            toggleActions: 'play none none reverse',
+          },
+        }
+      );
+
+      gsap.fromTo(
+        sliderRef.current,
+        { opacity: 0, y: 60 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: sliderRef.current,
+            start: 'top 75%',
+            toggleActions: 'play none none reverse',
+          },
+        }
+      );
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
+  // Auto-play
+  useEffect(() => {
+    const interval = setInterval(nextSlide, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <section
+      ref={sectionRef}
+      className="relative py-20 lg:py-32 bg-[#F3F3F3] overflow-hidden"
+    >
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Title */}
+        <div ref={titleRef} className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#00D084]/10 rounded-full mb-6">
+            <span className="w-2 h-2 bg-[#00D084] rounded-full" />
+            <span className="text-sm font-medium text-[#00D084]">Rəylər</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 mb-4">
+            {t('testimonials.title')}
+          </h2>
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+            {t('testimonials.subtitle')}
+          </p>
+        </div>
+
+        {/* Testimonial Slider */}
+        <div ref={sliderRef} className="relative max-w-4xl mx-auto">
+          {/* Main Card */}
+          <div className="relative bg-white rounded-[40px] p-8 sm:p-12 lg:p-16 shadow-xl shadow-gray-200/50">
+            {/* Quote Icon */}
+            <div className="absolute -top-6 left-8 sm:left-12 w-12 h-12 bg-[#00D084] rounded-2xl flex items-center justify-center">
+              <Quote className="w-6 h-6 text-white" />
+            </div>
+
+            {/* Content */}
+            <div className="relative">
+              {testimonials.map((testimonial, index) => (
+                <div
+                  key={testimonial.id}
+                  className={`transition-all duration-500 ${
+                    index === currentIndex
+                      ? 'opacity-100 translate-x-0'
+                      : 'opacity-0 absolute inset-0 translate-x-8'
+                  }`}
+                >
+                  {/* Stars */}
+                  <div className="flex gap-1 mb-6">
+                    {[...Array(5)].map((_, i) => (
+                      <Star
+                        key={i}
+                        className="w-5 h-5 text-yellow-400 fill-yellow-400"
+                      />
+                    ))}
+                  </div>
+
+                  {/* Quote */}
+                  <p className="text-xl sm:text-2xl lg:text-3xl text-gray-800 font-medium leading-relaxed mb-8">
+                    "{testimonial.quote}"
+                  </p>
+
+                  {/* Author */}
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={testimonial.avatar}
+                      alt={testimonial.name}
+                      className="w-14 h-14 rounded-full object-cover"
+                    />
+                    <div>
+                      <h4 className="font-bold text-gray-900">
+                        {testimonial.name}
+                      </h4>
+                      <p className="text-gray-500 text-sm">{testimonial.role}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Navigation */}
+            <div className="absolute bottom-8 right-8 sm:bottom-12 sm:right-12 flex gap-2">
+              <button
+                onClick={prevSlide}
+                className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                aria-label="Previous"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={nextSlide}
+                className="w-12 h-12 rounded-full bg-[#00D084] hover:bg-[#00B873] text-white flex items-center justify-center transition-colors"
+                aria-label="Next"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Dots */}
+          <div className="flex justify-center gap-2 mt-8">
+            {testimonials.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`w-2.5 h-2.5 rounded-full transition-all ${
+                  index === currentIndex
+                    ? 'bg-[#00D084] w-8'
+                    : 'bg-gray-300 hover:bg-gray-400'
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
