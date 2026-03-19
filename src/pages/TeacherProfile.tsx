@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
+import { useNavigate } from 'react-router-dom';
 import { teachers } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,12 +18,14 @@ import {
   Save,
   Facebook,
   Instagram,
-  Linkedin
+  Linkedin,
+  ArrowLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function TeacherProfile() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const teacher = teachers[0];
   
   const [isEditing, setIsEditing] = useState(false);
@@ -36,7 +38,12 @@ export default function TeacherProfile() {
     education: teacher?.education || '',
     experience: teacher?.experience || 0,
     specialties: teacher?.specialties?.join(', ') || '',
+    facebook: teacher?.socialLinks?.facebook || '',
+    instagram: teacher?.socialLinks?.instagram || '',
+    linkedin: teacher?.socialLinks?.linkedin || '',
   });
+
+  const allSpecialties = Array.from(new Set(teachers.flatMap(t => t.specialties)));
 
   const handleSave = () => {
     setIsEditing(false);
@@ -52,7 +59,17 @@ export default function TeacherProfile() {
 
   return (
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/teacher/dashboard')}
+          className="text-gray-600 hover:text-gray-900 transition-colors mb-4 flex items-center gap-2"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          Geri
+        </Button>
+      </div>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Cover Image */}
         <div className="relative h-48 lg:h-64 bg-gradient-to-r from-[#00D084] to-[#0082F3] rounded-3xl mb-20">
           <div className="absolute -bottom-16 left-8">
@@ -116,13 +133,34 @@ export default function TeacherProfile() {
                       />
                     </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">E-poçt</label>
+                      <Input
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className="rounded-xl"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Telefon</label>
+                      <Input
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className="rounded-xl"
+                      />
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <>
                   <h1 className="text-2xl lg:text-3xl font-black text-gray-900">
-                    {teacher?.name} {teacher?.surname}
+                    {formData.name} {formData.surname}
                   </h1>
-                  <p className="text-gray-500 mt-1">{teacher?.specialties?.join(', ')}</p>
+                  <p className="text-gray-500 mt-1">{formData.specialties}</p>
                   
                   <div className="flex flex-wrap gap-4 mt-4">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -131,11 +169,11 @@ export default function TeacherProfile() {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Mail className="w-4 h-4" />
-                      {teacher?.email}
+                      {formData.email}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Phone className="w-4 h-4" />
-                      {teacher?.phone}
+                      {formData.phone}
                     </div>
                   </div>
                 </>
@@ -156,7 +194,7 @@ export default function TeacherProfile() {
                   className="rounded-xl resize-none"
                 />
               ) : (
-                <p className="text-gray-600 leading-relaxed">{teacher?.bio}</p>
+                <p className="text-gray-600 leading-relaxed">{formData.bio}</p>
               )}
             </div>
 
@@ -179,7 +217,7 @@ export default function TeacherProfile() {
                       <Award className="w-5 h-5 text-[#00D084]" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{teacher?.education}</p>
+                      <p className="font-medium text-gray-900">{formData.education}</p>
                       <p className="text-sm text-gray-500">Ali təhsil</p>
                     </div>
                   </div>
@@ -204,7 +242,7 @@ export default function TeacherProfile() {
                       <BookOpen className="w-5 h-5 text-[#0082F3]" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{teacher?.experience} il</p>
+                      <p className="font-medium text-gray-900">{formData.experience} il</p>
                       <p className="text-sm text-gray-500">Tədris təcrübəsi</p>
                     </div>
                   </div>
@@ -218,22 +256,39 @@ export default function TeacherProfile() {
                 {t('teacher.profile.specialties')}
               </h2>
               {isEditing ? (
-                <Textarea
-                  name="specialties"
-                  value={formData.specialties}
-                  onChange={handleChange}
-                  placeholder="Vergüllə ayırın"
-                  rows={3}
-                  className="rounded-xl resize-none"
-                />
+                <div className="flex flex-wrap gap-2">
+                  {allSpecialties.map((specialty) => {
+                    const isSelected = formData.specialties.split(',').map(s => s.trim()).includes(specialty);
+                    return (
+                      <button
+                        key={specialty}
+                        type="button"
+                        onClick={() => {
+                          const currentSpecs = formData.specialties.split(',').map(s => s.trim()).filter(Boolean);
+                          const newSpecs = isSelected
+                            ? currentSpecs.filter(s => s !== specialty)
+                            : [...currentSpecs, specialty];
+                          setFormData(prev => ({ ...prev, specialties: newSpecs.join(', ') }));
+                        }}
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                          isSelected
+                            ? 'bg-[#00D084] text-white shadow-md'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {specialty}
+                      </button>
+                    );
+                  })}
+                </div>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {teacher?.specialties?.map((specialty, index) => (
+                  {formData.specialties.split(',').map((specialty, index) => (
                     <span
                       key={index}
                       className="px-4 py-2 bg-[#00D084]/10 text-[#00D084] rounded-full text-sm font-medium"
                     >
-                      {specialty}
+                      {specialty.trim()}
                     </span>
                   ))}
                 </div>
@@ -274,35 +329,70 @@ export default function TeacherProfile() {
             {/* Social Links */}
             <div className="bg-white rounded-3xl p-6 shadow-sm">
               <h2 className="text-xl font-bold text-gray-900 mb-4">Sosial Şəbəkələr</h2>
-              <div className="space-y-3">
-                <a
-                  href={teacher?.socialLinks?.facebook}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 bg-[#1877F2]/10 rounded-xl hover:bg-[#1877F2]/20 transition-colors"
-                >
-                  <Facebook className="w-5 h-5 text-[#1877F2]" />
-                  <span className="text-gray-700">Facebook</span>
-                </a>
-                <a
-                  href={teacher?.socialLinks?.instagram}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#833AB4]/10 via-[#E1306C]/10 to-[#F77737]/10 rounded-xl hover:from-[#833AB4]/20 hover:via-[#E1306C]/20 hover:to-[#F77737]/20 transition-colors"
-                >
-                  <Instagram className="w-5 h-5 text-[#E1306C]" />
-                  <span className="text-gray-700">Instagram</span>
-                </a>
-                <a
-                  href={teacher?.socialLinks?.linkedin}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 bg-[#0A66C2]/10 rounded-xl hover:bg-[#0A66C2]/20 transition-colors"
-                >
-                  <Linkedin className="w-5 h-5 text-[#0A66C2]" />
-                  <span className="text-gray-700">LinkedIn</span>
-                </a>
-              </div>
+              {isEditing ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Facebook</label>
+                    <Input
+                      name="facebook"
+                      value={formData.facebook}
+                      onChange={handleChange}
+                      placeholder="URL daxil edin"
+                      className="rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Instagram</label>
+                    <Input
+                      name="instagram"
+                      value={formData.instagram}
+                      onChange={handleChange}
+                      placeholder="URL daxil edin"
+                      className="rounded-xl"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn</label>
+                    <Input
+                      name="linkedin"
+                      value={formData.linkedin}
+                      onChange={handleChange}
+                      placeholder="URL daxil edin"
+                      className="rounded-xl"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <a
+                    href={formData.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 bg-[#1877F2]/10 rounded-xl hover:bg-[#1877F2]/20 transition-colors"
+                  >
+                    <Facebook className="w-5 h-5 text-[#1877F2]" />
+                    <span className="text-gray-700">Facebook</span>
+                  </a>
+                  <a
+                    href={formData.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#833AB4]/10 via-[#E1306C]/10 to-[#F77737]/10 rounded-xl hover:from-[#833AB4]/20 hover:via-[#E1306C]/20 hover:to-[#F77737]/20 transition-colors"
+                  >
+                    <Instagram className="w-5 h-5 text-[#E1306C]" />
+                    <span className="text-gray-700">Instagram</span>
+                  </a>
+                  <a
+                    href={formData.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-3 bg-[#0A66C2]/10 rounded-xl hover:bg-[#0A66C2]/20 transition-colors"
+                  >
+                    <Linkedin className="w-5 h-5 text-[#0A66C2]" />
+                    <span className="text-gray-700">LinkedIn</span>
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </div>

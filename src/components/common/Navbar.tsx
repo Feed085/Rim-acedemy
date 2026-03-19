@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Menu, User, LogOut, BookOpen, Users, FileText, Phone, Home, ChevronDown } from 'lucide-react';
-import logo from '@/photos/RimAcademyLogo.jpeg';
+import logo from '@/photos/new_logo.png';
 import { cn } from '@/lib/utils';
 import { courses, teachers } from '@/data/mockData';
 
@@ -31,9 +31,7 @@ export default function Navbar() {
   const [isCoursesHovered, setIsCoursesHovered] = useState(false);
   const [isTeachersHovered, setIsTeachersHovered] = useState(false);
   
-  const isDarkPage = location.pathname.startsWith('/courses/') || 
-                    location.pathname.startsWith('/teachers/') || 
-                    location.pathname === '/teacher/profile';
+  const isDarkPage = location.pathname.startsWith('/courses/') || location.pathname === '/contact';
   
   const coursesTimer = useRef<any>(null);
   const teachersTimer = useRef<any>(null);
@@ -88,6 +86,8 @@ export default function Navbar() {
       className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
         isScrolled
           ? 'bg-white/95 backdrop-blur-md shadow-lg'
+          : location.pathname === '/contact'
+          ? 'bg-[#0A0A0A]/80 backdrop-blur-md border-b border-white/10'
           : 'bg-transparent'
       }`}
     >
@@ -263,14 +263,13 @@ export default function Navbar() {
                     <ChevronDown className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => navigate('/dashboard')}>
+                <DropdownMenuContent align="end" className="w-48 z-[110]">
+                  <DropdownMenuItem onClick={() => {
+                    window.scrollTo(0, 0);
+                    navigate(user?.role === 'teacher' ? '/teacher/dashboard' : '/dashboard');
+                  }}>
                     <User className="w-4 h-4 mr-2" />
                     {t('nav.dashboard')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
-                    <BookOpen className="w-4 h-4 mr-2" />
-                    {t('nav.profile')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-red-600">
@@ -340,7 +339,8 @@ export default function Navbar() {
                         variant="outline"
                         onClick={() => {
                           setIsOpen(false);
-                          navigate('/dashboard');
+                          window.scrollTo(0, 0);
+                          navigate(user?.role === 'teacher' ? '/teacher/dashboard' : '/dashboard');
                         }}
                       >
                         <User className="w-4 h-4 mr-2" />

@@ -14,6 +14,7 @@ import TeacherDashboard from '@/pages/TeacherDashboard';
 import TeacherProfile from '@/pages/TeacherProfile';
 import UploadVideo from '@/pages/UploadVideo';
 import CreateTest from '@/pages/CreateTest';
+import TeacherStudents from '@/pages/TeacherStudents';
 import Courses from '@/pages/Courses';
 import CourseDetail from '@/pages/CourseDetail';
 import Teachers from '@/pages/Teachers';
@@ -21,6 +22,7 @@ import TeacherDetail from '@/pages/TeacherDetail';
 import Tests from '@/pages/Tests';
 import TestDetail from '@/pages/TestDetail';
 import Contact from '@/components/student/Contact';
+import TeacherCourseEdit from '@/pages/TeacherCourseEdit';
 
 import './i18n';
 
@@ -178,6 +180,16 @@ function AppRoutes() {
         } 
       />
       <Route 
+        path="/teacher/students" 
+        element={
+          <ProtectedRoute allowedRoles={['teacher']}>
+            <MainLayout>
+              <TeacherStudents />
+            </MainLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/teacher/profile" 
         element={
           <ProtectedRoute allowedRoles={['teacher']}>
@@ -207,7 +219,16 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
-
+      <Route 
+        path="/teacher/courses/:id" 
+        element={
+          <ProtectedRoute allowedRoles={['teacher']}>
+            <MainLayout>
+              <TeacherCourseEdit />
+            </MainLayout>
+          </ProtectedRoute>
+        } 
+      />
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

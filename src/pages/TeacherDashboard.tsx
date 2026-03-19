@@ -12,7 +12,7 @@ import {
   TrendingUp,
   Plus,
   ArrowRight,
-  BarChart3,
+
   Eye
 } from 'lucide-react';
 
@@ -104,14 +104,7 @@ export default function TeacherDashboard() {
                 <h2 className="text-xl font-bold text-gray-900">
                   {t('teacher.dashboard.my_courses')}
                 </h2>
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate('/teacher/courses')}
-                  className="text-[#00D084] hover:text-[#00B873]"
-                >
-                  Hamısı
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
+
               </div>
 
               <div className="space-y-4">
@@ -142,7 +135,10 @@ export default function TeacherDashboard() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => navigate(`/teacher/courses/${course.id}`)}
+                          onClick={() => {
+                            window.scrollTo(0, 0);
+                            navigate(`/teacher/courses/${course.id}`);
+                          }}
                           className="rounded-lg"
                         >
                           <Eye className="w-4 h-4 mr-1" />
@@ -163,7 +159,10 @@ export default function TeacherDashboard() {
                 </h2>
                 <Button
                   variant="ghost"
-                  onClick={() => navigate('/teacher/students')}
+                  onClick={() => {
+                    window.scrollTo(0, 0);
+                    navigate('/teacher/students');
+                  }}
                   className="text-[#00D084] hover:text-[#00B873]"
                 >
                   Hamısı
@@ -235,14 +234,7 @@ export default function TeacherDashboard() {
                 {t('teacher.dashboard.statistics')}
               </h2>
               <div className="space-y-4">
-                <div className="p-4 bg-gradient-to-br from-[#00D084]/10 to-[#0082F3]/10 rounded-2xl">
-                  <div className="flex items-center gap-3 mb-2">
-                    <BarChart3 className="w-5 h-5 text-[#00D084]" />
-                    <span className="font-medium text-gray-700">Aylıq Gəlir</span>
-                  </div>
-                  <div className="text-2xl font-black text-gray-900">3,450₼</div>
-                  <div className="text-sm text-green-600">+15% keçən aydan</div>
-                </div>
+
                 <div className="p-4 bg-gradient-to-br from-[#0082F3]/10 to-[#EC4899]/10 rounded-2xl">
                   <div className="flex items-center gap-3 mb-2">
                     <TrendingUp className="w-5 h-5 text-[#0082F3]" />

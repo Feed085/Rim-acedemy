@@ -16,15 +16,39 @@ import {
   Facebook,
   Instagram,
   Linkedin,
-  Clock
+  Clock,
+  Send,
+  MessageSquare
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
 
 export default function TeacherDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const teacher = teachers.find(t => t.id === id);
   const [activeTab, setActiveTab] = useState<'courses' | 'about' | 'reviews'>('courses');
+  const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newReview.comment.trim()) {
+      toast.error('Zəhmət olmasa rəyinizi yazın');
+      return;
+    }
+
+    setIsSubmitting(true);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    toast.success('Rəyiniz uğurla göndərildi!');
+    setNewReview({ rating: 5, comment: '' });
+    setIsSubmitting(false);
+  };
 
   if (!teacher) {
     return (
@@ -299,9 +323,72 @@ export default function TeacherDetail() {
             )}
 
             {activeTab === 'reviews' && (
-              <div className="space-y-4">
-                {reviews.map((review) => (
-                  <div key={review.id} className="p-4 bg-gray-50 rounded-2xl">
+              <div className="space-y-6">
+                {/* Write Review Section */}
+                {isAuthenticated && user?.role === 'student' ? (
+                  <div className="bg-white border-2 border-[#00D084]/20 rounded-2xl p-6 mb-8">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <MessageSquare className="w-5 h-5 text-[#00D084]" />
+                      Rəy yazın
+                    </h3>
+                    <form onSubmit={handleReviewSubmit} className="space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium text-gray-700 mr-2">Qiymətləndirmə:</span>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setNewReview(prev => ({ ...prev, rating: star }))}
+                            className="focus:outline-none transition-transform hover:scale-110"
+                          >
+                            <Star
+                              className={`w-6 h-6 ${
+                                star <= newReview.rating
+                                  ? 'text-yellow-400 fill-yellow-400'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                      <Textarea
+                        placeholder="Müəllim haqqında fikirlərinizi bölüşün..."
+                        value={newReview.comment}
+                        onChange={(e) => setNewReview(prev => ({ ...prev, comment: e.target.value }))}
+                        className="rounded-xl border-gray-100 min-h-[120px] focus:border-[#00D084]"
+                      />
+                      <Button 
+                        type="submit" 
+                        disabled={isSubmitting}
+                        className="bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl px-8 h-12 flex items-center gap-2"
+                      >
+                        {isSubmitting ? (
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4" />
+                            Rəyi paylaş
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </div>
+                ) : !isAuthenticated ? (
+                  <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 text-center mb-8">
+                    <p className="text-gray-600 mb-4">Rəy yazmaq üçün qeydiyyatdan keçməlisiniz.</p>
+                    <Button 
+                      onClick={() => navigate('/login')}
+                      variant="outline"
+                      className="rounded-xl"
+                    >
+                      Daxil ol
+                    </Button>
+                  </div>
+                ) : null}
+
+                <div className="space-y-4">
+                  {reviews.map((review) => (
+                    <div key={review.id} className="p-4 bg-gray-50 rounded-2xl">
                     <div className="flex items-start gap-4">
                       <img
                         src={review.avatar}
@@ -331,7 +418,8 @@ export default function TeacherDetail() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </div>

@@ -1,0 +1,166 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { 
+  ArrowLeft, 
+  Search, 
+  Mail, 
+  Phone, 
+  Calendar,
+  Users
+} from 'lucide-react';
+
+export default function TeacherStudents() {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+
+  // Mock data for all students
+  const allStudents = [
+    { id: 1, name: 'Aysel Məmmədova', email: 'aysel@example.com', phone: '+994 55 123 45 67', course: 'IELTS Intensive', date: '12 Yanvar 2024' },
+    { id: 2, name: 'Orxan Əliyev', email: 'orxan@example.com', phone: '+994 50 234 56 78', course: 'SAT Hazırlığı', date: '15 Yanvar 2024' },
+    { id: 3, name: 'Günay Hüseynova', email: 'gunay@example.com', phone: '+994 70 345 67 89', course: 'İngilis Dili', date: '20 Yanvar 2024' },
+    { id: 4, name: 'Tural İsmayılov', email: 'tural@example.com', phone: '+994 51 456 78 90', course: 'Web Proqramlaşdırma', date: '01 Fevral 2024' },
+    { id: 5, name: 'Lalə Rzayeva', email: 'lala@example.com', phone: '+994 55 567 89 01', course: 'IELTS Intensive', date: '05 Fevral 2024' },
+    { id: 6, name: 'Emin Heydərov', email: 'emin@example.com', phone: '+994 50 678 90 12', course: 'SAT Hazırlığı', date: '10 Fevral 2024' },
+    { id: 7, name: 'Səbinə Quliyeva', email: 'sabina@example.com', phone: '+994 70 789 01 23', course: 'İngilis Dili', date: '15 Fevral 2024' },
+    { id: 8, name: 'Vüsal Abbasov', email: 'vusal@example.com', phone: '+994 51 890 12 34', course: 'Python Proqramlaşdırma', date: '20 Fevral 2024' },
+  ];
+
+  const allCourses = Array.from(new Set(allStudents.map(s => s.course)));
+
+  const filteredStudents = allStudents.filter(student => {
+    const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         student.course.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCourse = selectedCourse ? student.course === selectedCourse : true;
+    return matchesSearch && matchesCourse;
+  });
+
+  return (
+    <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/teacher/dashboard')}
+            className="mb-4 p-0 h-auto hover:bg-transparent text-gray-500 hover:text-gray-900 group"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+            Panelə qayıt
+          </Button>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-black text-gray-900 flex items-center gap-3">
+                <Users className="w-8 h-8 text-[#00D084]" />
+                Bütün Tələbələr
+              </h1>
+              <p className="text-gray-600 mt-1">Cəmi {allStudents.length} tələbə qeydiyyatdadır</p>
+            </div>
+            <div className="flex gap-3">
+              <div className="relative w-full md:w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Tələbə və ya kurs axtar..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 rounded-xl border-gray-200 bg-white"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Course Filters */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          <button
+            onClick={() => setSelectedCourse(null)}
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              selectedCourse === null
+                ? 'bg-[#00D084] text-white shadow-md'
+                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
+            }`}
+          >
+            Sıfırla
+          </button>
+          {allCourses.map((course) => (
+            <button
+              key={course}
+              onClick={() => setSelectedCourse(course)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                selectedCourse === course
+                  ? 'bg-[#00D084] text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
+              }`}
+            >
+              {course}
+            </button>
+          ))}
+        </div>
+
+        {/* Students Table/Grid */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-gray-50/50 border-b border-gray-100">
+                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Tələbə</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Kurs</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Əlaqə</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Qeydiyyat</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredStudents.map((student) => (
+                  <tr key={student.id} className="hover:bg-gray-50/50 transition-colors group">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#00D084]/20 to-[#0082F3]/20 flex items-center justify-center text-[#00B873] font-bold">
+                          {student.name.charAt(0)}
+                        </div>
+                        <span className="font-bold text-gray-900">{student.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium">
+                        {student.course}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <Mail className="w-3 h-3" />
+                          {student.email}
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <Phone className="w-3 h-3" />
+                          {student.phone}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <Calendar className="w-3 h-3" />
+                        {student.date}
+                      </div>
+                    </td>
+
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {filteredStudents.length === 0 && (
+            <div className="py-20 text-center">
+              <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 font-medium">Heç bir tələbə tapılmadı.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
