@@ -30,53 +30,23 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (step === 1) {
-      if (!formData.name || !formData.surname) {
-        toast.error('Zəhmət olmasa ad və soyad daxil edin');
-        return;
-      }
-      setStep(2);
-      return;
-    }
+    // Bypass all registration steps and validation for quick entry
+    const dummyData = {
+      name: formData.name || 'Yeni',
+      surname: formData.surname || 'İstifadəçi',
+      email: formData.email || `user${Date.now()}@rimacademy.az`,
+      phone: formData.phone || '+994 50 000 00 00',
+      password: formData.password || 'password123',
+      role,
+    };
 
-    if (step === 2) {
-      if (!formData.email || !formData.phone) {
-        toast.error('Zəhmət olmasa email və telefon daxil edin');
-        return;
-      }
-      setStep(3);
-      return;
-    }
+    const success = await register(dummyData);
 
-    if (step === 3) {
-      if (!formData.password || !formData.confirmPassword) {
-        toast.error('Zəhmət olmasa şifrə daxil edin');
-        return;
-      }
-      if (formData.password !== formData.confirmPassword) {
-        toast.error('Şifrələr uyğun gəlmir');
-        return;
-      }
-      if (formData.password.length < 6) {
-        toast.error('Şifrə ən az 6 simvol olmalıdır');
-        return;
-      }
-
-      const success = await register({
-        name: formData.name,
-        surname: formData.surname,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password,
-        role,
-      });
-
-      if (success) {
-        toast.success('Qeydiyyat uğurla tamamlandı!');
-        navigate(role === 'teacher' ? '/teacher/dashboard' : '/dashboard');
-      } else {
-        toast.error('Qeydiyyat zamanı xəta baş verdi');
-      }
+    if (success) {
+      toast.success('Qeydiyyat uğurla tamamlandı!');
+      navigate(role === 'teacher' ? '/teacher/dashboard' : '/dashboard');
+    } else {
+      toast.error('Qeydiyyat zamanı xəta baş verdi');
     }
   };
 
@@ -105,7 +75,6 @@ export default function Register() {
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="Ad"
-                    required
                     className="pl-11 h-12 rounded-xl border-gray-200 focus:border-[#00D084] focus:ring-[#00D084]"
                   />
                 </div>
@@ -122,7 +91,6 @@ export default function Register() {
                     value={formData.surname}
                     onChange={handleChange}
                     placeholder="Soyad"
-                    required
                     className="pl-11 h-12 rounded-xl border-gray-200 focus:border-[#00D084] focus:ring-[#00D084]"
                   />
                 </div>
@@ -146,7 +114,6 @@ export default function Register() {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="email@example.com"
-                  required
                   className="pl-11 h-12 rounded-xl border-gray-200 focus:border-[#00D084] focus:ring-[#00D084]"
                 />
               </div>
@@ -164,7 +131,6 @@ export default function Register() {
                   value={formData.phone}
                   onChange={handleChange}
                   placeholder="+994 50 123 45 67"
-                  required
                   className="pl-11 h-12 rounded-xl border-gray-200 focus:border-[#00D084] focus:ring-[#00D084]"
                 />
               </div>
@@ -187,7 +153,6 @@ export default function Register() {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="••••••••"
-                  required
                   className="pl-11 pr-11 h-12 rounded-xl border-gray-200 focus:border-[#00D084] focus:ring-[#00D084]"
                 />
                 <button
@@ -212,7 +177,6 @@ export default function Register() {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   placeholder="••••••••"
-                  required
                   className="pl-11 pr-11 h-12 rounded-xl border-gray-200 focus:border-[#00D084] focus:ring-[#00D084]"
                 />
                 <button

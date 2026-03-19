@@ -15,6 +15,7 @@ import TeacherProfile from '@/pages/TeacherProfile';
 import UploadVideo from '@/pages/UploadVideo';
 import CreateTest from '@/pages/CreateTest';
 import Courses from '@/pages/Courses';
+import CourseDetail from '@/pages/CourseDetail';
 import Teachers from '@/pages/Teachers';
 import TeacherDetail from '@/pages/TeacherDetail';
 import Tests from '@/pages/Tests';
@@ -83,6 +84,14 @@ function AppRoutes() {
         element={
           <MainLayout>
             <Courses />
+          </MainLayout>
+        } 
+      />
+      <Route 
+        path="/courses/:id" 
+        element={
+          <MainLayout>
+            <CourseDetail />
           </MainLayout>
         } 
       />

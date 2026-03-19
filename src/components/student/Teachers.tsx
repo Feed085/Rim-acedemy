@@ -90,7 +90,7 @@ export default function Teachers() {
           <Button
             onClick={() => navigate('/teachers')}
             variant="outline"
-            className="mt-6 lg:mt-0 border-white/20 text-white hover:bg-white/10 rounded-full px-6 group"
+            className="mt-6 lg:mt-0 bg-white border-transparent text-black hover:bg-[#00D084] hover:text-white rounded-full px-6 group"
           >
             {t('teachers.button')}
             <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
@@ -159,7 +159,7 @@ export default function Teachers() {
                 <Button
                   onClick={() => navigate(`/teachers/${teacher.id}`)}
                   variant="outline"
-                  className="w-full border-white/20 text-white hover:bg-white hover:text-black rounded-xl group/btn"
+                  className="w-full bg-white border-transparent text-black hover:bg-[#00D084] hover:text-white rounded-xl group/btn"
                 >
                   {t('teachers.view_profile')}
                   <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />

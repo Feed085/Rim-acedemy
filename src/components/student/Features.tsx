@@ -2,29 +2,29 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { Users, MonitorPlay, Award, HeadphonesIcon } from 'lucide-react';
+import { UserCheck, Laptop, Trophy, Headset } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const features = [
   {
     key: 'teachers',
-    icon: Users,
+    icon: UserCheck,
     color: '#00D084',
   },
   {
     key: 'online',
-    icon: MonitorPlay,
+    icon: Laptop,
     color: '#0082F3',
   },
   {
     key: 'certificate',
-    icon: Award,
+    icon: Trophy,
     color: '#F59E0B',
   },
   {
     key: 'support',
-    icon: HeadphonesIcon,
+    icon: Headset,
     color: '#EC4899',
   },
 ];

@@ -16,7 +16,7 @@
     "subtitle": "RIM Academy — Təhsilin gələcəyi",
     "description": "Peşəkar müəllimlərlə, müasir tədris metodları ilə uğura gedən yol",
     "cta": "Kəşf Et",
-    "cta_secondary": "Pulsuz Dərs"
+    "cta_secondary": "Müraciət et"
   },
   "features": {
     "title": "Niyə RIM Academy?",
@@ -60,7 +60,7 @@
   },
   "courses": {
     "title": "Proqramlar",
-    "subtitle": "Təklif etdiyimiz kurslar",
+    "subtitle": "Gələcəyinizi bizimlə kəşf edin",
     "categories": {
       "all": "Hamısı",
       "language": "Dil Kursları",
@@ -94,7 +94,8 @@
       }
     },
     "view_all": "Hamısını gör",
-    "enroll": "Qeydiyyatdan keç"
+    "enroll": "Kursu əldə et",
+    "auth_required": "Zəhmət olmasa, kursu əldə etmək üçün qeydiyyatdan keçin"
   },
   "teachers": {
     "title": "Müəllimlərimizlə tanış olun",
@@ -130,7 +131,7 @@
   },
   "footer": {
     "follow_us": "Bizi izləyin",
-    "copyright": "© 2024 RIM Academy. Bütün hüquqlar qorunur.",
+    "copyright": "© 2026 RIM Academy. Bütün hüquqlar qorunur.",
     "links": {
       "about": "Haqqımızda",
       "courses": "Kurslar",

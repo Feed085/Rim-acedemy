@@ -11,12 +11,28 @@ import {
   Star, 
   ArrowRight
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 export default function CoursesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+
+  const handleEnroll = (courseId: string) => {
+    if (!isAuthenticated) {
+      toast.info(t('courses.auth_required'), {
+        action: {
+          label: t('nav.register'),
+          onClick: () => navigate('/register')
+        }
+      });
+      return;
+    }
+    navigate(`/courses/${courseId}`);
+  };
 
   const categories = [
     { key: 'all', label: 'Hamısı' },
@@ -57,13 +73,13 @@ export default function CoursesPage() {
 
         {/* Search and Filter */}
         <div className="flex flex-col sm:flex-row gap-4 mb-8">
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <div className="relative flex-1 group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-[#00D084] transition-colors" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Kurs axtar..."
-              className="pl-12 h-12 rounded-xl bg-white border-0 shadow-sm"
+              className="pl-12 h-14 rounded-2xl bg-white border-2 border-gray-100 shadow-lg shadow-gray-200/50 focus:border-[#00D084] focus:ring-0 transition-all text-base placeholder:text-gray-400"
             />
           </div>
           <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
@@ -105,14 +121,6 @@ export default function CoursesPage() {
                   <span className="text-xs font-semibold">{course.rating}</span>
                 </div>
 
-                {/* Category badge */}
-                <div className="absolute bottom-3 left-3">
-                  <span className="px-3 py-1 bg-[#00D084] text-white text-xs font-medium rounded-full">
-                    {course.category === 'language' && 'Dil'}
-                    {course.category === 'exam' && 'İmtahan'}
-                    {course.category === 'computer' && 'Komputer'}
-                  </span>
-                </div>
               </div>
 
               {/* Content */}
@@ -155,7 +163,7 @@ export default function CoursesPage() {
 
                 {/* Button */}
                 <Button
-                  onClick={() => navigate(`/courses/${course.id}`)}
+                  onClick={() => handleEnroll(course.id)}
                   className="w-full mt-4 bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl group/btn"
                 >
                   {t('courses.enroll')}

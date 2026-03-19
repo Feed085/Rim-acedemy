@@ -134,14 +134,6 @@ export default function Courses() {
                   <span className="text-xs font-semibold">{course.rating}</span>
                 </div>
 
-                {/* Category badge */}
-                <div className="absolute bottom-3 left-3">
-                  <span className="px-3 py-1 bg-[#00D084] text-white text-xs font-medium rounded-full">
-                    {course.category === 'language' && 'Dil'}
-                    {course.category === 'exam' && 'İmtahan'}
-                    {course.category === 'computer' && 'Komputer'}
-                  </span>
-                </div>
               </div>
 
               {/* Content */}

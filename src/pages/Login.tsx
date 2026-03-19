@@ -24,18 +24,17 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.password) {
-      toast.error('Zəhmət olmasa bütün sahələri doldurun');
-      return;
-    }
+    // Bypass validation for quick login
+    const dummyEmail = role === 'teacher' ? 'teacher@rimacademy.az' : 'student@rimacademy.az';
+    const dummyPass = 'password123';
 
-    const success = await login(formData.email, formData.password, role);
+    const success = await login(dummyEmail, dummyPass, role);
     
     if (success) {
       toast.success('Uğurla daxil oldunuz!');
       navigate(role === 'teacher' ? '/teacher/dashboard' : '/dashboard');
     } else {
-      toast.error('Email və ya şifrə yanlışdır');
+      toast.error('Giriş zamanı xəta baş verdi');
     }
   };
 
@@ -110,7 +109,6 @@ export default function Login() {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="email@example.com"
-                  required
                   className="pl-11 h-12 rounded-xl border-gray-200 focus:border-[#00D084] focus:ring-[#00D084]"
                 />
               </div>
@@ -129,7 +127,6 @@ export default function Login() {
                   value={formData.password}
                   onChange={handleChange}
                   placeholder="••••••••"
-                  required
                   className="pl-11 pr-11 h-12 rounded-xl border-gray-200 focus:border-[#00D084] focus:ring-[#00D084]"
                 />
                 <button

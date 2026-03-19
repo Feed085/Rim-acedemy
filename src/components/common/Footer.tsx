@@ -48,31 +48,13 @@ export default function Footer() {
               <img 
                 src={logo} 
                 alt="RIM Academy Logo" 
-                className="w-12 h-12 lg:w-16 lg:h-16 object-contain rounded-lg"
+                className="w-10 h-10 lg:w-12 lg:h-12 object-contain rounded-full border border-white/10"
               />
               <span className="font-bold text-xl lg:text-2xl italic tracking-tight">RIM Academy</span>
             </Link>
             <p className="text-gray-400 text-sm leading-relaxed mb-6">
               Təhsilin gələcəyi. Peşəkar müəllimlərlə, müasir tədris metodları ilə uğura gedən yol.
             </p>
-            {/* Social Links */}
-            <div>
-              <p className="text-sm font-medium mb-4">{t('footer.follow_us')}</p>
-              <div className="flex gap-3">
-                {socialLinks.map((social) => (
-                  <a
-                    key={social.label}
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`w-10 h-10 rounded-full bg-white/10 flex items-center justify-center transition-all hover:bg-white/20 ${social.color}`}
-                    aria-label={social.label}
-                  >
-                    <social.icon />
-                  </a>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* Quick Links */}
@@ -105,7 +87,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-[#00D084] flex-shrink-0" />
-                <span className="text-gray-400 text-sm">+994 12 345 67 89</span>
+                <span className="text-gray-400 text-sm">+994 51 627 87 11</span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-[#00D084] flex-shrink-0" />
@@ -120,25 +102,26 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Newsletter */}
+          {/* Social Links */}
           <div>
-            <h3 className="font-bold text-lg mb-6">Xəbər Bülleteni</h3>
+            <h3 className="font-bold text-lg mb-6">{t('footer.follow_us')}</h3>
             <p className="text-gray-400 text-sm mb-4">
-              Yeni kurslar və xəbərlərdən xəbərdar olun.
+              Bizi sosial şəbəkələrdə izləyərək ən son yeniliklərdən xəbərdar olun.
             </p>
-            <form className="flex flex-col gap-3">
-              <input
-                type="email"
-                placeholder="Email ünvanınız"
-                className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-[#00D084] transition-colors text-sm"
-              />
-              <button
-                type="submit"
-                className="w-full px-4 py-3 rounded-xl bg-[#00D084] hover:bg-[#00B873] text-white font-medium transition-colors text-sm"
-              >
-                Abunə ol
-              </button>
-            </form>
+            <div className="flex gap-3">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`w-10 h-10 rounded-full bg-white/10 flex items-center justify-center transition-all hover:bg-white/20 ${social.color}`}
+                  aria-label={social.label}
+                >
+                  <social.icon />
+                </a>
+              ))}
+            </div>
           </div>
         </div>
 

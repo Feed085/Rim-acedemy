@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,6 +17,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Menu, User, LogOut, BookOpen, Users, FileText, Phone, Home, ChevronDown } from 'lucide-react';
 import logo from '@/photos/RimAcademyLogo.jpeg';
+import { cn } from '@/lib/utils';
+import { courses, teachers } from '@/data/mockData';
 
 
 export default function Navbar() {
@@ -26,6 +28,37 @@ export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [isCoursesHovered, setIsCoursesHovered] = useState(false);
+  const [isTeachersHovered, setIsTeachersHovered] = useState(false);
+  
+  const isDarkPage = location.pathname.startsWith('/courses/') || 
+                    location.pathname.startsWith('/teachers/') || 
+                    location.pathname === '/teacher/profile';
+  
+  const coursesTimer = useRef<any>(null);
+  const teachersTimer = useRef<any>(null);
+
+  const handleMouseEnter = (type: 'courses' | 'teachers') => {
+    if (type === 'courses') {
+      if (coursesTimer.current) clearTimeout(coursesTimer.current);
+      setIsCoursesHovered(true);
+      setIsTeachersHovered(false);
+    } else {
+      if (teachersTimer.current) clearTimeout(teachersTimer.current);
+      setIsTeachersHovered(true);
+      setIsCoursesHovered(false);
+    }
+  };
+
+  const handleMouseLeave = (type: 'courses' | 'teachers') => {
+    const timer = setTimeout(() => {
+      if (type === 'courses') setIsCoursesHovered(false);
+      else setIsTeachersHovered(false);
+    }, 150);
+    
+    if (type === 'courses') coursesTimer.current = timer;
+    else teachersTimer.current = timer;
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -39,7 +72,7 @@ export default function Navbar() {
     { label: t('nav.home'), href: '/', icon: Home },
     { label: t('nav.courses'), href: '/courses', icon: BookOpen },
     { label: t('nav.teachers'), href: '/teachers', icon: Users },
-    { label: t('nav.tests'), href: '/tests', icon: FileText },
+    ...(isAuthenticated ? [{ label: t('nav.tests'), href: '/tests', icon: FileText }] : []),
     { label: t('nav.contact'), href: '/contact', icon: Phone },
   ];
 
@@ -52,7 +85,7 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
         isScrolled
           ? 'bg-white/95 backdrop-blur-md shadow-lg'
           : 'bg-transparent'
@@ -65,32 +98,150 @@ export default function Navbar() {
             <img 
               src={logo} 
               alt="RIM Academy Logo" 
-              className="w-10 h-10 lg:w-14 lg:h-14 object-contain rounded-lg"
+              className="w-10 h-10 lg:w-12 lg:h-12 object-contain rounded-full border border-white/10"
             />
             <span className={`font-bold text-lg lg:text-2xl transition-colors ${
-              isScrolled ? 'text-gray-900' : 'text-gray-900'
+              isScrolled 
+                ? 'text-gray-900' 
+                : isDarkPage 
+                ? 'text-white' 
+                : 'text-gray-900'
             }`}>
               RIM Academy
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={`text-sm font-medium transition-colors hover:text-[#00D084] ${
-                  isActive(item.href)
-                    ? 'text-[#00D084]'
-                    : isScrolled
-                    ? 'text-gray-700'
-                    : 'text-gray-700'
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+          <div className="hidden lg:flex items-center gap-2">
+            {navItems.map((item) => {
+              const hasDropdown = item.href === '/courses' || item.href === '/teachers';
+              const isHovered = item.href === '/courses' ? isCoursesHovered : isTeachersHovered;
+              const type = item.href === '/courses' ? 'courses' : 'teachers';
+
+              return (
+                <div key={item.href} className="relative group">
+                  <Link
+                    to={item.href}
+                    onMouseEnter={() => hasDropdown && handleMouseEnter(type)}
+                    onMouseLeave={() => hasDropdown && handleMouseLeave(type)}
+                    className={cn(
+                      "text-sm font-medium transition-colors hover:text-[#00D084] px-3 py-1.5 rounded-lg flex items-center gap-1",
+                      isActive(item.href)
+                        ? 'text-[#00D084]'
+                        : isScrolled
+                        ? 'text-gray-700'
+                        : isDarkPage
+                        ? 'text-white/90'
+                        : 'text-gray-700'
+                    )}
+                  >
+                    {item.label}
+                    {hasDropdown && (
+                      <ChevronDown className={cn("w-4 h-4 transition-transform duration-200", isHovered && "rotate-180")} />
+                    )}
+                  </Link>
+
+                  {hasDropdown && (
+                    <>
+                      {/* Backdrop */}
+                      <div 
+                        className={cn(
+                          "fixed top-[64px] lg:top-[80px] bottom-0 left-0 right-0 bg-black/30 backdrop-blur-[2px] z-[-1] transition-all duration-500 pointer-events-none",
+                          isHovered ? "opacity-100 visible" : "opacity-0 invisible"
+                        )}
+                      />
+                      {isHovered && (
+                        <div 
+                          className="fixed top-[64px] lg:top-[80px] -mt-[1px] left-0 right-0 w-screen bg-white shadow-[0_45px_100px_-25px_rgba(0,0,0,0.15)] border-b border-gray-100 animate-in fade-in slide-in-from-top-2 duration-500 ease-out z-[100] pointer-events-auto"
+                          onMouseEnter={() => handleMouseEnter(type)}
+                          onMouseLeave={() => handleMouseLeave(type)}
+                        >
+                          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                            <div className="grid grid-cols-4 gap-6">
+                              <div className="col-span-4 mb-1 flex items-center justify-between">
+                                <div>
+                                  <h4 className="text-sm font-bold text-gray-900 tracking-tight">
+                                    {item.href === '/courses' ? t('courses.title') : t('teachers.title')}
+                                  </h4>
+                                  <p className="text-[10px] text-gray-500">
+                                    {item.href === '/courses' ? t('courses.subtitle') : t('teachers.subtitle')}
+                                  </p>
+                                </div>
+                                <Link
+                                  to={item.href}
+                                  onClick={() => {
+                                    setIsCoursesHovered(false);
+                                    setIsTeachersHovered(false);
+                                  }}
+                                  className="text-[10px] font-bold text-[#00D084] hover:text-[#00B873] flex items-center gap-1 group transition-colors"
+                                >
+                                  {t('courses.view_all')}
+                                  <ChevronDown className="w-2.5 h-2.5 -rotate-90 group-hover:translate-x-1 transition-transform" />
+                                </Link>
+                              </div>
+
+                              {item.href === '/courses' ? (
+                                courses.slice(0, 4).map((course) => (
+                                  <Link
+                                    key={course.id}
+                                    to={`/courses`}
+                                    onClick={() => setIsCoursesHovered(false)}
+                                    className="group block select-none space-y-2 rounded-lg p-2 leading-none no-underline outline-none transition-all hover:bg-gray-50/80 border border-transparent hover:border-gray-100"
+                                  >
+                                    <div className="aspect-video w-full rounded-md overflow-hidden border border-gray-100 shadow-sm">
+                                      <img 
+                                        src={course.image} 
+                                        alt={course.title} 
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" 
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <div className="text-[13px] font-bold leading-tight text-gray-900 group-hover:text-[#00D084] transition-colors line-clamp-1">
+                                        {course.title}
+                                      </div>
+                                      <p className="line-clamp-1 text-[10px] leading-relaxed text-gray-500">
+                                        {course.description}
+                                      </p>
+                                    </div>
+                                  </Link>
+                                ))
+                              ) : (
+                                teachers.slice(0, 4).map((teacher) => (
+                                  <Link
+                                    key={teacher.id}
+                                    to={`/teachers`}
+                                    onClick={() => setIsTeachersHovered(false)}
+                                    className="group block select-none space-y-3 rounded-lg p-2 leading-none no-underline outline-none transition-all hover:bg-gray-50/80 border border-transparent hover:border-gray-100"
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-100 group-hover:border-[#00D084] transition-colors shrink-0">
+                                        <img 
+                                          src={teacher.avatar} 
+                                          alt={teacher.name} 
+                                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                                        />
+                                      </div>
+                                      <div className="min-w-0">
+                                        <div className="text-[13px] font-bold leading-tight text-gray-900 group-hover:text-[#00D084] transition-colors line-clamp-1">
+                                          {teacher.name} {teacher.surname}
+                                        </div>
+                                        <p className="line-clamp-1 text-[10px] text-gray-500 mt-0.5">
+                                          {teacher.specialties.join(', ')}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </Link>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {/* Desktop Auth Buttons */}
@@ -98,7 +249,13 @@ export default function Navbar() {
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    className={cn(
+                      "flex items-center gap-2 transition-colors",
+                      isScrolled ? "text-gray-900" : isDarkPage ? "text-white" : "text-gray-900"
+                    )}
+                  >
                     <div className="w-8 h-8 rounded-full bg-[#00D084] flex items-center justify-center">
                       <User className="w-4 h-4 text-white" />
                     </div>
@@ -127,7 +284,10 @@ export default function Navbar() {
                 <Button
                   variant="ghost"
                   onClick={() => navigate('/login')}
-                  className="font-medium"
+                  className={cn(
+                    "font-medium transition-colors",
+                    isScrolled ? "text-gray-900" : isDarkPage ? "text-white" : "text-gray-900"
+                  )}
                 >
                   {t('nav.login')}
                 </Button>

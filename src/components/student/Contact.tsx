@@ -88,7 +88,7 @@ export default function Contact() {
     {
       icon: Phone,
       label: t('contact.info.phone'),
-      value: '+994 12 345 67 89',
+      value: '+994 51 627 87 11',
     },
     {
       icon: Mail,
@@ -104,6 +104,7 @@ export default function Contact() {
 
   return (
     <section
+      id="contact"
       ref={sectionRef}
       className="relative py-20 lg:py-32 bg-[#0A0A0A] overflow-hidden"
     >

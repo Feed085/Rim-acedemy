@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Play } from 'lucide-react';
+import { ArrowRight, MessageSquare } from 'lucide-react';
 import gsap from 'gsap';
 
 export default function Hero() {
@@ -101,7 +101,7 @@ export default function Hero() {
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-lg mb-8">
           <span className="w-2 h-2 bg-[#00D084] rounded-full animate-pulse" />
-          <span className="text-sm font-medium text-gray-700">Yeni kurslar əlavə edildi</span>
+          <span className="text-sm font-medium text-gray-700">Gələcəyinizi bizimlə qurun</span>
         </div>
 
         {/* Main Title */}
@@ -140,10 +140,13 @@ export default function Hero() {
           </Button>
           <Button
             variant="outline"
-            onClick={() => navigate('/courses')}
-            className="border-2 border-gray-300 hover:border-[#00D084] hover:text-[#00D084] font-semibold rounded-full px-8 py-6 text-base group transition-all"
+            onClick={() => {
+              const contactSection = document.getElementById('contact');
+              contactSection?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="border-2 border-gray-900/10 hover:border-[#00D084] hover:bg-[#00D084]/10 hover:text-[#00D084] text-gray-700 font-semibold rounded-full px-8 py-6 text-base group transition-all active:scale-95 shadow-sm hover:shadow-md bg-white/50 backdrop-blur-sm"
           >
-            <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+            <MessageSquare className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
             {t('hero.cta_secondary')}
           </Button>
         </div>

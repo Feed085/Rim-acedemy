@@ -71,18 +71,18 @@ export default function TeacherDetail() {
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
       {/* Cover */}
       <div className="relative h-48 lg:h-72 bg-gradient-to-r from-[#00D084] to-[#0082F3]">
-        <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute inset-0 bg-black/20 z-0" />
         <Button
           variant="ghost"
           onClick={() => navigate('/teachers')}
-          className="absolute top-4 left-4 text-white hover:bg-white/20"
+          className="absolute top-4 left-4 text-white hover:bg-white/20 z-10"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
           Geri
         </Button>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 pb-12">
+      <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 pb-12">
         {/* Profile Card */}
         <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-lg mb-8">
           <div className="flex flex-col lg:flex-row gap-6">
