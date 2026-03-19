@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { 
   Star, 
   Users, 
+  User,
   BookOpen, 
   Award, 
   ArrowLeft,
@@ -174,7 +175,7 @@ export default function TeacherDetail() {
           <div className="flex border-b border-gray-100">
             {[
               { key: 'courses', label: 'Kurslar', icon: BookOpen },
-              { key: 'about', label: 'Haqqında', icon: Award },
+              { key: 'about', label: 'Haqqında', icon: User },
               { key: 'reviews', label: 'Rəylər', icon: Star },
             ].map((tab) => (
               <button
