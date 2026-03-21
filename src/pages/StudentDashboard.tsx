@@ -4,15 +4,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { courses, tests } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { 
   BookOpen, 
-  Award, 
   FileText, 
   Clock, 
-  TrendingUp, 
   ArrowRight,
   Play,
-  CheckCircle
+  Award
 } from 'lucide-react';
 
 export default function StudentDashboard() {
@@ -23,11 +27,33 @@ export default function StudentDashboard() {
   const myCourses = courses.slice(0, 3);
   const myTests = tests.slice(0, 3);
 
+  const groupedCourseTests = Object.values(
+    myTests.reduce((acc, test) => {
+      if (!acc[test.courseId]) {
+        acc[test.courseId] = {
+          courseId: test.courseId,
+          courseName: test.courseName || 'Naməlum Kurs',
+          tests: []
+        };
+      }
+      acc[test.courseId].tests.push(test);
+      return acc;
+    }, {} as Record<string, { courseId: string; courseName: string; tests: typeof myTests }>)
+  );
+
+  const scrollToCourses = () => {
+    const el = document.getElementById('my-courses-section');
+    if (el) {
+      const yOffset = -100;
+      const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  };
+
   const stats = [
-    { label: 'Aktiv Kurslar', value: '3', icon: BookOpen, color: '#00D084' },
-    { label: 'Tamamlanan Testlər', value: '12', icon: FileText, color: '#0082F3' },
-    { label: 'Sertifikatlar', value: '2', icon: Award, color: '#F59E0B' },
-    { label: 'Ümumi İrakət', value: '68%', icon: TrendingUp, color: '#EC4899' },
+    { label: 'Aktiv Kurslar', value: '3', icon: BookOpen, color: '#00D084', onClick: scrollToCourses },
+    { label: 'Tamamlanan Testlər', value: '12', icon: FileText, color: '#0082F3', onClick: () => navigate('/dashboard/completed-tests') },
+    { label: 'Sertifikatlar', value: '2', icon: Award, color: '#F59E0B', onClick: () => navigate('/dashboard/certificates') },
   ];
 
   return (
@@ -63,11 +89,12 @@ export default function StudentDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {stats.map((stat) => (
             <div
               key={stat.label}
-              className="bg-white rounded-2xl p-5 shadow-sm"
+              onClick={stat.onClick}
+              className="bg-white rounded-2xl p-5 shadow-sm transition-all cursor-pointer hover:shadow-md hover:-translate-y-1"
             >
               <div
                 className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
@@ -84,7 +111,7 @@ export default function StudentDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* My Courses */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-3xl p-6 shadow-sm">
+            <div id="my-courses-section" className="bg-white rounded-3xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-900">
                   {t('student.dashboard.my_courses')}
@@ -116,12 +143,13 @@ export default function StudentDashboard() {
                       <div className="flex items-center gap-4">
                         <div className="flex-1">
                           <div className="flex items-center justify-between text-xs mb-1">
-                            <span className="text-gray-500">İrakət</span>
+                            <span className="text-gray-500">İrəliləyiş</span>
                             <span className="font-medium text-[#00D084]">65%</span>
                           </div>
                           <Progress value={65} className="h-2" />
                         </div>
                         <Button
+                          onClick={() => navigate(`/courses/${course.id}/watch`, { state: { from: 'dashboard' } })}
                           size="sm"
                           className="bg-[#00D084] hover:bg-[#00B873] rounded-lg"
                         >
@@ -143,69 +171,67 @@ export default function StudentDashboard() {
               <h2 className="text-xl font-bold text-gray-900 mb-4">
                 {t('student.dashboard.tests')}
               </h2>
-              <div className="space-y-3">
-                {myTests.map((test) => (
-                  <div
-                    key={test.id}
-                    className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"
+              <Accordion type="multiple" className="w-full space-y-3">
+                {groupedCourseTests.map((group) => (
+                  <AccordionItem 
+                    key={group.courseId} 
+                    value={group.courseId} 
+                    className="border border-gray-100 bg-gray-50 rounded-2xl overflow-hidden px-4"
                   >
-                    <div className="w-10 h-10 bg-[#0082F3]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <FileText className="w-5 h-5 text-[#0082F3]" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-gray-900 text-sm truncate">
-                        {test.title}
-                      </h4>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <Clock className="w-3 h-3" />
-                        <span>{test.duration} dəq</span>
+                    <AccordionTrigger className="hover:no-underline py-4">
+                      <div className="flex items-center gap-3 text-left w-full pr-2">
+                        <div className="w-10 h-10 bg-[#00D084]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <BookOpen className="w-5 h-5 text-[#00D084]" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-gray-900 text-sm truncate">
+                            {group.courseName}
+                          </h4>
+                          <p className="text-xs text-gray-500 font-normal mt-0.5">
+                            {group.tests.length} test mövcuddur
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate(`/tests/${test.id}`)}
-                      className="rounded-lg text-xs"
-                    >
-                      Başla
-                    </Button>
-                  </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-0 pb-4">
+                      <div className="space-y-3 mt-1">
+                        {group.tests.map((test) => (
+                          <div
+                            key={test.id}
+                            className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-sm"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className="w-8 h-8 bg-[#0082F3]/10 rounded-md flex items-center justify-center flex-shrink-0">
+                                <FileText className="w-4 h-4 text-[#0082F3]" />
+                              </div>
+                              <div className="min-w-0 pr-4">
+                                <h5 className="font-medium text-gray-900 text-sm truncate">
+                                  {test.title}
+                                </h5>
+                                <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                                  <Clock className="w-3 h-3" />
+                                  <span>{test.duration} dəq</span>
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => navigate(`/tests/${test.id}`, { state: { from: 'dashboard' } })}
+                              className="rounded-lg text-xs h-8 shrink-0 hover:bg-[#0082F3] hover:text-white hover:border-[#0082F3] transition-colors"
+                            >
+                              Başla
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 ))}
-              </div>
+              </Accordion>
             </div>
 
-            {/* Certificates */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                {t('student.dashboard.certificates')}
-              </h2>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-[#00D084]/5 rounded-xl border border-[#00D084]/20">
-                  <div className="w-10 h-10 bg-[#00D084]/10 rounded-lg flex items-center justify-center">
-                    <Award className="w-5 h-5 text-[#00D084]" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 text-sm">IELTS Sertifikatı</h4>
-                    <div className="flex items-center gap-1 text-xs text-[#00D084]">
-                      <CheckCircle className="w-3 h-3" />
-                      <span>Tamamlandı</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-3 bg-[#00D084]/5 rounded-xl border border-[#00D084]/20">
-                  <div className="w-10 h-10 bg-[#00D084]/10 rounded-lg flex items-center justify-center">
-                    <Award className="w-5 h-5 text-[#00D084]" />
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 text-sm">İngilis Dili</h4>
-                    <div className="flex items-center gap-1 text-xs text-[#00D084]">
-                      <CheckCircle className="w-3 h-3" />
-                      <span>Tamamlandı</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+
 
             {/* Calendar */}
             <div className="bg-white rounded-3xl p-6 shadow-sm">

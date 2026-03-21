@@ -1,7 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { courses } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,11 +13,20 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { mockDb } from '@/services/mockDb';
+import { teachers } from '@/data/mockData';
 
 export default function UploadVideo() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   
+  useEffect(() => {
+    window.scrollTo({
+      top: 150,
+      behavior: 'smooth'
+    });
+  }, []);
+
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isUploaded, setIsUploaded] = useState(false);
@@ -29,6 +37,14 @@ export default function UploadVideo() {
     description: '',
     courseId: '',
   });
+
+  const teacher = teachers[0];
+  const teacherCourses = mockDb.getTeacherCourses(teacher.id);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -96,16 +112,11 @@ export default function UploadVideo() {
     // Simulate upload
     await new Promise(resolve => setTimeout(resolve, 3000));
     
+    mockDb.addLessonToCourse(formData.courseId, formData.title);
+    
     setIsUploading(false);
     setIsUploaded(true);
-    toast.success('Video uğurla yükləndi!');
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+    toast.success('Video dərsi uğurla əlavə edildi!');
   };
 
   if (isUploaded) {
@@ -124,10 +135,10 @@ export default function UploadVideo() {
           <div className="flex gap-4">
             <Button
               variant="outline"
-              onClick={() => navigate('/teacher/dashboard')}
+              onClick={() => navigate(-1)}
               className="flex-1 rounded-xl"
             >
-              Panelə qayıt
+              Geri qayıt
             </Button>
             <Button
               onClick={() => {
@@ -153,7 +164,7 @@ export default function UploadVideo() {
         <div className="flex items-center gap-4 mb-8">
           <Button
             variant="ghost"
-            onClick={() => navigate('/teacher/dashboard')}
+            onClick={() => navigate(-1)}
             className="p-2"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -245,7 +256,7 @@ export default function UploadVideo() {
                 className="w-full h-12 px-4 rounded-xl border border-gray-200 focus:border-[#00D084] focus:ring-[#00D084] outline-none"
               >
                 <option value="">Kurs seçin</option>
-                {courses.map(course => (
+                {teacherCourses.map(course => (
                   <option key={course.id} value={course.id}>
                     {course.title}
                   </option>

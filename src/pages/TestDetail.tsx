@@ -49,8 +49,8 @@ export default function TestDetail() {
       <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Test tapılmadı</h1>
-          <Button onClick={() => navigate('/tests')}>
-            Testlərə qayıt
+          <Button onClick={() => navigate(-1)}>
+            Geri qayıt
           </Button>
         </div>
       </div>
@@ -95,11 +95,11 @@ export default function TestDetail() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Button
             variant="ghost"
-            onClick={() => navigate('/tests')}
+            onClick={() => navigate(-1)}
             className="mb-6"
           >
             <ChevronLeft className="w-4 h-4 mr-1" />
-            Geri
+            Geri qayıt
           </Button>
 
           <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-lg">
@@ -194,13 +194,53 @@ export default function TestDetail() {
                 </div>
               </div>
 
+              {test.questions.length - score > 0 && (
+                <div className="mb-8 text-left">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <XCircle className="w-5 h-5 text-red-500" />
+                    Səhv Cavablarınız
+                  </h3>
+                  <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    {test.questions.map((q, idx) => {
+                      const selected = selectedAnswers[q.id];
+                      const isCorrect = selected === q.correctAnswer;
+                      if (isCorrect) return null;
+                      
+                      return (
+                        <div key={q.id} className="bg-red-50/50 border border-red-100 rounded-xl p-4">
+                          <p className="font-medium text-gray-900 mb-2">
+                            {idx + 1}. {q.question}
+                          </p>
+                          <div className="flex flex-col sm:flex-row gap-2 mt-3 text-sm">
+                            <div className="flex-1 flex items-start gap-2 text-red-600 bg-red-100/50 px-3 py-2 rounded-lg">
+                              <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                              <div>
+                                <span className="font-medium block text-xs uppercase tracking-wider mb-0.5">Sizin cavabınız</span>
+                                <span>{selected !== undefined ? q.options[selected] : 'Cavab verilməyib'}</span>
+                              </div>
+                            </div>
+                            <div className="flex-1 flex items-start gap-2 text-[#00D084] bg-[#00D084]/10 px-3 py-2 rounded-lg">
+                              <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                              <div>
+                                <span className="font-medium block text-xs uppercase tracking-wider mb-0.5">Düzgün cavab</span>
+                                <span>{q.options[q.correctAnswer]}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-4">
                 <Button
                   variant="outline"
-                  onClick={() => navigate('/tests')}
+                  onClick={() => navigate(-1)}
                   className="flex-1 h-12 rounded-xl"
                 >
-                  Testlərə qayıt
+                  Geri qayıt
                 </Button>
                 <Button
                   onClick={() => {

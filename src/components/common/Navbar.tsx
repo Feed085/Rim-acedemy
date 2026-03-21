@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, User, LogOut, BookOpen, Users, FileText, Phone, Home, ChevronDown } from 'lucide-react';
+import { Menu, User, LogOut, BookOpen, Users, Phone, Home, ChevronDown } from 'lucide-react';
 import logo from '@/photos/new_logo.png';
 import { cn } from '@/lib/utils';
 import { courses, teachers } from '@/data/mockData';
@@ -31,7 +31,8 @@ export default function Navbar() {
   const [isCoursesHovered, setIsCoursesHovered] = useState(false);
   const [isTeachersHovered, setIsTeachersHovered] = useState(false);
   
-  const isDarkPage = location.pathname.startsWith('/courses/') || location.pathname === '/contact';
+  const isWatchPage = location.pathname.includes('/watch');
+  const isDarkPage = (location.pathname.startsWith('/courses/') && !isWatchPage) || location.pathname === '/contact';
   
   const coursesTimer = useRef<any>(null);
   const teachersTimer = useRef<any>(null);
@@ -70,7 +71,6 @@ export default function Navbar() {
     { label: t('nav.home'), href: '/', icon: Home },
     { label: t('nav.courses'), href: '/courses', icon: BookOpen },
     { label: t('nav.teachers'), href: '/teachers', icon: Users },
-    ...(isAuthenticated ? [{ label: t('nav.tests'), href: '/tests', icon: FileText }] : []),
     { label: t('nav.contact'), href: '/contact', icon: Phone },
   ];
 
@@ -84,8 +84,8 @@ export default function Navbar() {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
-        isScrolled
-          ? 'bg-white/95 backdrop-blur-md shadow-lg'
+        isScrolled || isWatchPage
+          ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100'
           : location.pathname === '/contact'
           ? 'bg-[#0A0A0A]/80 backdrop-blur-md border-b border-white/10'
           : 'bg-transparent'
@@ -101,7 +101,7 @@ export default function Navbar() {
               className="w-10 h-10 lg:w-12 lg:h-12 object-contain rounded-full border border-white/10"
             />
             <span className={`font-bold text-lg lg:text-2xl transition-colors ${
-              isScrolled 
+              (isScrolled || isWatchPage)
                 ? 'text-gray-900' 
                 : isDarkPage 
                 ? 'text-white' 
@@ -128,7 +128,7 @@ export default function Navbar() {
                       "text-sm font-medium transition-colors hover:text-[#00D084] px-3 py-1.5 rounded-lg flex items-center gap-1",
                       isActive(item.href)
                         ? 'text-[#00D084]'
-                        : isScrolled
+                        : (isScrolled || isWatchPage)
                         ? 'text-gray-700'
                         : isDarkPage
                         ? 'text-white/90'
@@ -253,7 +253,7 @@ export default function Navbar() {
                     variant="ghost" 
                     className={cn(
                       "flex items-center gap-2 transition-colors",
-                      isScrolled ? "text-gray-900" : isDarkPage ? "text-white" : "text-gray-900"
+                      (isScrolled || isWatchPage) ? "text-gray-900" : isDarkPage ? "text-white" : "text-gray-900"
                     )}
                   >
                     <div className="w-8 h-8 rounded-full bg-[#00D084] flex items-center justify-center">
@@ -285,7 +285,7 @@ export default function Navbar() {
                   onClick={() => navigate('/login')}
                   className={cn(
                     "font-medium transition-colors",
-                    isScrolled ? "text-gray-900" : isDarkPage ? "text-white" : "text-gray-900"
+                    (isScrolled || isWatchPage) ? "text-gray-900" : isDarkPage ? "text-white" : "text-gray-900"
                   )}
                 >
                   {t('nav.login')}

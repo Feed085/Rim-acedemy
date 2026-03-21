@@ -1,0 +1,140 @@
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { tests } from '@/data/mockData';
+import { 
+  FileText, 
+  ChevronLeft, 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  RotateCcw
+} from 'lucide-react';
+
+export default function StudentCompletedTests() {
+  const navigate = useNavigate();
+
+  // Mocking completed tests by taking the first two and assigning mock scores
+  const completedTests = tests.slice(0, 2).map((test, index) => ({
+    ...test,
+    score: index === 0 ? test.questionCount : test.questionCount - 3,
+    percentage: index === 0 ? 100 : Math.round(((test.questionCount - 3) / test.questionCount) * 100),
+    isPassed: index === 0 ? true : Math.round(((test.questionCount - 3) / test.questionCount) * 100) >= 60,
+    completedAt: '22 Mart 2024, 14:30'
+  }));
+
+  return (
+    <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            className="mb-4 text-gray-600 hover:text-gray-900"
+          >
+            <ChevronLeft className="w-4 h-4 mr-1" />
+            Geri qayıt
+          </Button>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-[#0082F3]/10 rounded-xl flex items-center justify-center">
+              <FileText className="w-6 h-6 text-[#0082F3]" />
+            </div>
+            <div>
+              <h1 className="text-2xl lg:text-3xl font-black text-gray-900">
+                Tamamlanan Testlər
+              </h1>
+              <p className="text-gray-500 mt-1">
+                İndiyə qədər bitirdiyiniz testlərin nəticələri
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* List of Completed Tests */}
+        <div className="space-y-4">
+          {completedTests.map((completedTest) => (
+            <div
+              key={completedTest.id}
+              className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-6 sm:items-center justify-between transition-all hover:shadow-md"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold">
+                    {completedTest.courseName}
+                  </span>
+                  <span className="text-xs text-gray-400 font-medium">
+                    {completedTest.completedAt}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
+                  {completedTest.title}
+                </h3>
+                <div className="flex items-center gap-4 text-sm text-gray-500">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-4 h-4" />
+                    <span>{completedTest.duration} dəq</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <FileText className="w-4 h-4" />
+                    <span>{completedTest.questionCount} sual</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 border-t sm:border-t-0 sm:border-l border-gray-100 pt-4 sm:pt-0 sm:pl-6 shrink-0">
+                <div className="text-left sm:text-center">
+                  <div className={`text-2xl font-black ${completedTest.isPassed ? 'text-[#00D084]' : 'text-red-500'}`}>
+                    {completedTest.percentage}%
+                  </div>
+                  <div className={`flex items-center gap-1 mt-0.5 ${completedTest.isPassed ? 'text-[#00D084]' : 'text-red-500'}`}>
+                    {completedTest.isPassed ? (
+                      <CheckCircle className="w-3.5 h-3.5" />
+                    ) : (
+                      <XCircle className="w-3.5 h-3.5" />
+                    )}
+                    <span className="text-xs font-semibold">
+                      {completedTest.isPassed ? 'Keçdi' : 'Kəsildi'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-sm">
+                  <div className="flex items-center gap-4 mb-2">
+                    <span className="text-gray-500">Doğru:</span>
+                    <span className="text-[#00D084] font-bold">{completedTest.score}</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-gray-500">Yanlış:</span>
+                    <span className="text-red-500 font-bold">{completedTest.questionCount - completedTest.score}</span>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => navigate(`/tests/${completedTest.id}`, { state: { from: 'dashboard' } })}
+                  className="w-full sm:w-auto mt-2 sm:mt-0 bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl"
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Yenidən başla
+                </Button>
+              </div>
+            </div>
+          ))}
+
+          {completedTests.length === 0 && (
+             <div className="text-center py-16 bg-white rounded-3xl shadow-sm border border-gray-100">
+             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+               <FileText className="w-10 h-10 text-gray-400" />
+             </div>
+             <h3 className="text-xl font-bold text-gray-900 mb-2">
+               Hələ heç bir test tamamlanmayıb
+             </h3>
+             <p className="text-gray-500">
+               Testlərə daxil olaraq biliklərinizi yoxlamağa başlayın.
+             </p>
+           </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

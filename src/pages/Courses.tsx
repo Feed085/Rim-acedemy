@@ -9,31 +9,22 @@ import {
   Clock, 
   Users, 
   Star, 
-  ArrowRight
+  ArrowRight,
+  Filter
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function CoursesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-
-  const handleEnroll = (courseId: string) => {
-    if (!isAuthenticated) {
-      toast.info(t('courses.auth_required'), {
-        action: {
-          label: t('nav.register'),
-          onClick: () => navigate('/register')
-        }
-      });
-      return;
-    }
-    navigate(`/courses/${courseId}`);
-  };
-
   const categories = [
     { key: 'all', label: 'Hamısı' },
     { key: 'language', label: 'Dil Kursları' },
@@ -82,20 +73,26 @@ export default function CoursesPage() {
               className="pl-12 h-14 rounded-2xl bg-white border-2 border-gray-100 shadow-lg shadow-gray-200/50 focus:border-[#00D084] focus:ring-0 transition-all text-base placeholder:text-gray-400"
             />
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
-            {categories.map((cat) => (
-              <button
-                key={cat.key}
-                onClick={() => setSelectedCategory(cat.key)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-                  selectedCategory === cat.key
-                    ? 'bg-[#00D084] text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
+          <div className="w-full sm:w-[220px] shrink-0">
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-full !h-14 bg-white border-2 border-gray-100 rounded-2xl shadow-lg shadow-gray-200/50 focus:ring-0 focus:ring-offset-0 outline-none focus:border-[#00D084] text-gray-700 font-medium px-5">
+                <div className="flex items-center gap-2.5">
+                  <Filter className="w-4 h-4 text-[#00D084]" />
+                  <SelectValue placeholder="Kateqoriya" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2 min-w-[220px]">
+                {categories.map((cat) => (
+                  <SelectItem
+                    key={cat.key}
+                    value={cat.key}
+                    className="py-3 px-4 rounded-xl text-sm font-medium text-gray-600 cursor-pointer focus:bg-[#00D084]/10 focus:text-[#00D084] data-[state=checked]:text-[#00D084] data-[state=checked]:bg-[#00D084]/5 transition-colors mb-1 last:mb-0"
+                  >
+                    {cat.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -156,17 +153,14 @@ export default function CoursesPage() {
                       {course.teacherName}
                     </span>
                   </div>
-                  <div className="text-lg font-black text-[#00D084]">
-                    {course.price}₼
-                  </div>
                 </div>
 
                 {/* Button */}
                 <Button
-                  onClick={() => handleEnroll(course.id)}
+                  onClick={() => navigate(`/courses/${course.id}`)}
                   className="w-full mt-4 bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl group/btn"
                 >
-                  {t('courses.enroll')}
+                  Dərslərə bax
                   <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
                 </Button>
               </div>

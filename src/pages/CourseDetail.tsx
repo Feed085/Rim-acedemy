@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { courses, teachers } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
@@ -12,20 +11,16 @@ import {
   PlayCircle, 
   ShieldCheck, 
   ChevronRight,
-  ArrowLeft,
-  Share2,
   Calendar,
   Award,
   MessageSquare
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+
 
 export default function CourseDetail() {
-  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  
   
   const course = courses.find(c => c.id === id);
   const teacher = teachers.find(t => t.id === course?.teacherId);
@@ -39,26 +34,15 @@ export default function CourseDetail() {
       <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Kurs tapılmadı</h1>
-          <Button onClick={() => navigate('/courses')}>
-            Kurslara qayıt
+          <Button onClick={() => navigate(-1)}>
+            Geri qayıt
           </Button>
         </div>
       </div>
     );
   }
 
-  const handleEnroll = () => {
-    if (!isAuthenticated) {
-      toast.info(t('courses.auth_required'), {
-        action: {
-          label: t('nav.register'),
-          onClick: () => navigate('/register')
-        }
-      });
-      return;
-    }
-    toast.success('Kursa uğurla yazıldınız!');
-  };
+
 
   const learningPoints = [
     'Kursun əsas mövzuları üzrə dərin biliklər',
@@ -137,12 +121,9 @@ export default function CourseDetail() {
             {/* Mobile Price View */}
             <div className="mt-8 lg:hidden flex items-center justify-between bg-white/5 backdrop-blur-md p-6 rounded-3xl border border-white/10">
               <div>
-                <p className="text-gray-400 text-sm mb-1">Kursun qiyməti</p>
-                <div className="text-3xl font-black text-white">{course.price}₼</div>
+                <p className="text-gray-400 text-sm mb-1">Kurs haqqında</p>
+                <div className="text-3xl font-black text-white">{course.title}</div>
               </div>
-              <Button onClick={handleEnroll} className="bg-[#00D084] hover:bg-[#00B873] px-8 rounded-xl h-12">
-                {t('courses.enroll')}
-              </Button>
             </div>
           </div>
         </div>
@@ -266,24 +247,7 @@ export default function CourseDetail() {
 
                 {/* Card Content */}
                 <div className="p-8">
-                  <div className="flex items-baseline gap-2 mb-6">
-                    <span className="text-4xl font-black text-gray-900">{course.price}₼</span>
-                    <span className="text-gray-400 line-through text-lg">600₼</span>
-                    <span className="ml-auto bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded-lg">
-                      -25%
-                    </span>
-                  </div>
 
-                  <Button 
-                    onClick={handleEnroll}
-                    className="w-full h-14 bg-[#00D084] hover:bg-[#00B873] shadow-lg shadow-[#00D084]/30 rounded-2xl text-lg font-bold mb-4"
-                  >
-                    {t('courses.enroll')}
-                  </Button>
-                  
-                  <p className="text-center text-xs text-gray-500 mb-8">
-                    30 günlük geri ödəniş zəmanəti
-                  </p>
 
                   <div className="space-y-4">
                     <h4 className="font-bold text-gray-900 text-sm uppercase tracking-widest">Kurs daxildir:</h4>
@@ -303,14 +267,7 @@ export default function CourseDetail() {
                     </div>
                   </div>
 
-                  <hr className="my-8 border-gray-100" />
 
-                  <div className="flex gap-3">
-                    <Button variant="outline" className="flex-1 rounded-xl h-11 border-gray-200">
-                      <Share2 className="w-4 h-4 mr-2 text-gray-400" />
-                      Paylaş
-                    </Button>
-                  </div>
                 </div>
               </div>
             </div>

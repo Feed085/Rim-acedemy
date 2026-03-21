@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
-import { courses } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { 
   ArrowLeft, 
   Save, 
-  Plus, 
   Trash2, 
   PlayCircle, 
   FileText,
@@ -16,19 +13,67 @@ import {
   Settings,
   Image as ImageIcon
 } from 'lucide-react';
+import { mockDb } from '@/services/mockDb';
 import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 export default function TeacherCourseEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [course, setCourse] = useState<any>(null);
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [tests, setTests] = useState<any[]>([]);
+  const [editingLesson, setEditingLesson] = useState<any>(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
 
   useEffect(() => {
-    const foundCourse = courses.find(c => c.id === id);
+    window.scrollTo(0, 0); // Always scroll to top on visit
+    const allCourses = mockDb.getCourses();
+    const foundCourse = allCourses.find(c => c.id === id);
     if (foundCourse) {
       setCourse({ ...foundCourse });
+      setLessons(mockDb.getLessons(id || ''));
+      setTests(mockDb.getTests(id || ''));
     }
   }, [id]);
+
+
+
+
+
+  const removeLesson = (lessonId: number) => {
+    if (id) {
+      mockDb.deleteLesson(id, lessonId);
+      setLessons(mockDb.getLessons(id));
+      toast.info('Video dərsi silindi');
+    }
+  };
+
+  const handleEditClick = (lesson: any) => {
+    setEditingLesson({ ...lesson });
+    setIsEditorOpen(true);
+  };
+
+  const handleUpdateLesson = () => {
+    if (id && editingLesson) {
+      mockDb.updateLesson(id, editingLesson.id, {
+        title: editingLesson.title,
+        description: editingLesson.description,
+        thumbnail: editingLesson.thumbnail
+      });
+      setLessons(mockDb.getLessons(id));
+      setIsEditorOpen(false);
+      setEditingLesson(null);
+      toast.success('Video məlumatları yeniləndi');
+    }
+  };
 
   if (!course) {
     return (
@@ -51,18 +96,18 @@ export default function TeacherCourseEdit() {
           <div>
             <Button
               variant="ghost"
-              onClick={() => navigate('/teacher/dashboard')}
+              onClick={() => navigate(-1)}
               className="mb-2 p-0 h-auto hover:bg-transparent text-gray-500 hover:text-gray-900 group"
             >
               <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-              Panelə qayıt
+              Geri qayıt
             </Button>
             <h1 className="text-2xl lg:text-3xl font-black text-gray-900">
               Kursu Redaktə Et
             </h1>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" className="rounded-xl" onClick={() => navigate('/teacher/dashboard')}>
+            <Button variant="outline" className="rounded-xl" onClick={() => navigate(-1)}>
               Ləğv et
             </Button>
             <Button className="bg-[#00D084] hover:bg-[#00B873] rounded-xl px-6" onClick={handleSave}>
@@ -115,28 +160,34 @@ export default function TeacherCourseEdit() {
                   <Video className="w-5 h-5 text-[#00D084]" />
                   Video Dərslər
                 </h2>
-                <Button variant="outline" size="sm" className="rounded-xl text-[#00D084] border-[#00D084]/20">
-                  <Plus className="w-4 h-4 mr-1" />
-                  Yeni Video
-                </Button>
               </div>
               <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 group">
+                {lessons.map((lesson) => (
+                  <div key={lesson.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 group">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
                         <PlayCircle className="w-6 h-6 text-[#00D084]" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-gray-900">Video Dərs #{i}</h4>
-                        <p className="text-xs text-gray-500">12:45 dəq</p>
+                        <h4 className="text-sm font-bold text-gray-900">{lesson.title}</h4>
+                        <p className="text-xs text-gray-500">{lesson.duration} dəq</p>
                       </div>
                     </div>
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-900">
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-gray-400 hover:text-gray-900 transition-colors"
+                        onClick={() => handleEditClick(lesson)}
+                      >
                         <Settings className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400 hover:text-red-600">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-red-400 hover:text-red-600 transition-all hover:scale-110"
+                        onClick={() => removeLesson(lesson.id)}
+                      >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -152,23 +203,31 @@ export default function TeacherCourseEdit() {
                   <FileText className="w-5 h-5 text-[#00D084]" />
                   Testlər və Tapşırıqlar
                 </h2>
-                <Button variant="outline" size="sm" className="rounded-xl text-[#00D084] border-[#00D084]/20">
-                  <Plus className="w-4 h-4 mr-1" />
-                  Yeni Test
-                </Button>
               </div>
               <div className="space-y-3">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                  <div className="flex items-center gap-4 text-sm font-bold text-gray-900">
-                    <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
-                      <FileText className="w-6 h-6 text-blue-500" />
+                {tests.map((test) => (
+                  <div key={test.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div className="flex items-center gap-4 text-sm font-bold text-gray-900">
+                      <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
+                        <FileText className="w-6 h-6 text-blue-500" />
+                      </div>
+                      {test.title}
                     </div>
-                    Yekun İmtahan Testi
+                    <div className="flex gap-2">
+                       <Button 
+                         variant="ghost" 
+                         size="icon" 
+                         className="h-8 w-8 text-gray-400 hover:text-gray-900 transition-colors"
+                         onClick={() => navigate(`/teacher/tests/${test.id}`)}
+                       >
+                         <Settings className="w-4 h-4" />
+                       </Button>
+                       <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400">
+                         <Trash2 className="w-4 h-4" />
+                       </Button>
+                    </div>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400">
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
+                ))}
               </div>
             </div>
           </div>
@@ -192,27 +251,77 @@ export default function TeacherCourseEdit() {
               <p className="text-xs text-center text-gray-500">Şəkli dəyişmək üçün üzərinə klikləyin</p>
             </div>
 
-            <div className="bg-[#0A0A0A] text-white rounded-3xl p-6 lg:p-8 shadow-xl">
-              <h3 className="text-lg font-bold mb-4">Kurs Statusu</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm">Görünüş</span>
-                  <span className="px-3 py-1 bg-[#00D084]/20 text-[#00D084] rounded-full text-xs font-bold">
-                    Açıq
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm">Tələbə sayı</span>
-                  <span className="font-bold">124</span>
-                </div>
-                <Button className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/10 rounded-xl mt-4">
-                  Kursu Gizlət
-                </Button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
+
+      {/* Video Edit Dialog */}
+      <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
+        <DialogContent className="sm:max-w-[500px] rounded-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold italic">Video Dərsi Redaktə Et</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-6 py-4">
+            {/* Thumbnail Preview/Upload */}
+            <div className="space-y-2">
+              <Label className="text-sm font-bold text-gray-700">Video Qapağı (Kaver)</Label>
+              <div className="relative aspect-video max-w-[280px] mx-auto rounded-2xl overflow-hidden bg-gray-100 group cursor-pointer border-2 border-dashed border-gray-200 hover:border-[#00D084]/50 transition-colors">
+                <img 
+                  src={editingLesson?.thumbnail || 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80'} 
+                  alt="Video Thumbnail"
+                  className="w-full h-full object-cover group-hover:opacity-40 transition-opacity"
+                />
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="bg-white/90 p-3 rounded-full shadow-lg">
+                    <ImageIcon className="w-6 h-6 text-[#00D084]" />
+                  </div>
+                </div>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const fakeUrl = URL.createObjectURL(file);
+                      setEditingLesson({ ...editingLesson, thumbnail: fakeUrl });
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="title" className="text-sm font-bold text-gray-700">Video Başlığı</Label>
+              <Input
+                id="title"
+                value={editingLesson?.title || ''}
+                onChange={(e) => setEditingLesson({ ...editingLesson, title: e.target.value })}
+                className="rounded-xl h-11 border-gray-200 focus:border-[#00D084]"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="description" className="text-sm font-bold text-gray-700">Açıqlama</Label>
+              <Textarea
+                id="description"
+                value={editingLesson?.description || ''}
+                onChange={(e) => setEditingLesson({ ...editingLesson, description: e.target.value })}
+                placeholder="Video dərsi haqqında ətraflı məlumat..."
+                className="rounded-xl min-h-[80px] border-gray-200 focus:border-[#00D084] resize-none"
+              />
+            </div>
+          </div>
+          <DialogFooter className="sticky bottom-0 bg-white pt-2 border-t mt-4">
+            <Button 
+              className="bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl w-full h-12 font-bold shadow-lg shadow-[#00D084]/20"
+              onClick={handleUpdateLesson}
+            >
+              Dəyişiklikləri Yadda Saxla
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

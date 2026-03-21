@@ -99,7 +99,7 @@ export default function TeacherDetail() {
         <div className="absolute inset-0 bg-black/20 z-0" />
         <Button
           variant="ghost"
-          onClick={() => navigate('/teachers')}
+          onClick={() => navigate(-1)}
           className="absolute top-4 left-4 text-white hover:bg-white/20 z-10"
         >
           <ArrowLeft className="w-5 h-5 mr-2" />
@@ -242,9 +242,6 @@ export default function TeacherDetail() {
                           <Users className="w-3.5 h-3.5" />
                           {course.studentCount}
                         </span>
-                      </div>
-                      <div className="mt-2 text-[#00D084] font-bold">
-                        {course.price}₼
                       </div>
                     </div>
                   </div>

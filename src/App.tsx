@@ -4,17 +4,22 @@ import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/common/Navbar';
 import Footer from '@/components/common/Footer';
+import ScrollToTop from '@/components/common/ScrollToTop';
 
 // Pages
 import Home from '@/pages/Home';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import StudentDashboard from '@/pages/StudentDashboard';
+import StudentCompletedTests from '@/pages/StudentCompletedTests';
+import StudentCertificates from '@/pages/StudentCertificates';
+import CourseWatch from '@/pages/CourseWatch';
 import TeacherDashboard from '@/pages/TeacherDashboard';
 import TeacherProfile from '@/pages/TeacherProfile';
 import UploadVideo from '@/pages/UploadVideo';
 import CreateTest from '@/pages/CreateTest';
 import TeacherStudents from '@/pages/TeacherStudents';
+import CreateCourse from '@/pages/CreateCourse';
 import Courses from '@/pages/Courses';
 import CourseDetail from '@/pages/CourseDetail';
 import Teachers from '@/pages/Teachers';
@@ -23,6 +28,7 @@ import Tests from '@/pages/Tests';
 import TestDetail from '@/pages/TestDetail';
 import Contact from '@/components/student/Contact';
 import TeacherCourseEdit from '@/pages/TeacherCourseEdit';
+import TeacherTestEdit from '@/pages/TeacherTestEdit';
 
 import './i18n';
 
@@ -167,6 +173,46 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/dashboard/completed-tests" 
+        element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <MainLayout>
+              <StudentCompletedTests />
+            </MainLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/courses/:id/watch" 
+        element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <MainLayout>
+              <CourseWatch />
+            </MainLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/dashboard/certificates" 
+        element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <MainLayout>
+              <StudentCertificates />
+            </MainLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher/courses/create" 
+        element={
+          <ProtectedRoute allowedRoles={['teacher']}>
+            <MainLayout>
+              <CreateCourse />
+            </MainLayout>
+          </ProtectedRoute>
+        } 
+      />
 
       {/* Teacher Routes */}
       <Route 
@@ -229,6 +275,16 @@ function AppRoutes() {
           </ProtectedRoute>
         } 
       />
+      <Route 
+        path="/teacher/tests/:id" 
+        element={
+          <ProtectedRoute allowedRoles={['teacher']}>
+            <MainLayout>
+              <TeacherTestEdit />
+            </MainLayout>
+          </ProtectedRoute>
+        } 
+      />
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -239,6 +295,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <ScrollToTop />
         <Suspense fallback={
           <div className="min-h-screen flex items-center justify-center">
             <div className="w-12 h-12 border-4 border-[#00D084]/30 border-t-[#00D084] rounded-full animate-spin" />

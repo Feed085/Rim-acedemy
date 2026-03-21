@@ -45,11 +45,11 @@ export default function TeacherStudents() {
         <div className="mb-8">
           <Button
             variant="ghost"
-            onClick={() => navigate('/teacher/dashboard')}
+            onClick={() => navigate(-1)}
             className="mb-4 p-0 h-auto hover:bg-transparent text-gray-500 hover:text-gray-900 group"
           >
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-            Panelə qayıt
+            Geri qayıt
           </Button>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>

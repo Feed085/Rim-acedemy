@@ -62,11 +62,11 @@ export default function TeacherProfile() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <Button
           variant="ghost"
-          onClick={() => navigate('/teacher/dashboard')}
+          onClick={() => navigate(-1)}
           className="text-gray-600 hover:text-gray-900 transition-colors mb-4 flex items-center gap-2"
         >
           <ArrowLeft className="w-5 h-5" />
-          Geri
+          Geri qayıt
         </Button>
       </div>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">

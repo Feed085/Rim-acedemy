@@ -1,19 +1,22 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { courses, tests, teachers } from '@/data/mockData';
+import { tests, teachers } from '@/data/mockData';
+import { mockDb } from '@/services/mockDb';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Users, 
-  BookOpen, 
-  FileText, 
-  Video, 
+import {
+  Users,
+  BookOpen,
+  FileText,
+  Video,
   TrendingUp,
   Plus,
   ArrowRight,
-
-  Eye
+  Eye,
+  Check,
+  X,
+  UserPlus
 } from 'lucide-react';
 
 export default function TeacherDashboard() {
@@ -22,7 +25,7 @@ export default function TeacherDashboard() {
   const { user } = useAuth();
   const teacher = teachers[0];
 
-  const myCourses = courses.slice(0, 3);
+  const myCourses = mockDb.getTeacherCourses(teacher.id);
   const myTests = tests.slice(0, 3);
 
   const stats = [
@@ -39,6 +42,11 @@ export default function TeacherDashboard() {
     { name: 'Tural İsmayılov', course: 'Web Proqramlaşdırma', progress: 45, date: '2 gün əvvəl' },
   ];
 
+  const courseRequests = [
+    { id: 1, name: 'Fərid Hacıyev', course: 'IELTS Hazırlıq', time: '10 dəq əvvəl' },
+    { id: 2, name: 'Nigar Rzayeva', course: 'General English', time: '1 saat əvvəl' },
+  ];
+
   return (
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -53,6 +61,14 @@ export default function TeacherDashboard() {
             </p>
           </div>
           <div className="flex gap-3">
+            <Button
+              onClick={() => navigate('/teacher/courses/create')}
+              variant="outline"
+              className="rounded-xl border-[#00D084] text-[#00D084] hover:bg-[#00D084]/5"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Kurs Yarat
+            </Button>
             <Button
               onClick={() => navigate('/teacher/upload')}
               variant="outline"
@@ -121,7 +137,6 @@ export default function TeacherDashboard() {
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-2">
                         <h3 className="font-bold text-gray-900">{course.title}</h3>
-                        <span className="text-sm font-medium text-[#00D084]">{course.price}₼</span>
                       </div>
                       <p className="text-sm text-gray-500 mb-3">{course.studentCount} tələbə</p>
                       <div className="flex items-center gap-4">
@@ -196,37 +211,7 @@ export default function TeacherDashboard() {
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Quick Actions */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                Sürətli Əməliyyatlar
-              </h2>
-              <div className="space-y-3">
-                <Button
-                  onClick={() => navigate('/teacher/upload')}
-                  variant="outline"
-                  className="w-full justify-start rounded-xl h-12"
-                >
-                  <Video className="w-5 h-5 mr-3 text-[#00D084]" />
-                  {t('teacher.dashboard.upload_video')}
-                </Button>
-                <Button
-                  onClick={() => navigate('/teacher/test/create')}
-                  variant="outline"
-                  className="w-full justify-start rounded-xl h-12"
-                >
-                  <FileText className="w-5 h-5 mr-3 text-[#0082F3]" />
-                  {t('teacher.dashboard.create_test')}
-                </Button>
-                <Button
-                  onClick={() => navigate('/teacher/profile')}
-                  variant="outline"
-                  className="w-full justify-start rounded-xl h-12"
-                >
-                  <Users className="w-5 h-5 mr-3 text-[#F59E0B]" />
-                  Profili Redaktə Et
-                </Button>
-              </div>
-            </div>
+
 
             {/* Analytics */}
             <div className="bg-white rounded-3xl p-6 shadow-sm">
@@ -274,6 +259,37 @@ export default function TeacherDashboard() {
                     <p className="text-xs text-[#0082F3]">20 tələbə</p>
                   </div>
                 </div>
+              </div>
+            </div>
+            <div className="bg-white rounded-3xl p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <UserPlus className="w-5 h-5 text-[#00D084]" />
+                <h2 className="text-xl font-bold text-gray-900">
+                  Kurs Müraciətləri
+                </h2>
+              </div>
+              <div className="space-y-4">
+                {courseRequests.map((request) => (
+                  <div key={request.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className="font-bold text-gray-900">{request.name}</h4>
+                        <p className="text-xs text-gray-500">{request.course}</p>
+                      </div>
+                      <span className="text-[10px] text-gray-400 italic">{request.time}</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button className="flex-1 bg-[#00D084] hover:bg-[#00B873] text-white h-9 rounded-xl text-xs font-bold">
+                        <Check className="w-3 h-3 mr-1" />
+                        Təsdiqlə
+                      </Button>
+                      <Button variant="outline" className="flex-1 border-red-100 text-red-500 hover:bg-red-50 h-9 rounded-xl text-xs font-bold">
+                        <X className="w-3 h-3 mr-1" />
+                        Ləğv et
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

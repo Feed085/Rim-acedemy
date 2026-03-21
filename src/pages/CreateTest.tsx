@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { courses } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { mockDb } from '@/services/mockDb';
+import { teachers } from '@/data/mockData';
 import { 
   Plus, 
   Trash2, 
@@ -26,7 +27,11 @@ interface Question {
 export default function CreateTest() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const durationInputRef = useRef<HTMLInputElement>(null);
   
+  const teacher = teachers[0];
+  const teacherCourses = mockDb.getTeacherCourses(teacher.id);
+
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [testData, setTestData] = useState({
@@ -102,20 +107,54 @@ export default function CreateTest() {
 
     setIsSaving(true);
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Simulate slight delay for premium feel
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    const newTest = {
+      title: testData.title,
+      duration: testData.duration,
+      questions: questions.map(q => ({
+        id: q.id,
+        text: q.question,
+        options: q.options,
+        correctAnswerIdx: q.correctAnswer, // Current design uses index
+        correctAnswer: q.options[q.correctAnswer] // Use the text for consistency
+      }))
+    };
+
+    mockDb.addTestToCourse(testData.courseId, newTest);
     
     setIsSaving(false);
     setIsSaved(true);
-    toast.success('Test uğurla yaradıldı!');
+    
+    toast.success('Test uğurla yaradıldı və kursa əlavə edildi');
+    
+    setTimeout(() => {
+      navigate(`/teacher/courses/${testData.courseId}`);
+    }, 500);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setTestData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setTestData(prev => ({ ...prev, [name]: value }));
   };
+
+  useEffect(() => {
+    const input = durationInputRef.current;
+    if (!input) return;
+
+    const handleWheelManual = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY < 0 ? 1 : -1;
+      setTestData(prev => ({
+        ...prev,
+        duration: Math.max(5, Math.min(180, Number(prev.duration) + delta))
+      }));
+    };
+
+    input.addEventListener('wheel', handleWheelManual, { passive: false });
+    return () => input.removeEventListener('wheel', handleWheelManual);
+  }, []);
 
   if (isSaved) {
     return (
@@ -133,10 +172,10 @@ export default function CreateTest() {
           <div className="flex gap-4">
             <Button
               variant="outline"
-              onClick={() => navigate('/teacher/dashboard')}
+              onClick={() => navigate(-1)}
               className="flex-1 rounded-xl"
             >
-              Panelə qayıt
+              Geri qayıt
             </Button>
             <Button
               onClick={() => {
@@ -166,7 +205,7 @@ export default function CreateTest() {
         <div className="flex items-center gap-4 mb-8">
           <Button
             variant="ghost"
-            onClick={() => navigate('/teacher/dashboard')}
+            onClick={() => navigate(-1)}
             className="p-2"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -214,7 +253,7 @@ export default function CreateTest() {
                   className="w-full h-12 px-4 rounded-xl border border-gray-200 focus:border-[#00D084] focus:ring-[#00D084] outline-none"
                 >
                   <option value="">Kurs seçin</option>
-                  {courses.map(course => (
+                  {teacherCourses.map(course => (
                     <option key={course.id} value={course.id}>
                       {course.title}
                     </option>
@@ -230,6 +269,7 @@ export default function CreateTest() {
               <div className="relative max-w-xs">
                 <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <Input
+                  ref={durationInputRef}
                   name="duration"
                   type="number"
                   value={testData.duration}

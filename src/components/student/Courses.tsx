@@ -117,7 +117,8 @@ export default function Courses() {
           {filteredCourses.slice(0, 8).map((course) => (
             <div
               key={course.id}
-              className="course-card group bg-white rounded-3xl overflow-hidden shadow-lg shadow-gray-200/50 hover:shadow-xl hover:shadow-gray-300/50 transition-all duration-300 hover:-translate-y-2"
+              onClick={() => navigate(`/courses/${course.id}`)}
+              className="course-card group cursor-pointer bg-white rounded-3xl overflow-hidden shadow-lg shadow-gray-200/50 hover:shadow-xl hover:shadow-gray-300/50 transition-all duration-300 hover:-translate-y-2"
             >
               {/* Image */}
               <div className="relative h-48 overflow-hidden">
@@ -157,7 +158,6 @@ export default function Courses() {
                   </div>
                 </div>
 
-                {/* Footer */}
                 <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                   <div className="flex items-center gap-2">
                     <img
@@ -168,9 +168,6 @@ export default function Courses() {
                     <span className="text-xs font-medium text-gray-600">
                       {course.teacherName}
                     </span>
-                  </div>
-                  <div className="text-lg font-black text-[#00D084]">
-                    {course.price}₼
                   </div>
                 </div>
               </div>
