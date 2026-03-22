@@ -1,4 +1,4 @@
-import type { Teacher, Course, Test, Testimonial, User } from '@/types';
+import type { Teacher, Course, Test, TestResult, Testimonial, User } from '@/types';
 
 export const teachers: Teacher[] = [
   {
@@ -426,6 +426,188 @@ export const currentUser: User = {
   avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&h=200&fit=crop',
   createdAt: new Date('2024-01-01')
 };
+
+export const testResults: TestResult[] = [
+  {
+    id: 'tr1',
+    testId: 'test-1',
+    studentId: 's1',
+    studentName: 'Aysel Məmmədova',
+    studentAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop',
+    score: 90,
+    correctAnswers: 18,
+    wrongAnswers: 2,
+    totalQuestions: 20,
+    answers: {
+      '1': 0, // correct
+      '2': 1, // correct
+    },
+    completedAt: new Date('2024-03-20T14:30:00')
+  },
+  {
+    id: 'tr2',
+    testId: 'test-1',
+    studentId: 's2',
+    studentName: 'Orxan Əliyev',
+    studentAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop',
+    score: 75,
+    correctAnswers: 1,
+    wrongAnswers: 1,
+    totalQuestions: 2,
+    answers: {
+      '1': 0,
+      '2': 3, // wrong
+    },
+    completedAt: new Date('2024-03-21T10:15:00')
+  },
+  {
+    id: 'tr3',
+    testId: 'test-1',
+    studentId: 's3',
+    studentName: 'Kamran Atayev',
+    studentAvatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200&h=200&fit=crop',
+    score: 100,
+    correctAnswers: 2,
+    wrongAnswers: 0,
+    totalQuestions: 2,
+    answers: {
+      '1': 0, '2': 1
+    },
+    completedAt: new Date('2024-03-22T09:00:00')
+  },
+  {
+    id: 'tr-all-1',
+    testId: 'asas',
+    studentId: 's1',
+    studentName: 'Aysel Məmmədova',
+    studentAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop',
+    score: 100,
+    correctAnswers: 2,
+    wrongAnswers: 0,
+    totalQuestions: 2,
+    answers: { '1': 0, '2': 0 },
+    completedAt: new Date('2024-03-22T12:40:00')
+  },
+  {
+    id: 'tr-all-2',
+    testId: 'asas',
+    studentId: 's2',
+    studentName: 'Orxan Əliyev',
+    studentAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop',
+    score: 50,
+    correctAnswers: 1,
+    wrongAnswers: 1,
+    totalQuestions: 2,
+    answers: { '1': 0, '2': 1 },
+    completedAt: new Date('2024-03-22T12:45:00')
+  },
+  {
+    id: 'tr-all-3',
+    testId: 'test-1',
+    studentId: 's1',
+    studentName: 'Aysel Məmmədova',
+    studentAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop',
+    score: 100,
+    correctAnswers: 2,
+    wrongAnswers: 0,
+    totalQuestions: 2,
+    answers: { '1': 0, '2': 0 },
+    completedAt: new Date('2024-03-22T12:40:00')
+  },
+  {
+    id: 'tr4',
+    testId: '2',
+    studentId: 's4',
+    studentName: 'Nigar Məmmədova',
+    studentAvatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop',
+    score: 80,
+    correctAnswers: 4,
+    wrongAnswers: 1,
+    totalQuestions: 5,
+    answers: {
+      'q1': 1, 'q2': 2, 'q3': 1, 'q4': 0, 'q5': 2
+    },
+    completedAt: new Date('2024-03-22T11:20:00')
+  },
+  {
+    id: 'tr5',
+    testId: 'ielts-test-1',
+    studentId: 's5',
+    studentName: 'Aysel Məmmədova',
+    studentAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop',
+    score: 100,
+    correctAnswers: 2,
+    wrongAnswers: 0,
+    totalQuestions: 2,
+    answers: { '1': 2, '2': 1 },
+    completedAt: new Date('2024-03-22T12:00:00')
+  },
+  {
+    id: 'tr6',
+    testId: 'sat-math-1',
+    studentId: 's6',
+    studentName: 'Orxan Əliyev',
+    studentAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop',
+    score: 50,
+    correctAnswers: 1,
+    wrongAnswers: 1,
+    totalQuestions: 2,
+    answers: { '1': 2, '2': 2 },
+    completedAt: new Date('2024-03-22T12:15:00')
+  },
+  {
+    id: 'tr7',
+    testId: 'ielts-test-2',
+    studentId: 's2',
+    studentName: 'Orxan Əliyev',
+    studentAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop',
+    score: 100,
+    correctAnswers: 2,
+    wrongAnswers: 0,
+    totalQuestions: 2,
+    answers: { '1': 1, '2': 1 },
+    completedAt: new Date('2024-03-22T12:30:00')
+  },
+  {
+    id: 'tr8',
+    testId: 'ielts-test-2',
+    studentId: 's3',
+    studentName: 'Kamran Atayev',
+    studentAvatar: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?w=200&h=200&fit=crop',
+    score: 50,
+    correctAnswers: 1,
+    wrongAnswers: 1,
+    totalQuestions: 2,
+    answers: { '1': 0, '2': 3 },
+    completedAt: new Date('2024-03-22T12:35:00')
+  },
+  {
+    id: 'tr9',
+    testId: 'asas',
+    studentId: 's5',
+    studentName: 'Aysel Məmmədova',
+    studentAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop',
+    score: 100,
+    correctAnswers: 2,
+    wrongAnswers: 0,
+    totalQuestions: 2,
+    answers: { '1': 0, '2': 0 },
+    completedAt: new Date('2024-03-22T12:40:00')
+  },
+  {
+    id: 'tr10',
+    testId: 'asas',
+    studentId: 's6',
+    studentName: 'Orxan Əliyev',
+    studentAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop',
+    score: 0,
+    correctAnswers: 0,
+    wrongAnswers: 2,
+    totalQuestions: 2,
+    answers: { '1': 1, '2': 1 },
+    completedAt: new Date('2024-03-22T12:45:00')
+  }
+];
 
 export const stats = {
   experience: 15,

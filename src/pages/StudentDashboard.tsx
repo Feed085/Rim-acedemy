@@ -14,7 +14,6 @@ import {
   BookOpen, 
   FileText, 
   Clock, 
-  ArrowRight,
   Play,
   Award
 } from 'lucide-react';
@@ -116,14 +115,7 @@ export default function StudentDashboard() {
                 <h2 className="text-xl font-bold text-gray-900">
                   {t('student.dashboard.my_courses')}
                 </h2>
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate('/courses')}
-                  className="text-[#00D084] hover:text-[#00B873]"
-                >
-                  Hamısı
-                  <ArrowRight className="w-4 h-4 ml-1" />
-                </Button>
+
               </div>
 
               <div className="space-y-4">

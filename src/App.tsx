@@ -29,6 +29,7 @@ import TestDetail from '@/pages/TestDetail';
 import Contact from '@/components/student/Contact';
 import TeacherCourseEdit from '@/pages/TeacherCourseEdit';
 import TeacherTestEdit from '@/pages/TeacherTestEdit';
+import TeacherTestResults from '@/pages/TeacherTestResults';
 
 import './i18n';
 
@@ -281,6 +282,16 @@ function AppRoutes() {
           <ProtectedRoute allowedRoles={['teacher']}>
             <MainLayout>
               <TeacherTestEdit />
+            </MainLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher/tests/:id/results" 
+        element={
+          <ProtectedRoute allowedRoles={['teacher']}>
+            <MainLayout>
+              <TeacherTestResults />
             </MainLayout>
           </ProtectedRoute>
         } 

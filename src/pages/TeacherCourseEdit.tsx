@@ -11,7 +11,8 @@ import {
   FileText,
   Video,
   Settings,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Users
 } from 'lucide-react';
 import { mockDb } from '@/services/mockDb';
 import { toast } from 'sonner';
@@ -214,6 +215,15 @@ export default function TeacherCourseEdit() {
                       {test.title}
                     </div>
                     <div className="flex gap-2">
+                       <Button 
+                         variant="ghost" 
+                         size="icon" 
+                         className="h-8 w-8 text-[#00D084] hover:bg-[#00D084]/10 transition-colors"
+                         onClick={() => navigate(`/teacher/tests/${test.id}/results`)}
+                         title="Nəticələrə bax"
+                       >
+                         <Users className="w-5 h-5" />
+                       </Button>
                        <Button 
                          variant="ghost" 
                          size="icon" 

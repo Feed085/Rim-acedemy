@@ -89,10 +89,13 @@ export interface TestResult {
   id: string;
   testId: string;
   studentId: string;
+  studentName?: string;
+  studentAvatar?: string;
   score: number;
   correctAnswers: number;
   wrongAnswers: number;
   totalQuestions: number;
+  answers: Record<string, number>;
   completedAt: Date;
 }
 

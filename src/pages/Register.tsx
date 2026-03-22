@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Mail, Lock, User, Phone, GraduationCap, UserCircle, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/photos/RimAcademyLogo.jpeg';
 
@@ -16,7 +16,6 @@ export default function Register() {
   const { register, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [role, setRole] = useState<'student' | 'teacher'>('student');
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
@@ -30,21 +29,45 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Bypass all registration steps and validation for quick entry
-    const dummyData = {
-      name: formData.name || 'Yeni',
-      surname: formData.surname || 'İstifadəçi',
-      email: formData.email || `user${Date.now()}@rimacademy.az`,
-      phone: formData.phone || '+994 50 000 00 00',
-      password: formData.password || 'password123',
-      role,
-    };
+    // If not on the last step, just go to the next step
+    if (step < 3) {
+      // Basic validation for steps
+      if (step === 1 && (!formData.name || !formData.surname)) {
+        toast.error('Zəhmət olmasa ad və soyadınızı daxil edin');
+        return;
+      }
+      if (step === 2 && (!formData.email || !formData.phone)) {
+        toast.error('Zəhmət olmasa email və telefon nömrənizi daxil edin');
+        return;
+      }
+      
+      setStep(step + 1);
+      return;
+    }
 
-    const success = await register(dummyData);
+    // On the last step, perform registration
+    if (formData.password !== formData.confirmPassword) {
+      toast.error('Şifrələr uyğun gəlmir');
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      toast.error('Şifrə ən azı 6 simvoldan ibarət olmalıdır');
+      return;
+    }
+
+    const success = await register({
+      name: formData.name,
+      surname: formData.surname,
+      email: formData.email,
+      phone: formData.phone,
+      password: formData.password,
+      role: 'student', // Registering as student since teacher role selection was removed
+    });
 
     if (success) {
       toast.success('Qeydiyyat uğurla tamamlandı!');
-      navigate(role === 'teacher' ? '/teacher/dashboard' : '/dashboard');
+      navigate('/dashboard');
     } else {
       toast.error('Qeydiyyat zamanı xəta baş verdi');
     }
@@ -215,33 +238,7 @@ export default function Register() {
           </p>
         </div>
 
-        {/* Role Selection */}
-        <div className="bg-white rounded-2xl p-1.5 flex gap-1 mb-6 shadow-sm">
-          <button
-            type="button"
-            onClick={() => setRole('student')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all ${
-              role === 'student'
-                ? 'bg-[#00D084] text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <GraduationCap className="w-5 h-5" />
-            {t('auth.role.student')}
-          </button>
-          <button
-            type="button"
-            onClick={() => setRole('teacher')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all ${
-              role === 'teacher'
-                ? 'bg-[#00D084] text-white'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            <UserCircle className="w-5 h-5" />
-            {t('auth.role.teacher')}
-          </button>
-        </div>
+
 
         {/* Progress */}
         <div className="flex gap-2 mb-6">

@@ -8,6 +8,7 @@ import {
   FileText, 
   HelpCircle, 
   ArrowRight,
+  ArrowLeft,
   Search
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,18 @@ export default function Tests() {
   return (
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Back Button */}
+        <div className="mb-6">
+          <Button
+            onClick={() => navigate(-1)}
+            variant="ghost"
+            className="text-gray-600 hover:text-[#00D084] hover:bg-[#00D084]/10 rounded-xl px-4 py-2 flex items-center gap-2 group transition-all"
+          >
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            Geri qayıt
+          </Button>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#00D084]/10 rounded-full mb-6">

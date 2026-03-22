@@ -2,52 +2,86 @@ import { courses as initialCourses } from '@/data/mockData';
 
 // This is a simple in-memory store for the current session
 class MockDB {
-  private courses = [...initialCourses].map(c => ({
-    ...c,
-    lessons: [
-      { 
-        id: 1, 
-        title: 'Giriş və Əsas Anlayışlar', 
-        duration: '12:45',
-        description: 'Kursun ümumi məqsədləri və öyrəniləcək mövzular haqqında giriş dərsi.',
-        thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80'
-      },
-      { 
-        id: 2, 
-        title: 'IELTS-ə dair ümumi məlumat', 
-        duration: '15:20',
-        description: 'İmtahan strukturu, bölmələr və qiymətləndirmə meyarları.',
-        thumbnail: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&q=80'
-      },
-      { 
-        id: 3, 
-        title: 'Listening bölməsi - Strategiyalar', 
-        duration: '20:10',
-        description: 'Dinləmə bölməsində istifadə olunan ən vacib texnikalar.',
-        thumbnail: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=800&q=80'
-      },
-    ],
-    tests: [
+  private courses = [...initialCourses].map(c => {
+    let courseTests = [
       {
         id: 'test-1',
         title: 'Yekun İmtahan Testi',
         questions: [
-          {
-            id: 1,
-            text: 'IELTS imtahanı neçə hissədən ibarətdir?',
-            options: ['2', '3', '4', '5'],
-            correctAnswer: '4'
-          },
-          {
-            id: 2,
-            text: 'Listening hissəsi üçün nə qədər vaxt verilir?',
-            options: ['20 dəq', '30 dəq', '40 dəq', '60 dəq'],
-            correctAnswer: '30 dəq'
-          }
+          { id: 1, text: 'IELTS imtahanı neçə hissədən ibarətdir?', options: ['2', '3', '4', '5'], correctAnswer: '4' },
+          { id: 2, text: 'Listening hissəsi üçün nə qədər vaxt verilir?', options: ['20 dəq', '30 dəq', '40 dəq', '60 dəq'], correctAnswer: '30 dəq' }
         ]
       }
-    ]
-  }));
+    ];
+
+    if (c.id === '2') { // IELTS Intensive
+      courseTests = [
+        {
+          id: 'ielts-test-1',
+          title: 'IELTS General Mock Test',
+          questions: [
+            { id: 1, text: 'What is the maximum band score in IELTS?', options: ['7.0', '8.0', '9.0', '10.0'], correctAnswer: '9.0' },
+            { id: 2, text: 'How many tasks are in the Writing section?', options: ['1', '2', '3', '4'], correctAnswer: '2' }
+          ]
+        },
+        {
+          id: 'ielts-test-2',
+          title: 'IELTS Speaking Assessment',
+          questions: [
+            { id: 1, text: 'Which is a common topic in Part 1?', options: ['Philosophy', 'Hometown', 'Politics', 'Law'], correctAnswer: 'Hometown' },
+            { id: 2, text: 'How long is the long turn (Part 2)?', options: ['1 min', '2 mins', '3 mins', '5 mins'], correctAnswer: '2 mins' }
+          ]
+        }
+      ];
+    }
+
+    if (c.id === '1') { // SAT
+      courseTests = [
+        {
+          id: 'sat-math-1',
+          title: 'SAT Math Diagnostic',
+          questions: [
+            { id: 1, text: 'Solve for x: 3x - 5 = 10', options: ['3', '4', '5', '6'], correctAnswer: '5' },
+            { id: 2, text: 'What is the square root of 225?', options: ['12', '15', '20', '25'], correctAnswer: '15' }
+          ]
+        }
+      ];
+    }
+
+    if (c.id === '3') { // İngilis Dili - Başlanğıc
+      courseTests = [
+        {
+          id: 'asas',
+          title: 'asas',
+          questions: [
+            { id: 1, text: 'What is "Salam" in English?', options: ['Hello', 'Goodbye', 'Good morning', 'Good night'], correctAnswer: 'Hello' },
+            { id: 2, text: 'How do you say "Sağ ol"?', options: ['Thank you', 'Please', 'Sorry', 'Welcome'], correctAnswer: 'Thank you' }
+          ]
+        }
+      ];
+    }
+
+    return {
+      ...c,
+      lessons: [
+        { 
+          id: 1, 
+          title: 'Giriş və Əsas Anlayışlar', 
+          duration: '12:45',
+          description: 'Kursun ümumi məqsədləri və öyrəniləcək mövzular haqqında giriş dərsi.',
+          thumbnail: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80'
+        },
+        { 
+          id: 2, 
+          title: 'IELTS-ə dair ümumi məlumat', 
+          duration: '15:20',
+          description: 'İmtahan strukturu, bölmələr və qiymətləndirmə meyarları.',
+          thumbnail: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&q=80'
+        }
+      ],
+      tests: courseTests
+    };
+  });
 
   constructor() {
     // If we wanted persistence, we could use localStorage here

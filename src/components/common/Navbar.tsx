@@ -303,64 +303,108 @@ export default function Navbar() {
           {/* Mobile Menu */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild className="lg:hidden">
-              <Button variant="ghost" size="icon">
-                <Menu className="w-6 h-6" />
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className={cn(
+                  "hover:bg-[#00D084]/10 transition-colors z-[110]",
+                  (isScrolled || isWatchPage) ? "text-gray-900" : (isDarkPage && !isOpen) ? "text-white" : "text-gray-900",
+                  isOpen && "opacity-0 pointer-events-none"
+                )}
+              >
+                <Menu className="w-7 h-7" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-              <div className="flex flex-col gap-6 mt-8">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    to={item.href}
-                    onClick={() => setIsOpen(false)}
-                    className={`flex items-center gap-3 text-lg font-medium transition-colors hover:text-[#00D084] ${
-                      isActive(item.href) ? 'text-[#00D084]' : 'text-gray-700'
-                    }`}
-                  >
-                    <item.icon className="w-5 h-5" />
-                    {item.label}
-                  </Link>
-                ))}
-                
-                <div className="border-t pt-6 mt-4">
-                  {isAuthenticated ? (
-                    <div className="flex flex-col gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#00D084] flex items-center justify-center">
-                          <User className="w-5 h-5 text-white" />
+            <SheetContent side="right" className="w-full sm:w-[400px] border-l-0 bg-[#F3F3F3]/95 backdrop-blur-xl p-0">
+              <div className="flex flex-col h-full">
+                {/* Mobile Menu Header */}
+                <div className="p-6 border-b border-gray-100 bg-white/50">
+                  <div className="flex items-center gap-3">
+                    <img 
+                      src={logo} 
+                      alt="RIM Academy" 
+                      className="w-12 h-12 rounded-full border border-gray-100 shadow-sm"
+                    />
+                    <div>
+                      <h4 className="font-bold text-xl text-gray-900 leading-none">RIM Academy</h4>
+                      <p className="text-[10px] text-[#00D084] font-bold uppercase tracking-widest mt-1">Gələcəyi bizimlə qurun</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile Navigation Links */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-3">
+                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4 pl-1">Naviqasiya</div>
+                  {navItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      onClick={() => setIsOpen(false)}
+                      className={cn(
+                        "flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group",
+                        isActive(item.href) 
+                          ? 'bg-[#00D084] text-white shadow-xl shadow-[#00D084]/20 translate-x-1' 
+                          : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-100 active:scale-95'
+                      )}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "w-10 h-10 rounded-xl flex items-center justify-center transition-colors",
+                          isActive(item.href) ? 'bg-white/20' : 'bg-gray-100 group-hover:bg-[#00D084]/10'
+                        )}>
+                          <item.icon className={cn("w-5 h-5", isActive(item.href) ? 'text-white' : 'text-gray-500 group-hover:text-[#00D084]')} />
                         </div>
-                        <div>
-                          <p className="font-medium">{user?.name} {user?.surname}</p>
-                          <p className="text-sm text-gray-500">{user?.email}</p>
+                        <span className="font-bold text-base">{item.label}</span>
+                      </div>
+                      <ChevronDown className={cn("-rotate-90 w-4 h-4 transition-opacity", isActive(item.href) ? 'opacity-100' : 'opacity-30 group-hover:opacity-100')} />
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Mobile Auth/User Section */}
+                <div className="p-6 bg-white border-t border-gray-100 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.05)]">
+                  {isAuthenticated ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#00D084] to-[#00B873] flex items-center justify-center shadow-lg shadow-[#00D084]/20 shrink-0">
+                          <User className="w-7 h-7 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-gray-900 text-lg truncate leading-tight">{user?.name} {user?.surname}</p>
+                          <p className="text-sm text-gray-500 truncate mt-0.5">{user?.email}</p>
                         </div>
                       </div>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setIsOpen(false);
-                          window.scrollTo(0, 0);
-                          navigate(user?.role === 'teacher' ? '/teacher/dashboard' : '/dashboard');
-                        }}
-                      >
-                        <User className="w-4 h-4 mr-2" />
-                        {t('nav.dashboard')}
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        onClick={() => {
-                          setIsOpen(false);
-                          handleLogout();
-                        }}
-                      >
-                        <LogOut className="w-4 h-4 mr-2" />
-                        {t('nav.logout')}
-                      </Button>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Button
+                          variant="outline"
+                          className="h-14 rounded-2xl border-gray-200 font-bold hover:bg-[#00D084]/5 hover:text-[#00D084] hover:border-[#00D084]/30"
+                          onClick={() => {
+                            setIsOpen(false);
+                            window.scrollTo(0, 0);
+                            navigate(user?.role === 'teacher' ? '/teacher/dashboard' : '/dashboard');
+                          }}
+                        >
+                          <User className="w-4 h-4 mr-2" />
+                          Panel
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          className="h-14 rounded-2xl font-bold bg-red-50 text-red-600 border-red-100 hover:bg-red-100 shadow-none border"
+                          onClick={() => {
+                            setIsOpen(false);
+                            handleLogout();
+                          }}
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          Çıxış
+                        </Button>
+                      </div>
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-3">
+                    <div className="space-y-3">
                       <Button
                         variant="outline"
+                        className="w-full h-14 rounded-2xl text-base font-bold border-gray-200 hover:bg-gray-50 bg-white"
                         onClick={() => {
                           setIsOpen(false);
                           navigate('/login');
@@ -369,11 +413,11 @@ export default function Navbar() {
                         {t('nav.login')}
                       </Button>
                       <Button
+                        className="w-full h-14 rounded-2xl text-base font-bold bg-[#00D084] hover:bg-[#00B873] shadow-lg shadow-[#00D084]/20 border-0"
                         onClick={() => {
                           setIsOpen(false);
                           navigate('/register');
                         }}
-                        className="bg-[#00D084] hover:bg-[#00B873]"
                       >
                         {t('nav.register')}
                       </Button>
