@@ -9,7 +9,11 @@ import {
   Trash2, 
   FileText,
   CheckCircle2,
-  Circle
+  Circle,
+  Image as ImageIcon,
+  Type,
+  MinusCircle,
+  PlusCircle
 } from 'lucide-react';
 import { mockDb } from '@/services/mockDb';
 import { toast } from 'sonner';
@@ -23,7 +27,13 @@ export default function TeacherTestEdit() {
     if (id) {
       const foundTest = mockDb.getTestById(id);
       if (foundTest) {
-        setTest(JSON.parse(JSON.stringify(foundTest))); // Deep copy for editing
+        const cloned = JSON.parse(JSON.stringify(foundTest));
+        // Ensure every question has a type
+        cloned.questions = cloned.questions.map((q: any) => ({
+          ...q,
+          type: q.type || 'text'
+        }));
+        setTest(cloned);
       }
     }
   }, [id]);
@@ -39,9 +49,10 @@ export default function TeacherTestEdit() {
   const addQuestion = () => {
     const newQuestion = {
       id: Date.now(),
+      type: 'text',
       text: 'Yeni sual',
       options: ['Variant A', 'Variant B', 'Variant C', 'Variant D'],
-      correctAnswer: 'Variant A'
+      correctAnswerIdx: 0
     };
     setTest({
       ...test,
@@ -71,13 +82,8 @@ export default function TeacherTestEdit() {
       questions: test.questions.map((q: any) => {
         if (q.id === questionId) {
           const newOptions = [...q.options];
-          const oldOptionValue = newOptions[optionIndex];
           newOptions[optionIndex] = value;
-          
-          // Update correctAnswer if it was pointed to the old option
-          const newCorrectAnswer = q.correctAnswer === oldOptionValue ? value : q.correctAnswer;
-          
-          return { ...q, options: newOptions, correctAnswer: newCorrectAnswer };
+          return { ...q, options: newOptions };
         }
         return q;
       })
@@ -167,38 +173,131 @@ export default function TeacherTestEdit() {
                 <span className="text-sm font-bold text-gray-400 uppercase tracking-wider">Sual</span>
               </div>
 
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-2">Sualın mətni</label>
-                  <Input 
-                    value={question.text}
-                    onChange={(e) => updateQuestion(question.id, 'text', e.target.value)}
-                    className="rounded-xl h-12 border-gray-200 focus:border-[#00D084] font-medium"
-                  />
-                </div>
+              <div className="flex flex-wrap items-center gap-4 mb-6 p-2 bg-gray-50 rounded-2xl w-fit">
+                 <button
+                   type="button"
+                   onClick={() => updateQuestion(question.id, 'type', 'text')}
+                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                      question.type === 'text' ? 'bg-white text-[#00D084] shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                   }`}
+                 >
+                   <Type className="w-4 h-4" />
+                   Mətn Rejimi
+                 </button>
+                 <button
+                   type="button"
+                   onClick={() => updateQuestion(question.id, 'type', 'image')}
+                   className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                      question.type === 'image' ? 'bg-white text-[#00D084] shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                   }`}
+                 >
+                   <ImageIcon className="w-4 h-4" />
+                   Şəkil Rejimi
+                 </button>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {question.options.map((option: string, optIndex: number) => (
-                    <div key={optIndex} className={`relative flex items-center p-3 rounded-2xl border-2 transition-all ${
-                        question.correctAnswer === option 
-                        ? 'border-[#00D084] bg-[#00D084]/5' 
-                        : 'border-gray-100 hover:border-gray-200'
-                    }`}>
-                        <button
-                            onClick={() => updateQuestion(question.id, 'correctAnswer', option)}
-                            className={`mr-3 transition-colors ${
-                                question.correctAnswer === option ? 'text-[#00D084]' : 'text-gray-300'
-                            }`}
-                        >
-                            {question.correctAnswer === option ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
-                        </button>
-                        <Input 
-                            value={option}
-                            onChange={(e) => updateOption(question.id, optIndex, e.target.value)}
-                            className="border-none bg-transparent focus-visible:ring-0 p-0 font-medium h-auto"
+              <div className="space-y-6">
+                {question.type === 'text' ? (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-2">Sualın mətni</label>
+                    <Input 
+                      value={question.text}
+                      onChange={(e) => updateQuestion(question.id, 'text', e.target.value)}
+                      className="rounded-xl h-12 border-gray-200 focus:border-[#00D084] font-medium"
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                     <div className="relative aspect-video max-w-lg rounded-2xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 group cursor-pointer hover:border-[#00D084]/50 transition-colors">
+                        {question.image ? (
+                          <>
+                            <img src={question.image} alt="Sual" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                               <p className="text-white text-xs font-bold">Şəkli dəyişmək üçün klikləyin</p>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                             <ImageIcon className="w-10 h-10 mb-2 opacity-20" />
+                             <p className="text-sm font-bold">Sualın şəklini yükləyin</p>
+                          </div>
+                        )}
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          onChange={(e) => {
+                             const file = e.target.files?.[0];
+                             if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                   updateQuestion(question.id, 'image', reader.result as string);
+                                };
+                                reader.readAsDataURL(file);
+                             }
+                          }}
                         />
+                     </div>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-bold text-gray-700 uppercase tracking-widest text-[10px]">Variantlar</label>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => {
+                          if (question.options.length > 2) {
+                            const newOptions = [...question.options];
+                            newOptions.pop();
+                            const newCorrect = !newOptions.includes(question.correctAnswer) ? newOptions[0] : question.correctAnswer;
+                            updateQuestion(question.id, 'options', newOptions);
+                            updateQuestion(question.id, 'correctAnswer', newCorrect);
+                          }
+                        }}
+                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <MinusCircle className="w-5 h-5" />
+                      </button>
+                      <span className="text-xs font-black">{question.options.length}</span>
+                      <button 
+                        onClick={() => {
+                          if (question.options.length < 6) {
+                            const newOptions = [...question.options, `Variant ${String.fromCharCode(65 + question.options.length)}`];
+                            updateQuestion(question.id, 'options', newOptions);
+                          }
+                        }}
+                        className="p-1 text-gray-400 hover:text-[#00D084] transition-colors"
+                      >
+                        <PlusCircle className="w-5 h-5" />
+                      </button>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {question.options.map((option: string, optIndex: number) => (
+                      <div key={optIndex} className={`relative flex items-center p-3 rounded-2xl border-2 transition-all ${
+                          question.correctAnswerIdx === optIndex 
+                          ? 'border-[#00D084] bg-[#00D084]/5 shadow-sm' 
+                          : 'border-gray-50 hover:border-gray-100'
+                      }`}>
+                          <button
+                              onClick={() => updateQuestion(question.id, 'correctAnswerIdx', optIndex)}
+                              className={`mr-3 transition-colors ${
+                                  question.correctAnswerIdx === optIndex ? 'text-[#00D084]' : 'text-gray-300'
+                              }`}
+                          >
+                              {question.correctAnswerIdx === optIndex ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
+                          </button>
+                          <Input 
+                              value={option}
+                              onChange={(e) => updateOption(question.id, optIndex, e.target.value)}
+                              placeholder={`Variant ${String.fromCharCode(65 + optIndex)}`}
+                              className="border-none bg-transparent focus-visible:ring-0 p-0 font-medium h-auto"
+                          />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

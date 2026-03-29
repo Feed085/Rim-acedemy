@@ -255,6 +255,32 @@ class MockDB {
     return null;
   }
 
+  updateTest(testId: string, data: any) {
+    for (const course of this.courses) {
+      if (!course.tests) continue;
+      const index = course.tests.findIndex((t: any) => t.id === testId);
+      if (index !== -1) {
+        course.tests[index] = { ...course.tests[index], ...data };
+        this.save();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  deleteTest(testId: string) {
+    for (const course of this.courses) {
+      if (!course.tests) continue;
+      const originalCount = course.tests.length;
+      course.tests = course.tests.filter((t: any) => t.id !== testId);
+      if (course.tests.length !== originalCount) {
+        this.save();
+        return true;
+      }
+    }
+    return false;
+  }
+
   getProfile() {
     return this.teacherProfile;
   }
@@ -285,6 +311,108 @@ class MockDB {
       }
     }
     return null;
+  }
+
+  // Tələbə qeydiyyatı (Enrollment) məntiqi
+  enrollStudent(email: string, courseId: string, type: 'online' | 'physical' = 'online') {
+    const enrollments = this.getEnrollments();
+    if (!enrollments[email]) {
+      enrollments[email] = [];
+    }
+    
+    // Əgər artıq qeydiyyat yoxdursa əlavə et
+    if (!enrollments[email].some((e: any) => e.id === courseId)) {
+      enrollments[email].push({
+        id: courseId,
+        date: new Date().toLocaleDateString('az-AZ'),
+        type: type
+      });
+      localStorage.setItem('rim_acedemy_enrollments', JSON.stringify(enrollments));
+      return true;
+    }
+    return false;
+  }
+
+  isEnrolled(email: string, courseId: string) {
+    const enrollments = this.getEnrollments();
+    return enrollments[email]?.some((e: any) => e.id === courseId) || false;
+  }
+
+  getEnrolledCourses(email: string) {
+    const enrollments = this.getEnrollments();
+    const enrolledInfo = enrollments[email] || [];
+    // This is a simple filter on all courses
+    const allCourses = this.getCourses();
+    return allCourses.filter(c => enrolledInfo.some((e: any) => e.id === c.id));
+  }
+
+  // Kurs qeydiyyatı sorğuları (Requests)
+  requestEnrollment(email: string, studentName: string, courseId: string) {
+    const requests = this.getRequests();
+    if (!requests[email]) {
+      requests[email] = [];
+    }
+    
+    if (!requests[email].some((r: any) => r.courseId === courseId)) {
+      requests[email].push({
+        courseId,
+        studentName,
+        date: new Date().toLocaleDateString('az-AZ'),
+        status: 'pending'
+      });
+      localStorage.setItem('rim_acedemy_enrollment_requests', JSON.stringify(requests));
+      return true;
+    }
+    return false;
+  }
+
+  getEnrollmentStatus(email: string, courseId: string) {
+    if (this.isEnrolled(email, courseId)) return 'approved';
+    const requests = this.getRequests();
+    if (requests[email]?.some((r: any) => r.courseId === courseId)) return 'pending';
+    return 'none';
+  }
+
+  getEnrollmentRequests() {
+    return this.getRequests();
+  }
+
+  getCategories() {
+    const saved = localStorage.getItem('rim_acedemy_categories');
+    if (saved) return JSON.parse(saved);
+    return [
+      { id: 'language', name: 'Dil Kursları' },
+      { id: 'computer', name: 'Komputer Kursları' },
+      { id: 'programming', name: 'Programlasdirma Kursları' },
+      { id: 'exam', name: 'İmtahan Hazırlığı' }
+    ];
+  }
+
+  approveEnrollment(email: string, courseId: string, type: 'online' | 'physical') {
+    // 1. Enroll the student
+    const success = this.enrollStudent(email, courseId, type);
+    
+    // 2. Remove from requests if successful
+    if (success) {
+      const requests = this.getRequests();
+      if (requests[email]) {
+        requests[email] = requests[email].filter((r: any) => r.courseId !== courseId);
+        if (requests[email].length === 0) delete requests[email];
+        localStorage.setItem('rim_acedemy_enrollment_requests', JSON.stringify(requests));
+      }
+      return true;
+    }
+    return false;
+  }
+
+  private getRequests() {
+    const saved = localStorage.getItem('rim_acedemy_enrollment_requests');
+    return saved ? JSON.parse(saved) : {};
+  }
+
+  getEnrollments() {
+    const saved = localStorage.getItem('rim_acedemy_enrollments');
+    return saved ? JSON.parse(saved) : {};
   }
 }
 

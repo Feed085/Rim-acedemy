@@ -27,6 +27,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tag } from 'lucide-react';
 
 export default function TeacherCourseEdit() {
   const { id } = useParams();
@@ -79,32 +87,7 @@ export default function TeacherCourseEdit() {
     }
   };
 
-  const addNewLesson = () => {
-    if (id) {
-      mockDb.addLessonToCourse(id);
-      setLessons(mockDb.getLessons(id));
-      toast.success('Yeni video dərs əlavə edildi');
-    }
-  };
 
-  const addNewTest = () => {
-    if (id) {
-      const newTest = {
-        title: 'Yeni Test',
-        courseId: id,
-        courseName: course.title,
-        teacherId: course.teacherId,
-        duration: 30,
-        questionCount: 0,
-        questions: [],
-        isActive: true,
-        createdAt: new Date()
-      };
-      mockDb.addTestToCourse(id, newTest);
-      setTests(mockDb.getTests(id));
-      toast.success('Yeni test əlavə edildi');
-    }
-  };
 
   const handleSave = () => {
     if (id) {
@@ -117,7 +100,6 @@ export default function TeacherCourseEdit() {
         includes: course.includes || []
       });
       toast.success('Kurs məlumatları uğurla yeniləndi');
-      navigate('/teacher/dashboard');
     }
   };
 
@@ -181,11 +163,28 @@ export default function TeacherCourseEdit() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Kateqoriya</label>
-                  <Input 
-                    value={course.category}
-                    onChange={(e) => setCourse({ ...course, category: e.target.value })}
-                    className="rounded-xl border-gray-200"
-                  />
+                  <Select 
+                    value={course.category} 
+                    onValueChange={(val) => setCourse({ ...course, category: val })}
+                  >
+                    <SelectTrigger className="w-full h-11 rounded-xl bg-white border-gray-200">
+                      <div className="flex items-center gap-2.5">
+                        <Tag className="w-4 h-4 text-gray-400" />
+                        <SelectValue placeholder="Kateqoriya seçin" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border-gray-100 rounded-xl shadow-xl">
+                      {mockDb.getCategories().map((cat: any) => (
+                        <SelectItem 
+                          key={cat.id} 
+                          value={cat.id}
+                          className="py-2.5 px-4 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                        >
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Haqqında</label>
@@ -206,13 +205,13 @@ export default function TeacherCourseEdit() {
                   Video Dərslər
                 </h2>
                 <Button 
-                  onClick={addNewLesson}
+                  onClick={() => navigate('/teacher/upload')}
                   variant="outline" 
                   size="sm" 
                   className="rounded-xl border-[#00D084] text-[#00D084] hover:bg-[#00D084]/5 font-bold"
                 >
-                  <Plus className="w-4 h-4 mr-1" />
-                  Video Əlavə Et
+                  <Video className="w-4 h-4 mr-1" />
+                  Video Yüklə
                 </Button>
               </div>
               <div className="space-y-3">
@@ -258,13 +257,11 @@ export default function TeacherCourseEdit() {
                   Testlər və Tapşırıqlar
                 </h2>
                 <Button 
-                  onClick={addNewTest}
-                  variant="outline" 
-                  size="sm" 
-                  className="rounded-xl border-[#00D084] text-[#00D084] hover:bg-[#00D084]/5 font-bold"
+                  onClick={() => navigate('/teacher/test/create')}
+                  className="bg-[#00D084] hover:bg-[#00B873] rounded-xl text-white px-4 h-9 font-bold"
                 >
                   <Plus className="w-4 h-4 mr-1" />
-                  Test Əlavə Et
+                  Test Yarat
                 </Button>
               </div>
               <div className="space-y-3">

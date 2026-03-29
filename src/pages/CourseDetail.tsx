@@ -6,14 +6,17 @@ import { Button } from '@/components/ui/button';
 import { 
   Star, 
   Users, 
-  BookOpen, 
-  Clock, 
   CheckCircle2, 
   PlayCircle, 
-  ShieldCheck, 
   ChevronRight,
-  Calendar
+  Calendar,
+  ShoppingBag,
+  MessageCircle,
+  Loader2,
+  ShieldCheck
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 
 export default function CourseDetail() {
@@ -21,6 +24,9 @@ export default function CourseDetail() {
   const navigate = useNavigate();
   const [course, setCourse] = useState<any>(null);
   const [teacher, setTeacher] = useState<any>(null);
+  const { user, isAuthenticated } = useAuth();
+  const [enrollmentStatus, setEnrollmentStatus] = useState<'approved' | 'pending' | 'none'>('none');
+  const [isRequesting, setIsRequesting] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -30,8 +36,40 @@ export default function CourseDetail() {
       setCourse(foundCourse);
       const foundTeacher = teachers.find(t => t.id === foundCourse.teacherId);
       setTeacher(foundTeacher);
+      
+      // Check enrollment status
+      if (user && user.role === 'student') {
+        setEnrollmentStatus(mockDb.getEnrollmentStatus(user.email, foundCourse.id));
+      }
     }
-  }, [id]);
+  }, [id, user]);
+
+  const handleRequest = async () => {
+    if (!isAuthenticated) {
+      toast.error('Müraciət etmək üçün daxil olun');
+      navigate('/login');
+      return;
+    }
+    
+    setIsRequesting(true);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const success = mockDb.requestEnrollment(user!.email, user!.name, course.id);
+    if (success) {
+      setEnrollmentStatus('pending');
+      toast.success('Müraciətiniz qəbul olundu! Admin ilə WhatsApp-da əlaqə saxlayın.');
+    } else {
+      toast.error('Müraciətiniz artıq mövcuddur.');
+    }
+    setIsRequesting(false);
+  };
+
+  const openWhatsApp = () => {
+    const phone = "+994501234567"; // Placeholder phone number
+    const message = `Salam! Mən ${course.title} kursuna qoşulmaq üçün müraciət etmişəm. (${user?.email})`;
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
 
   if (!course) {
     return (
@@ -211,24 +249,60 @@ export default function CourseDetail() {
                 <div className="p-8">
 
 
-                  <div className="space-y-4">
-                    <h4 className="font-bold text-gray-900 text-sm uppercase tracking-widest">Kurs daxildir:</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <BookOpen className="w-5 h-5 text-[#00D084]" />
-                        <span>{course.lessonCount} video dərs</span>
+                  <div className="pt-6 border-t border-gray-100 flex flex-col gap-3">
+                    {user?.role === 'teacher' ? (
+                      <div className="bg-red-50 text-red-600 p-6 rounded-[24px] border border-red-100 text-center animate-in fade-in duration-500">
+                        <ShieldCheck className="w-8 h-8 mx-auto mb-3 opacity-80" />
+                        <h4 className="font-black text-sm uppercase tracking-wider mb-1">Giriş Məhduddur</h4>
+                        <p className="text-xs font-medium opacity-80 leading-relaxed italic">
+                          Müəllim hesabı ilə tələbə kurslarına müraciət etmək mümkün deyil.
+                        </p>
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <Clock className="w-5 h-5 text-[#00D084]" />
-                        <span>{course.duration}</span>
-                      </div>
-                      {(course.includes || []).map((item: string, index: number) => (
-                        <div key={index} className="flex items-center gap-4 text-sm text-gray-600">
-                          <ShieldCheck className="w-5 h-5 text-[#00D084]" />
-                          <span>{item}</span>
+                    ) : enrollmentStatus === 'approved' ? (
+                      <Button 
+                        onClick={() => navigate(`/course-watch/${course.id}`)}
+                        className="w-full h-14 bg-[#00D084] hover:bg-[#00B873] text-white font-black rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-[#00D084]/20"
+                      >
+                        <PlayCircle className="w-5 h-5" />
+                        Kursa daxil ol
+                      </Button>
+                    ) : enrollmentStatus === 'pending' ? (
+                      <div className="space-y-3">
+                        <div className="bg-orange-50 text-orange-600 p-4 rounded-2xl text-sm font-bold flex items-center gap-3">
+                           <Loader2 className="w-5 h-5 animate-spin" />
+                           Müraciətiniz gözləmədədir...
                         </div>
-                      ))}
-                    </div>
+                        <Button 
+                          onClick={openWhatsApp}
+                          className="w-full h-14 bg-[#25D366] hover:bg-[#128C7E] text-white font-black rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-green-200"
+                        >
+                          <MessageCircle className="w-5 h-5" />
+                          WhatsApp ilə əlaqə saxla
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-4 mb-2">
+                           <span className="text-4xl font-black text-gray-900">49.00 AZN</span>
+                           <span className="text-lg text-gray-400 line-through">120.00 AZN</span>
+                        </div>
+                        <Button 
+                          onClick={handleRequest}
+                          disabled={isRequesting}
+                          className="w-full h-14 bg-[#000000] hover:bg-gray-900 text-white font-black rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-gray-200"
+                        >
+                          {isRequesting ? (
+                             <Loader2 className="w-5 h-5 animate-spin" />
+                          ) : (
+                             <ShoppingBag className="w-5 h-5" />
+                          )}
+                          Müraciət göndər
+                        </Button>
+                        <p className="text-center text-xs text-gray-400 mt-2 italic px-4 leading-relaxed">
+                          Müraciətdən sonra WhatsApp vasitəsilə adminlə əlaqə saxlayaraq ödənişi tamamlayın.
+                        </p>
+                      </>
+                    )}
                   </div>
 
 
@@ -238,6 +312,7 @@ export default function CourseDetail() {
           </aside>
         </div>
       </div>
+
     </div>
   );
 }

@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import { tests } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { mockDb } from '@/services/mockDb';
 import { 
   Clock, 
   ChevronLeft, 
@@ -20,14 +20,22 @@ export default function TestDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
-  const test = tests.find(t => t.id === id);
-
+  const [test, setTest] = useState<any>(null);
   const [isStarted, setIsStarted] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [score, setScore] = useState(0);
+
+  useEffect(() => {
+    if (id) {
+      const found = mockDb.getTestById(id);
+      if (found) {
+        setTest(found);
+      }
+    }
+  }, [id]);
 
   useEffect(() => {
     if (test && isStarted && timeLeft > 0 && !isFinished) {
@@ -65,8 +73,8 @@ export default function TestDetail() {
 
   const finishTest = () => {
     let correct = 0;
-    test.questions.forEach(q => {
-      if (selectedAnswers[q.id] === q.correctAnswer) {
+    test.questions.forEach((q: any) => {
+      if (selectedAnswers[q.id] === q.correctAnswerIdx) {
         correct++;
       }
     });
@@ -201,7 +209,7 @@ export default function TestDetail() {
                     Səhv Cavablarınız
                   </h3>
                   <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    {test.questions.map((q, idx) => {
+                    {test.questions.map((q: any, idx: number) => {
                       const selected = selectedAnswers[q.id];
                       const isCorrect = selected === q.correctAnswer;
                       if (isCorrect) return null;
@@ -209,7 +217,11 @@ export default function TestDetail() {
                       return (
                         <div key={q.id} className="bg-red-50/50 border border-red-100 rounded-xl p-4">
                           <p className="font-medium text-gray-900 mb-2">
-                            {idx + 1}. {q.question}
+                            {idx + 1}. {q.type === 'image' ? (
+                              <div className="mt-2 rounded-lg overflow-hidden border border-gray-100 max-w-xs">
+                                <img src={q.image} alt="Sual" className="w-full h-auto" />
+                              </div>
+                            ) : q.text || q.question}
                           </p>
                           <div className="flex flex-col sm:flex-row gap-2 mt-3 text-sm">
                             <div className="flex-1 flex items-start gap-2 text-red-600 bg-red-100/50 px-3 py-2 rounded-lg">
@@ -223,7 +235,7 @@ export default function TestDetail() {
                               <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
                               <div>
                                 <span className="font-medium block text-xs uppercase tracking-wider mb-0.5">Düzgün cavab</span>
-                                <span>{q.options[q.correctAnswer]}</span>
+                                <span>{q.options[q.correctAnswerIdx] || q.options[q.correctAnswer] || String.fromCharCode(65 + q.correctAnswerIdx)}</span>
                               </div>
                             </div>
                           </div>
@@ -290,11 +302,18 @@ export default function TestDetail() {
         {/* Question */}
         <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-lg mb-6">
           <h2 className="text-lg lg:text-xl font-bold text-gray-900 mb-6">
-            {currentQuestion + 1}. {question.question}
+             {currentQuestion + 1}. 
+             {question.type === 'image' ? (
+                <div className="mt-4 rounded-2xl overflow-hidden border-2 border-gray-50 shadow-sm">
+                   <img src={question.image} alt="Sual" className="w-full h-auto" />
+                </div>
+             ) : (
+                <span className="ml-2">{question.text || question.question}</span>
+             )}
           </h2>
 
           <div className="space-y-3">
-            {question.options.map((option, index) => (
+            {question.options.map((option: string, index: number) => (
               <button
                 key={index}
                 onClick={() => selectAnswer(index)}
@@ -332,7 +351,7 @@ export default function TestDetail() {
           </Button>
 
           <div className="flex gap-2">
-            {test.questions.map((_, idx) => (
+            {test.questions.map((_: any, idx: number) => (
               <button
                 key={idx}
                 onClick={() => setCurrentQuestion(idx)}

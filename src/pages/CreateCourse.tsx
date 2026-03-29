@@ -15,13 +15,22 @@ import { toast } from 'sonner';
 import { mockDb } from '@/services/mockDb';
 import { teachers } from '@/data/mockData';
 
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
 export default function CreateCourse() {
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
+  const categories = mockDb.getCategories();
   
   const [formData, setFormData] = useState({
     title: '',
-    category: '',
+    category: mockDb.getCategories()[0]?.id || '',
     price: '',
     description: '',
     image: null as File | null,
@@ -124,16 +133,28 @@ export default function CreateCourse() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Kateqoriya</label>
-                      <div className="relative">
-                        <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                        <Input
-                          value={formData.category}
-                          onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                          placeholder="Məs: Xarici Diller"
-                          className="pl-12 h-12 rounded-xl"
-                          required
-                        />
-                      </div>
+                      <Select 
+                        value={formData.category} 
+                        onValueChange={(val) => setFormData({ ...formData, category: val })}
+                      >
+                        <SelectTrigger className="w-full h-12 rounded-xl bg-white border-gray-200">
+                          <div className="flex items-center gap-3">
+                            <Tag className="w-5 h-5 text-gray-400" />
+                            <SelectValue placeholder="Kateqoriya seçin" />
+                          </div>
+                        </SelectTrigger>
+                        <SelectContent className="bg-white border-gray-100 rounded-xl shadow-xl">
+                          {categories.map((cat: any) => (
+                            <SelectItem 
+                              key={cat.id} 
+                              value={cat.id}
+                              className="py-3 px-4 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                            >
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                   <div>

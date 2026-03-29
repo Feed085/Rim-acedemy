@@ -36,10 +36,8 @@ export default function CoursesPage() {
   }, []);
 
   const categories = [
-    { key: 'all', label: 'Hamısı' },
-    { key: 'language', label: 'Dil Kursları' },
-    { key: 'exam', label: 'İmtahan Hazırlığı' },
-    { key: 'computer', label: 'Komputer' },
+    { id: 'all', name: 'Hamısı' },
+    ...mockDb.getCategories(),
   ];
 
   const filteredCourses = dbCourses.filter(course => {
@@ -92,13 +90,13 @@ export default function CoursesPage() {
                 </div>
               </SelectTrigger>
               <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2 min-w-[220px]">
-                {categories.map((cat) => (
+                {categories.map((cat: any) => (
                   <SelectItem
-                    key={cat.key}
-                    value={cat.key}
+                    key={cat.id}
+                    value={cat.id}
                     className="py-3 px-4 rounded-xl text-sm font-medium text-gray-600 cursor-pointer focus:bg-[#00D084]/10 focus:text-[#00D084] data-[state=checked]:text-[#00D084] data-[state=checked]:bg-[#00D084]/5 transition-colors mb-1 last:mb-0"
                   >
-                    {cat.label}
+                    {cat.name}
                   </SelectItem>
                 ))}
               </SelectContent>

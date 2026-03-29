@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { courses, tests } from '@/data/mockData';
+import { tests } from '@/data/mockData';
+import { mockDb } from '@/services/mockDb';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -23,8 +24,12 @@ export default function StudentDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const myCourses = courses.slice(0, 3);
-  const myTests = tests.slice(0, 3);
+  const enrolledCourses = user ? mockDb.getEnrolledCourses(user.email) : [];
+  const myCourses = enrolledCourses;
+  
+  // Filter tests only for enrolled courses
+  const filteredTests = tests.filter(test => enrolledCourses.some(c => c.id === test.courseId));
+  const myTests = filteredTests.slice(0, 5);
 
   const groupedCourseTests = Object.values(
     myTests.reduce((acc, test) => {
@@ -37,7 +42,7 @@ export default function StudentDashboard() {
       }
       acc[test.courseId].tests.push(test);
       return acc;
-    }, {} as Record<string, { courseId: string; courseName: string; tests: typeof myTests }>)
+    }, {} as Record<string, { courseId: string; courseName: string; tests: typeof tests }>)
   );
 
   const scrollToCourses = () => {
@@ -50,7 +55,7 @@ export default function StudentDashboard() {
   };
 
   const stats = [
-    { label: 'Aktiv Kurslar', value: '3', icon: BookOpen, color: '#00D084', onClick: scrollToCourses },
+    { label: 'Aktiv Kurslar', value: enrolledCourses.length.toString(), icon: BookOpen, color: '#00D084', onClick: scrollToCourses },
     { label: 'Tamamlanan Testlər', value: '12', icon: FileText, color: '#0082F3', onClick: () => navigate('/dashboard/completed-tests') },
     { label: 'Sertifikatlar', value: '2', icon: Award, color: '#F59E0B', onClick: () => navigate('/dashboard/certificates') },
   ];
@@ -136,22 +141,37 @@ export default function StudentDashboard() {
                         <div className="flex-1">
                           <div className="flex items-center justify-between text-xs mb-1">
                             <span className="text-gray-500">İrəliləyiş</span>
-                            <span className="font-medium text-[#00D084]">65%</span>
+                            <span className="font-medium text-[#00D084]">0%</span>
                           </div>
-                          <Progress value={65} className="h-2" />
+                          <Progress value={0} className="h-2" />
                         </div>
                         <Button
-                          onClick={() => navigate(`/courses/${course.id}/watch`, { state: { from: 'dashboard' } })}
+                          onClick={() => navigate(`/course-watch/${course.id}`, { state: { from: 'dashboard' } })}
                           size="sm"
                           className="bg-[#00D084] hover:bg-[#00B873] rounded-lg"
                         >
                           <Play className="w-4 h-4 mr-1" />
-                          Davam et
+                          Başla
                         </Button>
                       </div>
                     </div>
                   </div>
                 ))}
+                {myCourses.length === 0 && (
+                  <div className="text-center py-12">
+                     <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <BookOpen className="w-8 h-8 text-gray-300" />
+                     </div>
+                     <p className="text-gray-500">Hələ ki, heç bir kursunuz yoxdur.</p>
+                     <Button 
+                       variant="link" 
+                       onClick={() => navigate('/courses')}
+                       className="text-[#00D084] mt-2 font-bold"
+                     >
+                       Kurslara göz at
+                     </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
