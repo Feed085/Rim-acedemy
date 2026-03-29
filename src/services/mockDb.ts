@@ -264,6 +264,28 @@ class MockDB {
     this.saveProfile();
     return true;
   }
+
+  // Admin Panel tərəfindən yaradılan müəllimləri yoxlayır
+  checkAllowedTeacher(email: string, password?: string) {
+    const allowed = localStorage.getItem('rim_acedemy_allowed_teachers');
+    if (allowed) {
+      const teachersList = JSON.parse(allowed);
+      const found = teachersList.find((t: any) => t.email === email && (!password || t.password === password));
+      if (found) {
+        // Əgər tapılarsa, bu müəllimi müvəqqəti profil kimi təyin edirik
+        this.teacherProfile = {
+          ...this.teacherProfile,
+          id: found.id.toString(),
+          name: found.name,
+          surname: found.surname,
+          email: found.email,
+          specialties: ['Yeni Müəllim']
+        };
+        return found;
+      }
+    }
+    return null;
+  }
 }
 
 export const mockDb = new MockDB();

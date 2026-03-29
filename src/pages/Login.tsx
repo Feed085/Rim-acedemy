@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Mail, Lock, GraduationCap, UserCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/photos/RimAcademyLogo.jpeg';
+import { mockDb } from '@/services/mockDb';
 
 
 export default function Login() {
@@ -24,17 +25,31 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Bypass validation for quick login
-    const dummyEmail = role === 'teacher' ? 'teacher@rimacademy.az' : 'student@rimacademy.az';
-    const dummyPass = 'password123';
+    // Müəllim girişi üçün xüsusi yoxlama (Admin tərəfindən yaradılanlar)
+    if (role === 'teacher') {
+      const allowed = mockDb.checkAllowedTeacher(formData.email, formData.password);
+      if (allowed) {
+        const success = await login(formData.email, formData.password, role);
+        if (success) {
+          toast.success(`${allowed.name} ${allowed.surname}, xoş gəldiniz!`);
+          navigate('/teacher/dashboard');
+          return;
+        }
+      }
+    }
 
-    const success = await login(dummyEmail, dummyPass, role);
-    
-    if (success) {
-      toast.success('Uğurla daxil oldunuz!');
-      navigate(role === 'teacher' ? '/teacher/dashboard' : '/dashboard');
+    // Standart test girişi üçün (Demo məqsədli)
+    const isMockTeacher = role === 'teacher' && formData.email === 'teacher@rimacademy.az' && formData.password === 'password123';
+    const isMockStudent = role === 'student' && formData.email === 'student@rimacademy.az' && formData.password === 'password123';
+
+    if (isMockTeacher || isMockStudent) {
+      const success = await login(formData.email, formData.password, role);
+      if (success) {
+        toast.success('Uğurla daxil oldunuz!');
+        navigate(role === 'teacher' ? '/teacher/dashboard' : '/dashboard');
+      }
     } else {
-      toast.error('Giriş zamanı xəta baş verdi');
+      toast.error('Giriş məlumatları yanlışdır və ya belə bir hesab yoxdur');
     }
   };
 
@@ -170,6 +185,36 @@ export default function Login() {
                 t('auth.login.submit')
               )}
             </Button>
+
+            {/* Quick Login Buttons for Demo */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={async () => {
+                  setRole('student');
+                  await login('student@rimacademy.az', 'password123', 'student');
+                  toast.success('Tələbə kimi sürətli giriş edildi!');
+                  navigate('/dashboard');
+                }}
+                className="rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 text-xs h-10"
+              >
+                Tələbə (Demo)
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={async () => {
+                   setRole('teacher');
+                   await login('teacher@rimacademy.az', 'password123', 'teacher');
+                   toast.success('Müəllim kimi sürətli giriş edildi!');
+                   navigate('/teacher/dashboard');
+                }}
+                className="rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 text-xs h-10"
+              >
+                Müəllim (Demo)
+              </Button>
+            </div>
           </form>
 
           {/* Divider */}
