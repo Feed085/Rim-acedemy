@@ -13,8 +13,6 @@ import {
   TrendingUp,
   Plus,
   ArrowRight,
-  Check,
-  X,
   UserPlus
 } from 'lucide-react';
 
@@ -41,10 +39,6 @@ export default function TeacherDashboard() {
     { name: 'Tural İsmayılov', course: 'Web Proqramlaşdırma', progress: 45, date: '2 gün əvvəl' },
   ];
 
-  const courseRequests = [
-    { id: 1, name: 'Fərid Hacıyev', course: 'IELTS Hazırlıq', time: '10 dəq əvvəl' },
-    { id: 2, name: 'Nigar Rzayeva', course: 'General English', time: '1 saat əvvəl' },
-  ];
 
   return (
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
@@ -59,7 +53,15 @@ export default function TeacherDashboard() {
               Xoş gəldiniz, {user?.name || teacher?.name}!
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => navigate('/teacher/profile')}
+              variant="outline"
+              className="rounded-xl"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Profil
+            </Button>
             <Button
               onClick={() => navigate('/teacher/courses/create')}
               variant="outline"
@@ -230,67 +232,6 @@ export default function TeacherDashboard() {
               </div>
             </div>
 
-            {/* Calendar */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                Yaxınlaşan Dərslər
-              </h2>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3 p-3 bg-[#00D084]/5 rounded-xl">
-                  <div className="w-12 h-12 bg-[#00D084]/10 rounded-xl flex flex-col items-center justify-center flex-shrink-0">
-                    <span className="text-xs text-[#00D084] font-medium">MAR</span>
-                    <span className="text-lg font-black text-[#00D084]">25</span>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 text-sm">IELTS Speaking</h4>
-                    <p className="text-xs text-gray-500">10:00 - 11:30</p>
-                    <p className="text-xs text-[#00D084]">15 tələbə</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-3 bg-[#0082F3]/5 rounded-xl">
-                  <div className="w-12 h-12 bg-[#0082F3]/10 rounded-xl flex flex-col items-center justify-center flex-shrink-0">
-                    <span className="text-xs text-[#0082F3] font-medium">MAR</span>
-                    <span className="text-lg font-black text-[#0082F3]">26</span>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 text-sm">SAT Riyaziyyat</h4>
-                    <p className="text-xs text-gray-500">14:00 - 16:00</p>
-                    <p className="text-xs text-[#0082F3]">20 tələbə</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white rounded-3xl p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <UserPlus className="w-5 h-5 text-[#00D084]" />
-                <h2 className="text-xl font-bold text-gray-900">
-                  Kurs Müraciətləri
-                </h2>
-              </div>
-              <div className="space-y-4">
-                {courseRequests.map((request) => (
-                  <div key={request.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-bold text-gray-900">{request.name}</h4>
-                        <p className="text-xs text-gray-500">{request.course}</p>
-                      </div>
-                      <span className="text-[10px] text-gray-400 italic">{request.time}</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button className="flex-1 bg-[#00D084] hover:bg-[#00B873] text-white h-9 rounded-xl text-xs font-bold">
-                        <Check className="w-3 h-3 mr-1" />
-                        Təsdiqlə
-                      </Button>
-                      <Button variant="outline" className="flex-1 border-red-100 text-red-500 hover:bg-red-50 h-9 rounded-xl text-xs font-bold">
-                        <X className="w-3 h-3 mr-1" />
-                        Ləğv et
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>

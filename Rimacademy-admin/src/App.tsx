@@ -187,12 +187,16 @@ const Dashboard = () => {
 const Teachers = () => {
   const [teachers, setTeachers] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newTeacher, setNewTeacher] = useState({ name: '', surname: '', email: '', password: '' });
+  const [newTeacher, setNewTeacher] = useState({ name: '', surname: '', email: '', password: '', category: '' });
   const [createdInfo, setCreatedInfo] = useState<any>(null);
+  const [categories, setCategories] = useState<any[]>([]);
 
   useEffect(() => {
     const saved = localStorage.getItem('rim_acedemy_allowed_teachers');
     if (saved) setTeachers(JSON.parse(saved));
+
+    const savedCats = localStorage.getItem('rim_acedemy_categories');
+    if (savedCats) setCategories(JSON.parse(savedCats));
   }, []);
 
   const handleCreate = (e: React.FormEvent) => {
@@ -202,7 +206,7 @@ const Teachers = () => {
     setTeachers(updated);
     localStorage.setItem('rim_acedemy_allowed_teachers', JSON.stringify(updated));
     setCreatedInfo(newTeacher);
-    setNewTeacher({ name: '', surname: '', email: '', password: '' });
+    setNewTeacher({ name: '', surname: '', email: '', password: '', category: '' });
     toast.success('Müəllim hesabı yaradıldı!');
   };
 
@@ -268,6 +272,7 @@ const Teachers = () => {
                    <tr className="bg-gray-50/50">
                       <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-widest italic">Müəllim</th>
                       <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-widest italic">Email</th>
+                      <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-widest italic">Kateqoriya</th>
                       <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-widest italic">Kurslar</th>
                       <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-widest italic">Status</th>
                       <th className="px-8 py-5 text-[11px] font-black text-gray-400 uppercase tracking-widest italic text-right">Əməliyyat</th>
@@ -278,6 +283,11 @@ const Teachers = () => {
                      <tr key={i} className="hover:bg-gray-50/50 transition-colors group">
                         <td className="px-8 py-6 font-bold text-gray-900">{t.name} {t.surname}</td>
                         <td className="px-8 py-6 text-gray-500 font-medium">{t.email}</td>
+                        <td className="px-8 py-6">
+                           <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-[10px] font-black uppercase">
+                              {categories.find(c => c.id === t.category)?.name || t.category || '---'}
+                           </span>
+                        </td>
                         <td className="px-8 py-6 font-bold text-gray-900">{t.courses} kurs</td>
                         <td className="px-8 py-6">
                            <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
@@ -356,6 +366,20 @@ const Teachers = () => {
                   className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-[#00D084] outline-none transition-all font-bold font-mono tracking-widest"
                   placeholder="RIM2026!#"
                 />
+            </div>
+            <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Kateqoriya</label>
+                <select 
+                  required
+                  value={newTeacher.category}
+                  onChange={e => setNewTeacher({...newTeacher, category: e.target.value})}
+                  className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-[#00D084] outline-none transition-all font-bold"
+                >
+                   <option value="">Kateqoriya seçin...</option>
+                   {categories.map(cat => (
+                     <option key={cat.id} value={cat.id}>{cat.name}</option>
+                   ))}
+                </select>
             </div>
             <button 
               type="submit"

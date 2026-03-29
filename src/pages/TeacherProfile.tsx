@@ -34,7 +34,6 @@ export default function TeacherProfile() {
     surname: teacher.surname,
     email: teacher.email,
     phone: teacher.phone,
-    bio: teacher.bio,
     education: teacher.education,
     experience: teacher.experience,
     specialties: teacher.specialties.join(', '),
@@ -207,23 +206,6 @@ export default function TeacherProfile() {
               )}
             </div>
 
-            {/* About */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                {t('teacher.profile.bio')}
-              </h2>
-              {isEditing ? (
-                <Textarea
-                  name="bio"
-                  value={formData.bio}
-                  onChange={handleChange}
-                  rows={5}
-                  className="rounded-xl resize-none"
-                />
-              ) : (
-                <p className="text-gray-600 leading-relaxed">{formData.bio}</p>
-              )}
-            </div>
 
             {/* Education & Experience */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -232,11 +214,12 @@ export default function TeacherProfile() {
                   {t('teacher.profile.education')}
                 </h2>
                 {isEditing ? (
-                  <Input
+                  <Textarea
                     name="education"
                     value={formData.education}
                     onChange={handleChange}
-                    className="rounded-xl"
+                    placeholder="Məs: Bakı Dövlət Universiteti, Filologiya fakültəsi, Ali təhsil"
+                    className="rounded-xl min-h-[80px]"
                   />
                 ) : (
                   <div className="flex items-start gap-3">
@@ -244,8 +227,7 @@ export default function TeacherProfile() {
                       <Award className="w-5 h-5 text-[#00D084]" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{formData.education}</p>
-                      <p className="text-sm text-gray-500">Ali təhsil</p>
+                      <p className="font-medium text-gray-900 leading-relaxed italic">{formData.education}</p>
                     </div>
                   </div>
                 )}
@@ -280,33 +262,34 @@ export default function TeacherProfile() {
             {/* Specialties */}
             <div className="bg-white rounded-3xl p-6 shadow-sm">
               <h2 className="text-xl font-bold text-gray-900 mb-4">
-                {t('teacher.profile.specialties')}
+                İxtisaslaşdığı Sahələr
               </h2>
               {isEditing ? (
-                <div className="flex flex-wrap gap-2">
-                  {mockDb.getCourses().flatMap(c => c.category).filter((v, i, a) => a.indexOf(v) === i).map((specialty: string) => {
-                    const isSelected = formData.specialties.split(',').map((s: string) => s.trim()).includes(specialty);
-                    return (
+                <div className="space-y-4">
+                   <Input
+                    name="specialties"
+                    value={formData.specialties}
+                    onChange={handleChange}
+                    placeholder="Məs: İngilis dili, IELTS, SAT"
+                    className="rounded-xl"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {['İngilis dili', 'IELTS', 'SAT', 'TOEFL', 'Rus dili', 'Riyaziyyat'].map((tag) => (
                       <button
-                        key={specialty}
+                        key={tag}
                         type="button"
                         onClick={() => {
                           const currentSpecs = formData.specialties.split(',').map((s: string) => s.trim()).filter(Boolean);
-                          const newSpecs = isSelected
-                            ? currentSpecs.filter((s: string) => s !== specialty)
-                            : [...currentSpecs, specialty];
-                          setFormData(prev => ({ ...prev, specialties: newSpecs.join(', ') }));
+                          if (!currentSpecs.includes(tag)) {
+                            setFormData(prev => ({ ...prev, specialties: [...currentSpecs, tag].join(', ') }));
+                          }
                         }}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                          isSelected
-                            ? 'bg-[#00D084] text-white shadow-md'
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
+                        className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-xs font-bold transition-colors"
                       >
-                        {specialty}
+                        + {tag}
                       </button>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-2">

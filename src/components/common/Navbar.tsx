@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, User, LogOut, BookOpen, Users, Phone, Home, ChevronDown } from 'lucide-react';
+import { Menu, User, LogOut, BookOpen, Users, Phone, Home, ChevronDown, Settings } from 'lucide-react';
 import logo from '@/photos/new_logo.png';
 import { cn } from '@/lib/utils';
 import { teachers } from '@/data/mockData';
@@ -305,6 +305,15 @@ export default function Navbar() {
                     <User className="w-4 h-4 mr-2" />
                     {t('nav.dashboard')}
                   </DropdownMenuItem>
+                  {user?.role === 'teacher' && (
+                    <DropdownMenuItem onClick={() => {
+                      window.scrollTo(0, 0);
+                      navigate('/teacher/profile');
+                    }}>
+                      <Settings className="w-4 h-4 mr-2" />
+                      Profil
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                     <LogOut className="w-4 h-4 mr-2" />
@@ -408,7 +417,7 @@ export default function Navbar() {
                           <p className="text-sm text-gray-500 truncate mt-0.5">{user?.email}</p>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                         <Button
                           variant="outline"
                           className="h-14 rounded-2xl border-gray-200 font-bold hover:bg-[#00D084]/5 hover:text-[#00D084] hover:border-[#00D084]/30"
@@ -421,6 +430,20 @@ export default function Navbar() {
                           <User className="w-4 h-4 mr-2" />
                           Panel
                         </Button>
+                        {user?.role === 'teacher' && (
+                          <Button
+                            variant="outline"
+                            className="h-14 rounded-2xl border-gray-200 font-bold hover:bg-[#00D084]/5 hover:text-[#00D084] hover:border-[#00D084]/30"
+                            onClick={() => {
+                              setIsOpen(false);
+                              window.scrollTo(0, 0);
+                              navigate('/teacher/profile');
+                            }}
+                          >
+                            <Settings className="w-4 h-4 mr-2" />
+                            Profil
+                          </Button>
+                        )}
                         <Button
                           variant="destructive"
                           className="h-14 rounded-2xl font-bold bg-red-50 text-red-600 border-red-100 hover:bg-red-100 shadow-none border"
