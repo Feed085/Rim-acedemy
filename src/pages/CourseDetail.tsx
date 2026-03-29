@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { courses, teachers } from '@/data/mockData';
+import { teachers } from '@/data/mockData';
+import { mockDb } from '@/services/mockDb';
 import { Button } from '@/components/ui/button';
 import { 
   Star, 
@@ -11,23 +12,26 @@ import {
   PlayCircle, 
   ShieldCheck, 
   ChevronRight,
-  Calendar,
-  Award,
-  MessageSquare
+  Calendar
 } from 'lucide-react';
 
 
 export default function CourseDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
-  
-  const course = courses.find(c => c.id === id);
-  const teacher = teachers.find(t => t.id === course?.teacherId);
+  const [course, setCourse] = useState<any>(null);
+  const [teacher, setTeacher] = useState<any>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
+    const dbCourses = mockDb.getCourses();
+    const foundCourse = dbCourses.find(c => c.id === id);
+    if (foundCourse) {
+      setCourse(foundCourse);
+      const foundTeacher = teachers.find(t => t.id === foundCourse.teacherId);
+      setTeacher(foundTeacher);
+    }
+  }, [id]);
 
   if (!course) {
     return (
@@ -44,22 +48,9 @@ export default function CourseDetail() {
 
 
 
-  const learningPoints = [
-    'Kursun əsas mövzuları üzrə dərin biliklər',
-    'Praktiki tapşırıqlar və real layihələr',
-    'Peşəkar vərdişlərin inkişafı',
-    'İmtahanlara hazırlıq strategiyaları',
-    'Sənaye standartlarına uyğun metodika',
-    'Yaradıcı düşüncə və problem həll etmə'
-  ];
 
-  const curriculum = [
-    { title: 'Giriş və Əsas Anlayışlar', lessons: 8 },
-    { title: 'İlkin Səviyyə üzrə Təlimlər', lessons: 12 },
-    { title: 'Orta Səviyyə: Praktiki Tətbiq', lessons: 20 },
-    { title: 'Təkmilləşdirilmiş Mövzular', lessons: 15 },
-    { title: 'Yekun İmtahan və Layihə', lessons: 5 },
-  ];
+
+
 
   return (
     <div className="min-h-screen bg-[#F3F3F3]">
@@ -114,7 +105,7 @@ export default function CourseDetail() {
 
               <div className="flex items-center gap-2 text-gray-300">
                 <Calendar className="w-5 h-5 text-[#0082F3]" />
-                <span className="font-medium text-sm">Son yenilənmə: Mart 2024</span>
+                <span className="font-medium text-sm">Son yenilənmə: {course.lastUpdated}</span>
               </div>
             </div>
             
@@ -142,7 +133,7 @@ export default function CourseDetail() {
                 Bu kursda nə öyrənəcəksiniz?
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {learningPoints.map((point, index) => (
+                {(course.learningPoints || []).map((point: string, index: number) => (
                   <div key={index} className="flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-[#00D084] shrink-0 mt-0.5" />
                     <span className="text-gray-600 text-sm leading-relaxed">{point}</span>
@@ -151,36 +142,7 @@ export default function CourseDetail() {
               </div>
             </section>
 
-            {/* Curriculum */}
-            <section className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Kursun proqramı</h2>
-                <div className="text-sm text-gray-500">
-                  {curriculum.length} Bölmə • {course.lessonCount} Dərs
-                </div>
-              </div>
-              <div className="space-y-3">
-                {curriculum.map((section, index) => (
-                  <div 
-                    key={index}
-                    className="group bg-white rounded-2xl p-4 border border-gray-100 hover:border-[#00D084]/30 hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-[#00D084]/10 group-hover:text-[#00D084] transition-colors">
-                          <PlayCircle className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-gray-900 text-sm lg:text-base">{section.title}</h3>
-                          <p className="text-xs text-gray-500">{section.lessons} dərs</p>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-[#00D084] transition-colors" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
+
 
             {/* Instructor */}
             <section className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
@@ -252,16 +214,18 @@ export default function CourseDetail() {
                   <div className="space-y-4">
                     <h4 className="font-bold text-gray-900 text-sm uppercase tracking-widest">Kurs daxildir:</h4>
                     <div className="space-y-3">
-                      {[
-                        { icon: BookOpen, text: `${course.lessonCount} video dərs` },
-                        { icon: Clock, text: course.duration },
-                        { icon: ShieldCheck, text: 'Ömürlük giriş imkanı' },
-                        { icon: Award, text: 'Tamamlama sertifikatı' },
-                        { icon: MessageSquare, text: '7/24 Dəstək xidməti' },
-                      ].map((item, index) => (
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <BookOpen className="w-5 h-5 text-[#00D084]" />
+                        <span>{course.lessonCount} video dərs</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <Clock className="w-5 h-5 text-[#00D084]" />
+                        <span>{course.duration}</span>
+                      </div>
+                      {(course.includes || []).map((item: string, index: number) => (
                         <div key={index} className="flex items-center gap-4 text-sm text-gray-600">
-                          <item.icon className="w-5 h-5 text-[#00D084]" />
-                          <span>{item.text}</span>
+                          <ShieldCheck className="w-5 h-5 text-[#00D084]" />
+                          <span>{item}</span>
                         </div>
                       ))}
                     </div>

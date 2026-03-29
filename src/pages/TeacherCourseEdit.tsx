@@ -12,7 +12,10 @@ import {
   Video,
   Settings,
   Image as ImageIcon,
-  Users
+  Users,
+  Plus,
+  CheckCircle2,
+  ShieldCheck
 } from 'lucide-react';
 import { mockDb } from '@/services/mockDb';
 import { toast } from 'sonner';
@@ -76,6 +79,48 @@ export default function TeacherCourseEdit() {
     }
   };
 
+  const addNewLesson = () => {
+    if (id) {
+      mockDb.addLessonToCourse(id);
+      setLessons(mockDb.getLessons(id));
+      toast.success('Yeni video dərs əlavə edildi');
+    }
+  };
+
+  const addNewTest = () => {
+    if (id) {
+      const newTest = {
+        title: 'Yeni Test',
+        courseId: id,
+        courseName: course.title,
+        teacherId: course.teacherId,
+        duration: 30,
+        questionCount: 0,
+        questions: [],
+        isActive: true,
+        createdAt: new Date()
+      };
+      mockDb.addTestToCourse(id, newTest);
+      setTests(mockDb.getTests(id));
+      toast.success('Yeni test əlavə edildi');
+    }
+  };
+
+  const handleSave = () => {
+    if (id) {
+      mockDb.updateCourse(id, {
+        title: course.title,
+        category: course.category,
+        description: course.description,
+        image: course.image,
+        learningPoints: course.learningPoints || [],
+        includes: course.includes || []
+      });
+      toast.success('Kurs məlumatları uğurla yeniləndi');
+      navigate('/teacher/dashboard');
+    }
+  };
+
   if (!course) {
     return (
       <div className="min-h-screen pt-24 flex items-center justify-center">
@@ -84,12 +129,8 @@ export default function TeacherCourseEdit() {
     );
   }
 
-  const handleSave = () => {
-    toast.success('Kurs məlumatları uğurla yeniləndi');
-    navigate('/teacher/dashboard');
-  };
-
   return (
+    <>
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24 pb-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
@@ -111,7 +152,10 @@ export default function TeacherCourseEdit() {
             <Button variant="outline" className="rounded-xl" onClick={() => navigate(-1)}>
               Ləğv et
             </Button>
-            <Button className="bg-[#00D084] hover:bg-[#00B873] rounded-xl px-6" onClick={handleSave}>
+            <Button 
+              className="bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl px-8 font-bold shadow-lg shadow-[#00D084]/20 transition-all active:scale-95" 
+              onClick={handleSave}
+            >
               <Save className="w-4 h-4 mr-2" />
               Yadda saxla
             </Button>
@@ -161,6 +205,15 @@ export default function TeacherCourseEdit() {
                   <Video className="w-5 h-5 text-[#00D084]" />
                   Video Dərslər
                 </h2>
+                <Button 
+                  onClick={addNewLesson}
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-xl border-[#00D084] text-[#00D084] hover:bg-[#00D084]/5 font-bold"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Video Əlavə Et
+                </Button>
               </div>
               <div className="space-y-3">
                 {lessons.map((lesson) => (
@@ -204,6 +257,15 @@ export default function TeacherCourseEdit() {
                   <FileText className="w-5 h-5 text-[#00D084]" />
                   Testlər və Tapşırıqlar
                 </h2>
+                <Button 
+                  onClick={addNewTest}
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-xl border-[#00D084] text-[#00D084] hover:bg-[#00D084]/5 font-bold"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Test Əlavə Et
+                </Button>
               </div>
               <div className="space-y-3">
                 {tests.map((test) => (
@@ -240,6 +302,103 @@ export default function TeacherCourseEdit() {
                 ))}
               </div>
             </div>
+            </div>
+
+            {/* What You'll Learn */}
+            <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5 text-[#00D084]" />
+                  Bu kursda nə öyrənəcəksiniz?
+                </h2>
+                <Button 
+                  onClick={() => {
+                    const newPoints = [...(course.learningPoints || []), 'Yeni öyrənəcəyiniz bənd'];
+                    setCourse({ ...course, learningPoints: newPoints });
+                  }}
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-xl border-[#00D084] text-[#00D084] hover:bg-[#00D084]/5 font-bold"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Bənd Əlavə Et
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {(course.learningPoints || []).map((point: string, idx: number) => (
+                  <div key={idx} className="flex gap-2">
+                    <Input 
+                      value={point}
+                      onChange={(e) => {
+                        const newPoints = [...course.learningPoints];
+                        newPoints[idx] = e.target.value;
+                        setCourse({ ...course, learningPoints: newPoints });
+                      }}
+                      className="rounded-xl border-gray-200"
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => {
+                        const newPoints = course.learningPoints.filter((_: any, i: number) => i !== idx);
+                        setCourse({ ...course, learningPoints: newPoints });
+                      }}
+                      className="text-red-400"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Course Includes */}
+            <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-[#00D084]" />
+                  Kurs daxildir
+                </h2>
+                <Button 
+                  onClick={() => {
+                    const newIncludes = [...(course.includes || []), 'Yeni xüsusiyyət'];
+                    setCourse({ ...course, includes: newIncludes });
+                  }}
+                  variant="outline" 
+                  size="sm" 
+                  className="rounded-xl border-[#00D084] text-[#00D084] hover:bg-[#00D084]/5 font-bold"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Əlavə Et
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {(course.includes || []).map((item: string, idx: number) => (
+                  <div key={idx} className="flex gap-2">
+                    <Input 
+                      value={item}
+                      onChange={(e) => {
+                        const newIncludes = [...course.includes];
+                        newIncludes[idx] = e.target.value;
+                        setCourse({ ...course, includes: newIncludes });
+                      }}
+                      className="rounded-xl border-gray-200"
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => {
+                        const newIncludes = course.includes.filter((_: any, i: number) => i !== idx);
+                        setCourse({ ...course, includes: newIncludes });
+                      }}
+                      className="text-red-400"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Sidebar */}
@@ -257,11 +416,41 @@ export default function TeacherCourseEdit() {
                     <ImageIcon className="w-6 h-6 text-[#00D084]" />
                   </div>
                 </div>
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const fakeUrl = URL.createObjectURL(file);
+                      setCourse({ ...course, image: fakeUrl });
+                    }
+                  }}
+                />
               </div>
               <p className="text-xs text-center text-gray-500">Şəkli dəyişmək üçün üzərinə klikləyin</p>
             </div>
 
           </div>
+        </div>
+        
+        {/* Floating Save Button */}
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 bg-white/80 backdrop-blur-md p-2 rounded-2xl shadow-2xl border border-white/50 flex gap-4">
+            <Button 
+                onClick={() => navigate(-1)}
+                variant="outline"
+                className="rounded-xl px-8 h-12 font-bold bg-white border-2 border-gray-100"
+            >
+              Ləğv et
+            </Button>
+            <Button 
+                onClick={handleSave}
+                className="bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl px-12 h-12 font-bold shadow-lg shadow-[#00D084]/20 transition-all active:scale-95"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Yadda Saxla
+            </Button>
         </div>
       </div>
 
@@ -332,6 +521,6 @@ export default function TeacherCourseEdit() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

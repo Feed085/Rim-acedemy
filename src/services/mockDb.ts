@@ -79,9 +79,41 @@ class MockDB {
           thumbnail: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&q=80'
         }
       ],
-      tests: courseTests
+      tests: courseTests,
+      learningPoints: [
+        'Kursun əsas mövzuları üzrə dərin biliklər',
+        'Praktiki tapşırıqlar və real layihələr',
+        'Peşəkar vərdişlərin inkişafı',
+        'İmtahanlara hazırlıq strategiyaları',
+        'Sənaye standartlarına uyğun metodika',
+        'Yaradıcı düşüncə və problem həll etmə'
+      ],
+      includes: [
+        'Ömürlük giriş imkanı',
+        'Tamamlama sertifikatı',
+        '7/24 Dəstək xidməti'
+      ],
+      lastUpdated: new Date().toLocaleDateString('az-AZ')
     };
   });
+
+  private teacherProfile = {
+    id: '1',
+    name: 'Məryəm',
+    surname: 'Ələkbərli',
+    email: 'maryam@rimacademy.com',
+    phone: '+994 50 123 45 67',
+    bio: '10 ildən artıq təcrübəyə malik IELTS eksperti. Yüzlərlə tələbəyə yüksək ballar qazandırmış mütəxəssis.',
+    education: 'Azərbaycan Dillər Universiteti',
+    experience: 12,
+    specialties: ['IELTS', 'TOEFL', 'SAT'],
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&q=80',
+    socialLinks: {
+      facebook: 'https://facebook.com',
+      instagram: 'https://instagram.com',
+      linkedin: 'https://linkedin.com'
+    }
+  };
 
   constructor() {
     // If we wanted persistence, we could use localStorage here
@@ -89,10 +121,18 @@ class MockDB {
     if (saved) {
       this.courses = JSON.parse(saved);
     }
+    const savedProfile = localStorage.getItem('rim_acedemy_teacher_profile');
+    if (savedProfile) {
+      this.teacherProfile = JSON.parse(savedProfile);
+    }
   }
 
   private save() {
     localStorage.setItem('rim_acedemy_courses', JSON.stringify(this.courses));
+  }
+
+  private saveProfile() {
+    localStorage.setItem('rim_acedemy_teacher_profile', JSON.stringify(this.teacherProfile));
   }
 
   getCourses() {
@@ -107,11 +147,37 @@ class MockDB {
       rating: 0,
       lessonCount: 0,
       lessons: [],
-      tests: []
+      tests: [],
+      learningPoints: [],
+      includes: [
+        'Ömürlük giriş imkanı',
+        'Tamamlama sertifikatı',
+        '7/24 Dəstək xidməti'
+      ],
+      lastUpdated: new Date().toLocaleDateString('az-AZ')
     };
     this.courses = [newCourse, ...this.courses];
     this.save();
     return newCourse;
+  }
+
+  updateCourse(courseId: string, data: any) {
+    const index = this.courses.findIndex(c => c.id === courseId);
+    if (index !== -1) {
+      this.courses[index] = { 
+        ...this.courses[index], 
+        ...data,
+        lastUpdated: new Date().toLocaleDateString('az-AZ')
+      };
+      this.save();
+      return true;
+    }
+    return false;
+  }
+
+  deleteCourse(courseId: string) {
+    this.courses = this.courses.filter(c => c.id !== courseId);
+    this.save();
   }
 
   getTeacherCourses(teacherId: string) {
@@ -189,17 +255,14 @@ class MockDB {
     return null;
   }
 
-  updateTest(testId: string, data: any) {
-    for (const course of this.courses) {
-      const tests = course.tests || [];
-      const testIndex = tests.findIndex((t: any) => t.id === testId);
-      if (testIndex !== -1) {
-        tests[testIndex] = { ...tests[testIndex], ...data };
-        this.save();
-        return true;
-      }
-    }
-    return false;
+  getProfile() {
+    return this.teacherProfile;
+  }
+
+  updateProfile(data: any) {
+    this.teacherProfile = { ...this.teacherProfile, ...data };
+    this.saveProfile();
+    return true;
   }
 }
 

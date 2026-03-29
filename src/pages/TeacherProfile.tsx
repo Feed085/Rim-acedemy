@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { teachers } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,30 +21,43 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { mockDb } from '@/services/mockDb';
 
 export default function TeacherProfile() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const teacher = teachers[0];
+  const [teacher, setTeacher] = useState<any>(mockDb.getProfile());
   
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: teacher?.name || '',
-    surname: teacher?.surname || '',
-    email: teacher?.email || '',
-    phone: teacher?.phone || '',
-    bio: teacher?.bio || '',
-    education: teacher?.education || '',
-    experience: teacher?.experience || 0,
-    specialties: teacher?.specialties?.join(', ') || '',
-    facebook: teacher?.socialLinks?.facebook || '',
-    instagram: teacher?.socialLinks?.instagram || '',
-    linkedin: teacher?.socialLinks?.linkedin || '',
+    name: teacher.name,
+    surname: teacher.surname,
+    email: teacher.email,
+    phone: teacher.phone,
+    bio: teacher.bio,
+    education: teacher.education,
+    experience: teacher.experience,
+    specialties: teacher.specialties.join(', '),
+    facebook: teacher.socialLinks.facebook,
+    instagram: teacher.socialLinks.instagram,
+    linkedin: teacher.socialLinks.linkedin,
+    avatar: teacher.avatar
   });
 
-  const allSpecialties = Array.from(new Set(teachers.flatMap(t => t.specialties)));
+
 
   const handleSave = () => {
+    const updatedProfile = {
+      ...formData,
+      specialties: formData.specialties.split(',').map((s: string) => s.trim()).filter(Boolean),
+      socialLinks: {
+        facebook: formData.facebook,
+        instagram: formData.instagram,
+        linkedin: formData.linkedin
+      }
+    };
+    mockDb.updateProfile(updatedProfile);
+    setTeacher(mockDb.getProfile());
     setIsEditing(false);
     toast.success('Profil yeniləndi!');
   };
@@ -75,20 +87,35 @@ export default function TeacherProfile() {
           <div className="absolute -bottom-16 left-8">
             <div className="relative">
               <img
-                src={teacher?.avatar}
-                alt={`${teacher?.name} ${teacher?.surname}`}
+                src={formData.avatar}
+                alt={`${formData.name} ${formData.surname}`}
                 className="w-32 h-32 lg:w-40 lg:h-40 rounded-3xl object-cover border-4 border-white shadow-lg"
               />
-              <button className="absolute bottom-2 right-2 w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center hover:bg-gray-50">
-                <Camera className="w-5 h-5 text-gray-600" />
-              </button>
+              <div className="absolute bottom-2 right-2">
+                <label className="w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center hover:bg-gray-50 cursor-pointer">
+                  <Camera className="w-5 h-5 text-gray-600" />
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const url = URL.createObjectURL(file);
+                        setFormData(prev => ({ ...prev, avatar: url }));
+                      }
+                    }}
+                  />
+                </label>
+              </div>
             </div>
           </div>
           <div className="absolute top-4 right-4">
             <Button
               onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-              variant="secondary"
-              className="bg-white/90 backdrop-blur-sm hover:bg-white rounded-xl"
+              className={`${isEditing 
+                ? 'bg-[#00D084] hover:bg-[#00B873] shadow-lg shadow-[#00D084]/20' 
+                : 'bg-white/90 backdrop-blur-sm hover:bg-white text-gray-900'} rounded-xl font-bold transition-all px-6`}
             >
               {isEditing ? (
                 <>
@@ -257,16 +284,16 @@ export default function TeacherProfile() {
               </h2>
               {isEditing ? (
                 <div className="flex flex-wrap gap-2">
-                  {allSpecialties.map((specialty) => {
-                    const isSelected = formData.specialties.split(',').map(s => s.trim()).includes(specialty);
+                  {mockDb.getCourses().flatMap(c => c.category).filter((v, i, a) => a.indexOf(v) === i).map((specialty: string) => {
+                    const isSelected = formData.specialties.split(',').map((s: string) => s.trim()).includes(specialty);
                     return (
                       <button
                         key={specialty}
                         type="button"
                         onClick={() => {
-                          const currentSpecs = formData.specialties.split(',').map(s => s.trim()).filter(Boolean);
+                          const currentSpecs = formData.specialties.split(',').map((s: string) => s.trim()).filter(Boolean);
                           const newSpecs = isSelected
-                            ? currentSpecs.filter(s => s !== specialty)
+                            ? currentSpecs.filter((s: string) => s !== specialty)
                             : [...currentSpecs, specialty];
                           setFormData(prev => ({ ...prev, specialties: newSpecs.join(', ') }));
                         }}
@@ -283,7 +310,7 @@ export default function TeacherProfile() {
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {formData.specialties.split(',').map((specialty, index) => (
+                  {formData.specialties.split(',').map((specialty: string, index: number) => (
                     <span
                       key={index}
                       className="px-4 py-2 bg-[#00D084]/10 text-[#00D084] rounded-full text-sm font-medium"

@@ -18,7 +18,8 @@ import {
 import { Menu, User, LogOut, BookOpen, Users, Phone, Home, ChevronDown } from 'lucide-react';
 import logo from '@/photos/new_logo.png';
 import { cn } from '@/lib/utils';
-import { courses, teachers } from '@/data/mockData';
+import { teachers } from '@/data/mockData';
+import { mockDb } from '@/services/mockDb';
 
 
 export default function Navbar() {
@@ -30,12 +31,21 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isCoursesHovered, setIsCoursesHovered] = useState(false);
   const [isTeachersHovered, setIsTeachersHovered] = useState(false);
+  const [dbCourses, setDbCourses] = useState<any[]>([]);
   
   const isWatchPage = location.pathname.includes('/watch');
   const isDarkPage = (location.pathname.startsWith('/courses/') && !isWatchPage) || location.pathname === '/contact';
   
   const coursesTimer = useRef<any>(null);
   const teachersTimer = useRef<any>(null);
+
+  useEffect(() => {
+    setDbCourses(mockDb.getCourses());
+    const interval = setInterval(() => {
+      setDbCourses(mockDb.getCourses());
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleMouseEnter = (type: 'courses' | 'teachers') => {
     if (type === 'courses') {
@@ -64,8 +74,23 @@ export default function Navbar() {
       setIsScrolled(window.scrollY > 50);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    
+    // Toggle body class for responsive menu with delay to allow animation to complete
+    let timeoutId: any;
+    if (isOpen) {
+      timeoutId = setTimeout(() => {
+        document.body.classList.add('mobile-menu-open');
+      }, 300); // 300ms matches standard sheet animation
+    } else {
+      document.body.classList.remove('mobile-menu-open');
+    }
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (timeoutId) clearTimeout(timeoutId);
+      document.body.classList.remove('mobile-menu-open');
+    };
+  }, [isOpen]);
 
   const navItems = [
     { label: t('nav.home'), href: '/', icon: Home },
@@ -94,7 +119,13 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3">
+          <Link 
+            to="/" 
+            className={cn(
+              "flex items-center gap-3 transition-opacity duration-200", 
+              isOpen && "opacity-0 invisible lg:opacity-100"
+            )}
+          >
             <img 
               src={logo} 
               alt="RIM Academy Logo" 
@@ -181,7 +212,10 @@ export default function Navbar() {
                               </div>
 
                               {item.href === '/courses' ? (
-                                courses.slice(0, 4).map((course) => (
+                                [...dbCourses]
+                                  .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+                                  .slice(0, 4)
+                                  .map((course) => (
                                   <Link
                                     key={course.id}
                                     to={`/courses`}

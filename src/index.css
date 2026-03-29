@@ -107,3 +107,15 @@
   background: #00D084;
   color: white;
 }
+
+/* Responsive Menu Styles - Hides background when menu is open on mobile */
+@media (max-width: 1024px) {
+  body.mobile-menu-open {
+    overflow: hidden;
+  }
+  
+  body.mobile-menu-open #root {
+    display: none !important;
+  }
+}
+

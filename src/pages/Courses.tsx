@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { courses } from '@/data/mockData';
+import { mockDb } from '@/services/mockDb';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -25,6 +25,16 @@ export default function CoursesPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [dbCourses, setDbCourses] = useState<any[]>(mockDb.getCourses());
+  
+  useEffect(() => {
+    setDbCourses(mockDb.getCourses());
+    const interval = setInterval(() => {
+      setDbCourses(mockDb.getCourses());
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   const categories = [
     { key: 'all', label: 'Hamısı' },
     { key: 'language', label: 'Dil Kursları' },
@@ -32,7 +42,7 @@ export default function CoursesPage() {
     { key: 'computer', label: 'Komputer' },
   ];
 
-  const filteredCourses = courses.filter(course => {
+  const filteredCourses = dbCourses.filter(course => {
     const matchesSearch = 
       course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||

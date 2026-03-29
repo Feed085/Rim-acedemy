@@ -13,7 +13,6 @@ import {
   TrendingUp,
   Plus,
   ArrowRight,
-  Eye,
   Check,
   X,
   UserPlus
@@ -154,10 +153,10 @@ export default function TeacherDashboard() {
                             window.scrollTo(0, 0);
                             navigate(`/teacher/courses/${course.id}`);
                           }}
-                          className="rounded-lg"
+                          className="rounded-lg border-[#00D084] text-[#00D084] hover:bg-[#00D084]/5 font-bold"
                         >
-                          <Eye className="w-4 h-4 mr-1" />
-                          Bax
+                          <Video className="w-4 h-4 mr-1" />
+                          Dərslərə Bax
                         </Button>
                       </div>
                     </div>

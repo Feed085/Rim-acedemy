@@ -32,7 +32,7 @@ export default function TeacherTestEdit() {
     if (id && test) {
       mockDb.updateTest(id, test);
       toast.success('Test uğurla yadda saxlanıldı');
-      navigate(-1);
+      // Sayfada kalması istendiği için navigate(-1) kaldırıldı
     }
   };
 
@@ -114,6 +114,22 @@ export default function TeacherTestEdit() {
               Testi Redaktə Et
             </h1>
           </div>
+          <div className="flex gap-3">
+            <Button 
+                variant="outline" 
+                className="rounded-xl border-gray-200" 
+                onClick={() => navigate(-1)}
+            >
+              Ləğv et
+            </Button>
+            <Button 
+                className="bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl px-8 font-bold shadow-lg shadow-[#00D084]/20" 
+                onClick={handleSave}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Yadda Saxla
+            </Button>
+          </div>
         </div>
 
         {/* Test Info */}
@@ -193,14 +209,14 @@ export default function TeacherTestEdit() {
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 bg-white/80 backdrop-blur-md p-2 rounded-2xl shadow-2xl border border-white/50 flex gap-4">
              <Button 
                 onClick={addQuestion}
-                className="bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl px-8 h-12 font-bold"
+                className="bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-100 rounded-xl px-8 h-12 font-bold"
             >
               <Plus className="w-4 h-4 mr-2" />
               Sual Əlavə Et
             </Button>
             <Button 
                 onClick={handleSave}
-                className="bg-[#0A0A0A] hover:bg-black text-white rounded-xl px-8 h-12 font-bold"
+                className="bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl px-8 h-12 font-bold shadow-lg shadow-[#00D084]/20"
             >
               <Save className="w-4 h-4 mr-2" />
               Yadda Saxla
