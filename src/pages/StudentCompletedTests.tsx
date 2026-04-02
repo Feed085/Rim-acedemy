@@ -1,6 +1,6 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { tests } from '@/data/mockData';
 import { 
   FileText, 
   ChevronLeft, 
@@ -13,14 +13,35 @@ import {
 export default function StudentCompletedTests() {
   const navigate = useNavigate();
 
-  // Mocking completed tests by taking the first two and assigning mock scores
-  const completedTests = tests.slice(0, 2).map((test, index) => ({
-    ...test,
-    score: index === 0 ? test.questionCount : test.questionCount - 3,
-    percentage: index === 0 ? 100 : Math.round(((test.questionCount - 3) / test.questionCount) * 100),
-    isPassed: index === 0 ? true : Math.round(((test.questionCount - 3) / test.questionCount) * 100) >= 60,
-    completedAt: '22 Mart 2024, 14:30'
-  }));
+  const [completedTests, setCompletedTests] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCompletedTests = async () => {
+      const token = localStorage.getItem('rim_auth_token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+      try {
+        const response = await fetch('http://localhost:5000/api/student/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        if (data.success && data.data) {
+          setCompletedTests(data.data.completedTests);
+        }
+      } catch (err) {
+        console.error('Tamamlanan testlər gətirilərkən xəta baş verdi', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCompletedTests();
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
@@ -52,7 +73,22 @@ export default function StudentCompletedTests() {
 
         {/* List of Completed Tests */}
         <div className="space-y-4">
-          {completedTests.map((completedTest) => (
+          {isLoading ? (
+            <div className="text-center py-16 text-gray-500">Yüklənir...</div>
+          ) : completedTests.length === 0 ? (
+             <div className="text-center py-16 bg-white rounded-3xl shadow-sm border border-gray-100">
+             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+               <FileText className="w-10 h-10 text-gray-400" />
+             </div>
+             <h3 className="text-xl font-bold text-gray-900 mb-2">
+               Hələ heç bir test tamamlanmayıb
+             </h3>
+             <p className="text-gray-500">
+               Testlərə daxil olaraq biliklərinizi yoxlamağa başlayın.
+             </p>
+           </div>
+          ) : (
+            completedTests.map((completedTest) => (
             <div
               key={completedTest.id}
               className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-6 sm:items-center justify-between transition-all hover:shadow-md"
@@ -118,20 +154,7 @@ export default function StudentCompletedTests() {
                 </Button>
               </div>
             </div>
-          ))}
-
-          {completedTests.length === 0 && (
-             <div className="text-center py-16 bg-white rounded-3xl shadow-sm border border-gray-100">
-             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-               <FileText className="w-10 h-10 text-gray-400" />
-             </div>
-             <h3 className="text-xl font-bold text-gray-900 mb-2">
-               Hələ heç bir test tamamlanmayıb
-             </h3>
-             <p className="text-gray-500">
-               Testlərə daxil olaraq biliklərinizi yoxlamağa başlayın.
-             </p>
-           </div>
+          ))
           )}
         </div>
       </div>

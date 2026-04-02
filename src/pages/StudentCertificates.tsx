@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
@@ -10,27 +11,35 @@ import {
 export default function StudentCertificates() {
   const navigate = useNavigate();
 
-  // Mocking certificates data
-  const certificates = [
-    {
-      id: 'cert-1',
-      title: 'IELTS Intensive',
-      category: 'İmtahan Hazırlığı',
-      issueDate: '15 Mart 2024',
-      grade: '8.0',
-      instructor: 'Leyla Əhmədova',
-      image: 'https://images.unsplash.com/photo-15dfbbcc38ff6-304b77d6928e?q=80&w=600&h=400&fit=crop'
-    },
-    {
-      id: 'cert-2',
-      title: 'İngilis Dili - Başlanğıc',
-      category: 'Dil Kursları',
-      issueDate: '10 Fevral 2024',
-      grade: 'Əla',
-      instructor: 'Leyla Əhmədova',
-      image: 'https://images.unsplash.com/photo-15dfbbcc38ff6-304b77d6928e?q=80&w=600&h=400&fit=crop'
-    }
-  ];
+  const [certificates, setCertificates] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCertificates = async () => {
+      const token = localStorage.getItem('rim_auth_token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+      try {
+        const response = await fetch('http://localhost:5000/api/student/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        if (data.success && data.data) {
+          setCertificates(data.data.certificates);
+        }
+      } catch (err) {
+        console.error('Sertifikatlar gətirilərkən xəta baş verdi', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCertificates();
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
@@ -62,7 +71,22 @@ export default function StudentCertificates() {
 
         {/* Certificates Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {certificates.map((cert) => (
+          {isLoading ? (
+            <div className="text-center py-16 text-gray-500 md:col-span-2">Yüklənir...</div>
+          ) : certificates.length === 0 ? (
+             <div className="text-center py-16 bg-white rounded-3xl shadow-sm border border-gray-100 md:col-span-2">
+             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+               <Award className="w-10 h-10 text-gray-400" />
+             </div>
+             <h3 className="text-xl font-bold text-gray-900 mb-2">
+               Sertifikatınız mövcud deyil
+             </h3>
+             <p className="text-gray-500">
+               Kursları uğurla tamamlayaraq sertifikatlarınızı əldə edə bilərsiniz.
+             </p>
+           </div>
+          ) : (
+            certificates.map((cert) => (
             <div
               key={cert.id}
               className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col transition-all hover:shadow-md group"
@@ -114,20 +138,7 @@ export default function StudentCertificates() {
                 </Button>
               </div>
             </div>
-          ))}
-
-          {certificates.length === 0 && (
-             <div className="text-center py-16 bg-white rounded-3xl shadow-sm border border-gray-100 md:col-span-2">
-             <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
-               <Award className="w-10 h-10 text-gray-400" />
-             </div>
-             <h3 className="text-xl font-bold text-gray-900 mb-2">
-               Sertifikatınız mövcud deyil
-             </h3>
-             <p className="text-gray-500">
-               Kursları uğurla tamamlayaraq sertifikatlarınızı əldə edə bilərsiniz.
-             </p>
-           </div>
+            ))
           )}
         </div>
       </div>

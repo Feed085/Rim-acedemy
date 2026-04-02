@@ -25,7 +25,19 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Müəllim girişi üçün xüsusi yoxlama (Admin tərəfindən yaradılanlar)
+    // Tələbə girişi - Birbaşa API-ya göndərilir (Real Backend)
+    if (role === 'student') {
+      const success = await login(formData.email, formData.password, role);
+      if (success) {
+        toast.success('Uğurla daxil oldunuz!');
+        navigate('/dashboard');
+      } else {
+        toast.error('Giriş məlumatları yanlışdır və ya hesab tapılmadı');
+      }
+      return;
+    }
+
+    // Müəllim girişi üçün xüsusi yoxlama (Hələlik Mock)
     if (role === 'teacher') {
       const allowed = mockDb.checkAllowedTeacher(formData.email, formData.password);
       if (allowed) {
@@ -36,20 +48,18 @@ export default function Login() {
           return;
         }
       }
-    }
-
-    // Standart test girişi üçün (Demo məqsədli)
-    const isMockTeacher = role === 'teacher' && formData.email === 'teacher@rimacademy.az' && formData.password === 'password123';
-    const isMockStudent = role === 'student' && formData.email === 'student@rimacademy.az' && formData.password === 'password123';
-
-    if (isMockTeacher || isMockStudent) {
-      const success = await login(formData.email, formData.password, role);
-      if (success) {
-        toast.success('Uğurla daxil oldunuz!');
-        navigate(role === 'teacher' ? '/teacher/dashboard' : '/dashboard');
+      
+      const isMockTeacher = formData.email === 'teacher@rimacademy.az' && formData.password === 'password123';
+      if (isMockTeacher) {
+        const success = await login(formData.email, formData.password, role);
+        if (success) {
+          toast.success('Uğurla daxil oldunuz!');
+          navigate('/teacher/dashboard');
+          return;
+        }
       }
-    } else {
-      toast.error('Giriş məlumatları yanlışdır və ya belə bir hesab yoxdur');
+      
+      toast.error('Müəllim giriş məlumatları yanlışdır');
     }
   };
 

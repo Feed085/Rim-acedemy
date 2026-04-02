@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,7 +28,42 @@ export default function StudentDashboard() {
   const enrolledCourses = user ? mockDb.getEnrolledCourses(user.email) : [];
   const myCourses = enrolledCourses;
   
-  // Filter tests only for enrolled courses
+  // Back-end'den API ile güncel istatistikleri çek
+  const [apiStats, setApiStats] = useState({
+    activeCoursesCount: enrolledCourses.length, // Fallback
+    completedTestsCount: 0,
+    certificatesCount: 0
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const token = localStorage.getItem('rim_auth_token');
+      if (!token) return;
+      try {
+        const response = await fetch('http://localhost:5000/api/student/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        if (data.success && data.data && data.data.stats) {
+          setApiStats({
+            activeCoursesCount: data.data.stats.activeCoursesCount,
+            completedTestsCount: data.data.stats.completedTestsCount,
+            certificatesCount: data.data.stats.certificatesCount
+          });
+        }
+      } catch (err) {
+        console.error('Statistika yüklənərkən xəta baş verdi', err);
+      }
+    };
+    
+    if (user && user.role === 'student') {
+      fetchStats();
+    }
+  }, [user]);
+
+  // Filter tests only for enrolled courses (Şimdilik mock)
   const filteredTests = tests.filter(test => enrolledCourses.some(c => c.id === test.courseId));
   const myTests = filteredTests.slice(0, 5);
 
@@ -55,9 +91,9 @@ export default function StudentDashboard() {
   };
 
   const stats = [
-    { label: 'Aktiv Kurslar', value: enrolledCourses.length.toString(), icon: BookOpen, color: '#00D084', onClick: scrollToCourses },
-    { label: 'Tamamlanan Testlər', value: '12', icon: FileText, color: '#0082F3', onClick: () => navigate('/dashboard/completed-tests') },
-    { label: 'Sertifikatlar', value: '2', icon: Award, color: '#F59E0B', onClick: () => navigate('/dashboard/certificates') },
+    { label: 'Aktiv Kurslar', value: apiStats.activeCoursesCount.toString(), icon: BookOpen, color: '#00D084', onClick: scrollToCourses },
+    { label: 'Tamamlanan Testlər', value: apiStats.completedTestsCount.toString(), icon: FileText, color: '#0082F3', onClick: () => navigate('/dashboard/completed-tests') },
+    { label: 'Sertifikatlar', value: apiStats.certificatesCount.toString(), icon: Award, color: '#F59E0B', onClick: () => navigate('/dashboard/certificates') },
   ];
 
   return (
