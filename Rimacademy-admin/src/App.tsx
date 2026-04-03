@@ -199,15 +199,42 @@ const Teachers = () => {
     if (savedCats) setCategories(JSON.parse(savedCats));
   }, []);
 
-  const handleCreate = (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const teacherData = { ...newTeacher, id: Date.now(), status: 'Aktiv', courses: 0 };
-    const updated = [teacherData, ...teachers];
-    setTeachers(updated);
-    localStorage.setItem('rim_acedemy_allowed_teachers', JSON.stringify(updated));
-    setCreatedInfo(newTeacher);
-    setNewTeacher({ name: '', surname: '', email: '', password: '', category: '' });
-    toast.success('Müəllim hesabı yaradıldı!');
+    try {
+      const response = await fetch('http://localhost:5000/api/teacher/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newTeacher.name,
+          surname: newTeacher.surname,
+          email: newTeacher.email,
+          password: newTeacher.password,
+          categories: [newTeacher.category]
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Muvaffakiyetle backend'e eklendiğinde lokal listeye de ekle
+        const teacherData = { ...newTeacher, id: data.teacher.id, status: 'Aktiv', courses: 0 };
+        const updated = [teacherData, ...teachers];
+        setTeachers(updated);
+        
+        // (Opsiyonel olarak localStorage'da mock saklamaya devam etmek isteyebilirsiniz, bozmamak adına)
+        localStorage.setItem('rim_acedemy_allowed_teachers', JSON.stringify(updated));
+        
+        setCreatedInfo({ email: newTeacher.email, password: newTeacher.password });
+        setNewTeacher({ name: '', surname: '', email: '', password: '', category: '' });
+        toast.success('Müəllim hesabı backend üzərində yaradıldı!');
+      } else {
+        toast.error(data.message || 'Müəllim əlavə edilərkən xəta baş verdi');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Serverlə əlaqə qurula bilmədi');
+    }
   };
 
   return (

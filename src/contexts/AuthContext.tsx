@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import type { User } from '@/types';
-import { currentUser as mockUser } from '@/data/mockData';
 
 interface AuthContextType {
   user: User | null;
@@ -71,19 +70,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsLoading(false);
           return false;
         }
-      } else {
-        // Mock teacher login
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        if (email && password) {
-          const loggedInUser: User = {
-            ...mockUser,
-            email,
-            role,
-            name: 'Müəllim',
+      } else if (role === 'teacher') {
+        const response = await fetch('http://localhost:5000/api/teacher/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.token) {
+          const mappedUser: User = {
+            id: data.teacher.id,
+            name: data.teacher.name,
+            surname: data.teacher.surname,
+            email: data.teacher.email,
+            phone: data.teacher.phoneNumber || '',
+            role: 'teacher',
+            createdAt: new Date(),
           };
-          setUser(loggedInUser);
+          setUser(mappedUser);
+          localStorage.setItem('rim_auth_token', data.token);
+          localStorage.setItem('rim_user', JSON.stringify(mappedUser));
           setIsLoading(false);
           return true;
+        } else {
+          console.error(data.message);
+          setIsLoading(false);
+          return false;
         }
       }
     } catch (err) {
@@ -156,6 +170,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
       return false;
     }
+    
+    return false;
   }, []);
 
   const logout = useCallback(() => {

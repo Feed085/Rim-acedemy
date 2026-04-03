@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { tests, teachers } from '@/data/mockData';
-import { mockDb } from '@/services/mockDb';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -20,25 +20,57 @@ export default function TeacherDashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const teacher = teachers[0];
+  
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const myCourses = mockDb.getTeacherCourses(teacher.id);
-  const myTests = tests.slice(0, 3);
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      try {
+        const token = localStorage.getItem('rim_auth_token');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
 
-  const stats = [
-    { label: 'Ümumi Tələbə', value: teacher?.studentCount || 1200, icon: Users, color: '#00D084', trend: '+12%' },
-    { label: 'Aktiv Kurslar', value: teacher?.courseCount || 8, icon: BookOpen, color: '#0082F3', trend: '+2' },
-    { label: 'Testlər', value: myTests.length, icon: FileText, color: '#F59E0B', trend: '+5' },
-    { label: 'Video Dərslər', value: '45', icon: Video, color: '#EC4899', trend: '+8' },
+        const response = await fetch('http://localhost:5000/api/teacher/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+          setDashboardData({
+            teacher: data.data,
+            stats: data.stats
+          });
+        }
+      } catch (error) {
+        toast.error('Dashboard məlumatları yüklənə bilmədi');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboard();
+  }, [navigate]);
+
+  if (isLoading || !dashboardData) {
+    return <div className="min-h-screen pt-24 text-center">Yüklənir...</div>;
+  }
+
+  const { teacher, stats } = dashboardData;
+
+  const statCards = [
+    { label: 'Ümumi Tələbə', value: stats.studentCount, icon: Users, color: '#00D084', trend: '---' },
+    { label: 'Aktiv Kurslar', value: stats.courseCount, icon: BookOpen, color: '#0082F3', trend: '---' },
+    { label: 'Testlər', value: stats.testCount, icon: FileText, color: '#F59E0B', trend: '---' },
+    { label: 'Video Dərslər', value: stats.videoCount, icon: Video, color: '#EC4899', trend: '---' },
   ];
 
-  const recentStudents = [
-    { name: 'Aysel Məmmədova', course: 'IELTS Intensive', progress: 78, date: '2 saat əvvəl' },
-    { name: 'Orxan Əliyev', course: 'SAT Hazırlığı', progress: 92, date: '5 saat əvvəl' },
-    { name: 'Günay Hüseynova', course: 'İngilis Dili', progress: 65, date: '1 gün əvvəl' },
-    { name: 'Tural İsmayılov', course: 'Web Proqramlaşdırma', progress: 45, date: '2 gün əvvəl' },
-  ];
-
+  const myCourses = teacher.courses || [];
+  const recentStudents: any[] = [];
 
   return (
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
@@ -90,7 +122,7 @@ export default function TeacherDashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {stats.map((stat) => (
+          {statCards.map((stat) => (
             <div
               key={stat.label}
               className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow"
@@ -125,9 +157,9 @@ export default function TeacherDashboard() {
               </div>
 
               <div className="space-y-4">
-                {myCourses.map((course) => (
+                {myCourses.map((course: any) => (
                   <div
-                    key={course.id}
+                    key={course.id || course._id}
                     className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors"
                   >
                     <img
@@ -226,8 +258,8 @@ export default function TeacherDashboard() {
                     <TrendingUp className="w-5 h-5 text-[#0082F3]" />
                     <span className="font-medium text-gray-700">Ortalama Reytinq</span>
                   </div>
-                  <div className="text-2xl font-black text-gray-900">4.8/5</div>
-                  <div className="text-sm text-green-600">+0.3 keçən aydan</div>
+                  <div className="text-2xl font-black text-gray-900">{stats.rating}/5</div>
+                  <div className="text-sm text-green-600">Yenilənmiş</div>
                 </div>
               </div>
             </div>

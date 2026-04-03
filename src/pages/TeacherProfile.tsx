@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -21,44 +21,100 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { mockDb } from '@/services/mockDb';
 
 export default function TeacherProfile() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [teacher, setTeacher] = useState<any>(mockDb.getProfile());
+  const [teacher, setTeacher] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: teacher.name,
-    surname: teacher.surname,
-    email: teacher.email,
-    phone: teacher.phone,
-    education: teacher.education,
-    experience: teacher.experience,
-    specialties: teacher.specialties.join(', '),
-    facebook: teacher.socialLinks.facebook,
-    instagram: teacher.socialLinks.instagram,
-    linkedin: teacher.socialLinks.linkedin,
-    avatar: teacher.avatar
+    name: '',
+    surname: '',
+    email: '',
+    phone: '',
+    education: '',
+    experience: '',
+    specialties: '',
+    facebook: '',
+    instagram: '',
+    linkedin: '',
+    location: '',
+    avatar: ''
   });
 
-
-
-  const handleSave = () => {
-    const updatedProfile = {
-      ...formData,
-      specialties: formData.specialties.split(',').map((s: string) => s.trim()).filter(Boolean),
-      socialLinks: {
-        facebook: formData.facebook,
-        instagram: formData.instagram,
-        linkedin: formData.linkedin
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('rim_auth_token');
+        if (!token) {
+          navigate('/login');
+          return;
+        }
+        const res = await fetch('http://localhost:5000/api/teacher/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const d = await res.json();
+        if (d.success) {
+           setTeacher({ ...d.data, ...d.stats });
+           setFormData({
+             name: d.data.name,
+             surname: d.data.surname,
+             email: d.data.email,
+             phone: d.data.phoneNumber || '',
+             education: d.data.education || '',
+             experience: d.data.experience || '',
+             specialties: (d.data.specializedAreas || []).join(', '),
+             facebook: d.data.socialNetworks?.facebook || '',
+             instagram: d.data.socialNetworks?.instagram || '',
+             linkedin: d.data.socialNetworks?.linkedin || '',
+             location: d.data.location || 'Bakı, Azərbaycan',
+             avatar: d.data.avatar
+           });
+        }
+      } catch (err) {
+        toast.error('Profil yüklənə bilmədi');
+      } finally {
+        setIsLoading(false);
       }
     };
-    mockDb.updateProfile(updatedProfile);
-    setTeacher(mockDb.getProfile());
-    setIsEditing(false);
-    toast.success('Profil yeniləndi!');
+    fetchProfile();
+  }, [navigate]);
+
+  const handleSave = async () => {
+    try {
+      const token = localStorage.getItem('rim_auth_token');
+      const updatedProfile = {
+        ...formData,
+        specialties: formData.specialties.split(',').map((s: string) => s.trim()).filter(Boolean),
+        socialLinks: {
+          facebook: formData.facebook,
+          instagram: formData.instagram,
+          linkedin: formData.linkedin
+        }
+      };
+
+      const res = await fetch('http://localhost:5000/api/teacher/me', {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify(updatedProfile)
+      });
+      
+      const d = await res.json();
+      if (d.success) {
+        setTeacher({ ...d.data, studentCount: teacher.studentCount, courseCount: teacher.courseCount, rating: teacher.rating });
+        setIsEditing(false);
+        toast.success('Profil yeniləndi!');
+      } else {
+        toast.error('Xəta: ' + d.message);
+      }
+    } catch(err) {
+      toast.error('Sunucu ilə əlaqə qurula bilmədi');
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -67,6 +123,21 @@ export default function TeacherProfile() {
       [e.target.name]: e.target.value
     }));
   };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, avatar: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  if (isLoading) {
+    return <div className="min-h-screen pt-24 text-center">Yüklənir...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
@@ -81,54 +152,69 @@ export default function TeacherProfile() {
         </Button>
       </div>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Cover Image */}
-        <div className="relative h-48 lg:h-64 bg-gradient-to-r from-[#00D084] to-[#0082F3] rounded-3xl mb-20">
-          <div className="absolute -bottom-16 left-8">
+        {/* Profile Header (Simplified, no banner) */}
+        <div className="bg-white rounded-3xl p-8 mb-8 shadow-sm relative overflow-hidden">
+          <div className="flex flex-col md:flex-row items-center gap-8 relative z-10">
             <div className="relative">
               <img
                 src={formData.avatar}
                 alt={`${formData.name} ${formData.surname}`}
-                className="w-32 h-32 lg:w-40 lg:h-40 rounded-3xl object-cover border-4 border-white shadow-lg"
+                className="w-32 h-32 lg:w-40 lg:h-40 rounded-3xl object-cover border-4 border-gray-50 shadow-sm"
               />
               <div className="absolute bottom-2 right-2">
-                <label className="w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center hover:bg-gray-50 cursor-pointer">
+                <label className="w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center hover:bg-gray-50 cursor-pointer border border-gray-100">
                   <Camera className="w-5 h-5 text-gray-600" />
                   <input 
                     type="file" 
                     className="hidden" 
                     accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const url = URL.createObjectURL(file);
-                        setFormData(prev => ({ ...prev, avatar: url }));
-                      }
-                    }}
+                    onChange={handleImageUpload}
                   />
                 </label>
               </div>
             </div>
+            
+            <div className="flex-1 text-center md:text-left">
+              <h1 className="text-3xl lg:text-4xl font-black text-gray-900 mb-2">
+                {formData.name} {formData.surname}
+              </h1>
+              <p className="text-[#00D084] font-bold text-lg mb-4">{formData.specialties || 'Sahə qeyd edilməyib'}</p>
+              
+              <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
+                  <MapPin className="w-4 h-4" />
+                  {formData.location}
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
+                  <Mail className="w-4 h-4" />
+                  {formData.email}
+                </div>
+              </div>
+            </div>
+
+            <div className="absolute top-0 right-0 md:relative md:top-auto md:right-auto self-start">
+              <Button
+                onClick={() => isEditing ? handleSave() : setIsEditing(true)}
+                className={`${isEditing 
+                  ? 'bg-[#00D084] hover:bg-[#00B873] shadow-lg shadow-[#00D084]/20' 
+                  : 'bg-gray-900 hover:bg-gray-800 text-white'} rounded-xl font-bold transition-all px-6`}
+              >
+                {isEditing ? (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Yadda saxla
+                  </>
+                ) : (
+                  <>
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    Redaktə et
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-          <div className="absolute top-4 right-4">
-            <Button
-              onClick={() => isEditing ? handleSave() : setIsEditing(true)}
-              className={`${isEditing 
-                ? 'bg-[#00D084] hover:bg-[#00B873] shadow-lg shadow-[#00D084]/20' 
-                : 'bg-white/90 backdrop-blur-sm hover:bg-white text-gray-900'} rounded-xl font-bold transition-all px-6`}
-            >
-              {isEditing ? (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Yadda saxla
-                </>
-              ) : (
-                <>
-                  <Edit2 className="w-4 h-4 mr-2" />
-                  Redaktə et
-                </>
-              )}
-            </Button>
-          </div>
+          {/* Subtle background decoration instead of full banner */}
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#00D084]/5 rounded-bl-full -mr-8 -mt-8" />
         </div>
 
         {/* Profile Info */}
@@ -180,29 +266,44 @@ export default function TeacherProfile() {
                       />
                     </div>
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Məkan</label>
+                    <Input
+                      name="location"
+                      value={formData.location}
+                      onChange={handleChange}
+                      placeholder="Məs: Bakı, Azərbaycan"
+                      className="rounded-xl"
+                    />
+                  </div>
                 </div>
               ) : (
-                <>
-                  <h1 className="text-2xl lg:text-3xl font-black text-gray-900">
-                    {formData.name} {formData.surname}
-                  </h1>
-                  <p className="text-gray-500 mt-1">{formData.specialties}</p>
-                  
-                  <div className="flex flex-wrap gap-4 mt-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <MapPin className="w-4 h-4" />
-                      Bakı, Azərbaycan
+                <div className="space-y-4">
+                  <h3 className="text-xl font-bold text-gray-900">Əlaqə Məlumatları</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl">
+                      <Mail className="w-5 h-5 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500 font-bold uppercase">E-poçt</p>
+                        <p className="text-sm font-bold text-gray-900">{formData.email}</p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Mail className="w-4 h-4" />
-                      {formData.email}
+                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl">
+                      <Phone className="w-5 h-5 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500 font-bold uppercase">Telefon</p>
+                        <p className="text-sm font-bold text-gray-900">{formData.phone || 'Qeyd edilməyib'}</p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Phone className="w-4 h-4" />
-                      {formData.phone}
+                    <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-2xl">
+                      <MapPin className="w-5 h-5 text-gray-400" />
+                      <div>
+                        <p className="text-xs text-gray-500 font-bold uppercase">Məkan</p>
+                        <p className="text-sm font-bold text-gray-900">{formData.location}</p>
+                      </div>
                     </div>
                   </div>
-                </>
+                </div>
               )}
             </div>
 
@@ -373,36 +474,36 @@ export default function TeacherProfile() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <a
-                    href={formData.facebook}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 bg-[#1877F2]/10 rounded-xl hover:bg-[#1877F2]/20 transition-colors"
-                  >
-                    <Facebook className="w-5 h-5 text-[#1877F2]" />
-                    <span className="text-gray-700">Facebook</span>
-                  </a>
-                  <a
-                    href={formData.instagram}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 bg-gradient-to-r from-[#833AB4]/10 via-[#E1306C]/10 to-[#F77737]/10 rounded-xl hover:from-[#833AB4]/20 hover:via-[#E1306C]/20 hover:to-[#F77737]/20 transition-colors"
-                  >
-                    <Instagram className="w-5 h-5 text-[#E1306C]" />
-                    <span className="text-gray-700">Instagram</span>
-                  </a>
-                  <a
-                    href={formData.linkedin}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-3 p-3 bg-[#0A66C2]/10 rounded-xl hover:bg-[#0A66C2]/20 transition-colors"
-                  >
-                    <Linkedin className="w-5 h-5 text-[#0A66C2]" />
-                    <span className="text-gray-700">LinkedIn</span>
-                  </a>
-                </div>
-              )}
+                  <div className="space-y-3">
+                    {[
+                      { name: 'Facebook', icon: Facebook, color: '#1877F2', link: formData.facebook },
+                      { name: 'Instagram', icon: Instagram, color: '#E1306C', link: formData.instagram },
+                      { name: 'LinkedIn', icon: Linkedin, color: '#0A66C2', link: formData.linkedin }
+                    ].map((platform) => (
+                      <button
+                        key={platform.name}
+                        onClick={() => {
+                          if (!platform.link || platform.link.trim() === '') {
+                            toast.error(`${platform.name} hesabı əlavə edilməyib`);
+                          } else {
+                            window.open(platform.link, '_blank', 'noopener,noreferrer');
+                          }
+                        }}
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${
+                          platform.name === 'Facebook' ? 'bg-[#1877F2]/10 hover:bg-[#1877F2]/20' :
+                          platform.name === 'Instagram' ? 'bg-gradient-to-r from-[#833AB4]/10 via-[#E1306C]/10 to-[#F77737]/10 hover:from-[#833AB4]/20 hover:via-[#E1306C]/20 hover:to-[#F77737]/20' :
+                          'bg-[#0A66C2]/10 hover:bg-[#0A66C2]/20'
+                        }`}
+                      >
+                        <platform.icon 
+                          className="w-5 h-5" 
+                          style={{ color: platform.name === 'Instagram' ? '#E1306C' : platform.color }} 
+                        />
+                        <span className="text-gray-700 font-medium">{platform.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
             </div>
           </div>
         </div>

@@ -8,8 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Mail, Lock, GraduationCap, UserCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/photos/RimAcademyLogo.jpeg';
-import { mockDb } from '@/services/mockDb';
-
 
 export default function Login() {
   const { t } = useTranslation();
@@ -25,41 +23,17 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Tələbə girişi - Birbaşa API-ya göndərilir (Real Backend)
-    if (role === 'student') {
-      const success = await login(formData.email, formData.password, role);
-      if (success) {
-        toast.success('Uğurla daxil oldunuz!');
+    // Həm tələbə, həm müəllim girişi API-ya göndərilir
+    const success = await login(formData.email, formData.password, role);
+    if (success) {
+      toast.success('Uğurla daxil oldunuz!');
+      if (role === 'student') {
         navigate('/dashboard');
       } else {
-        toast.error('Giriş məlumatları yanlışdır və ya hesab tapılmadı');
+        navigate('/teacher/dashboard');
       }
-      return;
-    }
-
-    // Müəllim girişi üçün xüsusi yoxlama (Hələlik Mock)
-    if (role === 'teacher') {
-      const allowed = mockDb.checkAllowedTeacher(formData.email, formData.password);
-      if (allowed) {
-        const success = await login(formData.email, formData.password, role);
-        if (success) {
-          toast.success(`${allowed.name} ${allowed.surname}, xoş gəldiniz!`);
-          navigate('/teacher/dashboard');
-          return;
-        }
-      }
-      
-      const isMockTeacher = formData.email === 'teacher@rimacademy.az' && formData.password === 'password123';
-      if (isMockTeacher) {
-        const success = await login(formData.email, formData.password, role);
-        if (success) {
-          toast.success('Uğurla daxil oldunuz!');
-          navigate('/teacher/dashboard');
-          return;
-        }
-      }
-      
-      toast.error('Müəllim giriş məlumatları yanlışdır');
+    } else {
+      toast.error('Giriş məlumatları yanlışdır və ya hesab tapılmadı');
     }
   };
 
