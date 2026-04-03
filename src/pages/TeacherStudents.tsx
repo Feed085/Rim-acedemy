@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,26 +18,44 @@ export default function TeacherStudents() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
 
-  // Mock data for all students
-  const allStudents = [
-    { id: 1, name: 'Aysel Məmmədova', email: 'aysel@example.com', phone: '+994 55 123 45 67', course: 'IELTS Intensive', date: '12 Yanvar 2024' },
-    { id: 2, name: 'Orxan Əliyev', email: 'orxan@example.com', phone: '+994 50 234 56 78', course: 'SAT Hazırlığı', date: '15 Yanvar 2024' },
-    { id: 3, name: 'Günay Hüseynova', email: 'gunay@example.com', phone: '+994 70 345 67 89', course: 'İngilis Dili', date: '20 Yanvar 2024' },
-    { id: 4, name: 'Tural İsmayılov', email: 'tural@example.com', phone: '+994 51 456 78 90', course: 'Web Proqramlaşdırma', date: '01 Fevral 2024' },
-    { id: 5, name: 'Lalə Rzayeva', email: 'lala@example.com', phone: '+994 55 567 89 01', course: 'IELTS Intensive', date: '05 Fevral 2024' },
-    { id: 6, name: 'Emin Heydərov', email: 'emin@example.com', phone: '+994 50 678 90 12', course: 'SAT Hazırlığı', date: '10 Fevral 2024' },
-    { id: 7, name: 'Səbinə Quliyeva', email: 'sabina@example.com', phone: '+994 70 789 01 23', course: 'İngilis Dili', date: '15 Fevral 2024' },
-    { id: 8, name: 'Vüsal Abbasov', email: 'vusal@example.com', phone: '+994 51 890 12 34', course: 'Python Proqramlaşdırma', date: '20 Fevral 2024' },
-  ];
+  const [students, setStudents] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const allCourses = Array.from(new Set(allStudents.map(s => s.course)));
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const token = localStorage.getItem('rim_auth_token');
+        if (!token) return;
 
-  const filteredStudents = allStudents.filter(student => {
+        const res = await fetch('http://localhost:5000/api/teacher/students', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          setStudents(data.data);
+        }
+      } catch (err) {
+        toast.error('Tələbə məlumatları yüklənmədi');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStudents();
+  }, []);
+
+  const allCourses = Array.from(new Set(students.map(s => s.course)));
+
+  const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          student.course.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCourse = selectedCourse ? student.course === selectedCourse : true;
     return matchesSearch && matchesCourse;
   });
+
+  if (isLoading) {
+    return <div className="min-h-screen pt-24 text-center">Yüklənir...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
@@ -55,9 +74,9 @@ export default function TeacherStudents() {
             <div>
               <h1 className="text-2xl lg:text-3xl font-black text-gray-900 flex items-center gap-3">
                 <Users className="w-8 h-8 text-[#00D084]" />
-                Bütün Tələbələr
+                Tələbələrim
               </h1>
-              <p className="text-gray-600 mt-1">Cəmi {allStudents.length} tələbə qeydiyyatdadır</p>
+              <p className="text-gray-600 mt-1">Sizin kurslarınıza qeydiyyatdan keçmiş {students.length} tələbə</p>
             </div>
             <div className="flex gap-3">
               <div className="relative w-full md:w-72">

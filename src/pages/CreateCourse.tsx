@@ -12,8 +12,6 @@ import {
   Tag
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { mockDb } from '@/services/mockDb';
-import { teachers } from '@/data/mockData';
 
 import { 
   Select,
@@ -26,12 +24,12 @@ import {
 export default function CreateCourse() {
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
-  const categories = mockDb.getCategories();
   
   const [formData, setFormData] = useState({
     title: '',
-    category: mockDb.getCategories()[0]?.id || '',
+    category: 'Design', // Default selected
     price: '',
+    hasCertificate: false,
     description: '',
     image: null as File | null,
     imageUrl: '' as string
@@ -56,32 +54,68 @@ export default function CreateCourse() {
     }
 
     setIsSaving(true);
-    
-    const teacher = teachers[0]; // Currently mocking as first teacher
-    
-    const newCourse = {
-      title: formData.title,
-      category: formData.category,
-      price: 0,
-      description: formData.description,
-      image: formData.imageUrl || 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80',
-      teacherId: teacher.id,
-      teacherName: teacher.name,
-      teacherAvatar: teacher.avatar,
-      duration: '0 saat',
-      lessonCount: 0,
-      studentCount: 0,
-      rating: 0
-    };
+    try {
+      const token = localStorage.getItem('rim_auth_token');
+      if (!token) {
+        toast.error('Sessiyanız bitib, yenidən giriş edin');
+        navigate('/login');
+        return;
+      }
 
-    mockDb.addCourse(newCourse);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    
-    toast.success('Yeni kurs uğurla yaradıldı!');
-    navigate('/teacher/dashboard');
+      let uploadedImageUrl = ''; // R2 Linki burada tutulacaq
+
+      // R2 Kover yükləmə mərhələsi
+      if (formData.image) {
+        const uploadData = new FormData();
+        uploadData.append('file', formData.image);
+
+        const uploadRes = await fetch('http://localhost:5000/api/upload', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: uploadData
+        });
+
+        const uploadResult = await uploadRes.json();
+        if (!uploadResult.success) {
+          throw new Error('Kover şəkli yüklənə bilmədi: ' + uploadResult.message);
+        }
+        uploadedImageUrl = uploadResult.data.url;
+      }
+
+      // Backend Kurs yaradılma mərhələsi
+      const newCourse = {
+        title: formData.title,
+        category: formData.category,
+        price: Number(formData.price) || 0,
+        description: formData.description,
+        hasCertificate: formData.hasCertificate,
+        image: uploadedImageUrl || 'default-course.jpg', 
+      };
+
+      const courseRes = await fetch('http://localhost:5000/api/courses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newCourse)
+      });
+
+      const courseData = await courseRes.json();
+      
+      if (courseData.success) {
+        toast.success('Yeni kurs uğurla yaradıldı!');
+        // Kurs yaradıldıqdan sonra gələcəkdə "Video idarə" pəncərəsinə yönləndiriləcək
+        // Şimdilik dashboard-da görünsün
+        navigate('/teacher/dashboard');
+      } else {
+        throw new Error(courseData.message);
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Xəta baş verdi');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -144,16 +178,16 @@ export default function CreateCourse() {
                           </div>
                         </SelectTrigger>
                         <SelectContent className="bg-white border-gray-100 rounded-xl shadow-xl">
-                          {categories.map((cat: any) => (
-                            <SelectItem 
-                              key={cat.id} 
-                              value={cat.id}
-                              className="py-3 px-4 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                            >
-                              {cat.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
+                      {['İmtahanlara Hazırlıq', 'Xarici Dillər', 'IT və Proqramlaşdırma', 'Dizayn', 'Biznes və İdarəetmə', 'Məktəbəqədər'].map((cat: string) => (
+                        <SelectItem 
+                          key={cat} 
+                          value={cat}
+                          className="py-2.5 px-4 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                        >
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
                       </Select>
                     </div>
 
@@ -165,6 +199,31 @@ export default function CreateCourse() {
                       placeholder="Kurs barədə ətraflı məlumat..."
                       className="rounded-xl min-h-[150px] resize-none"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Qiymət (AZN)</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={formData.price}
+                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                        placeholder="Məs: 50 (Ödənişsizsə 0 yazın)"
+                        className="rounded-xl h-12"
+                      />
+                    </div>
+                    <div className="flex items-center pt-8">
+                       <label className="flex items-center gap-3 cursor-pointer">
+                         <input 
+                           type="checkbox" 
+                           checked={formData.hasCertificate}
+                           onChange={(e) => setFormData({ ...formData, hasCertificate: e.target.checked })}
+                           className="w-5 h-5 rounded border-gray-300 text-[#00D084] focus:ring-[#00D084]"
+                         />
+                         <span className="text-sm font-medium text-gray-700">Sonda Sertifikat veriləcək</span>
+                       </label>
+                    </div>
                   </div>
                 </div>
               </div>

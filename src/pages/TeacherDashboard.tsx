@@ -181,16 +181,15 @@ export default function TeacherDashboard() {
                           <Progress value={course.rating * 20} className="h-2" />
                         </div>
                         <Button
-                          size="sm"
-                          variant="outline"
+                          variant="ghost"
                           onClick={() => {
                             window.scrollTo(0, 0);
-                            navigate(`/teacher/courses/${course.id}`);
+                            navigate(`/teacher/courses/${course._id || course.id}`);
                           }}
-                          className="rounded-lg border-[#00D084] text-[#00D084] hover:bg-[#00D084]/5 font-bold"
+                          className="text-[#00D084] hover:text-[#00B873] hover:bg-transparent p-0 font-bold flex items-center group/btn"
                         >
-                          <Video className="w-4 h-4 mr-1" />
-                          Dərslərə Bax
+                          Dərslərə bax
+                          <ArrowRight className="w-4 h-4 ml-1 group-hover/btn:translate-x-1 transition-transform" />
                         </Button>
                       </div>
                     </div>

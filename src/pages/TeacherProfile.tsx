@@ -43,6 +43,7 @@ export default function TeacherProfile() {
     location: '',
     avatar: ''
   });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -85,8 +86,31 @@ export default function TeacherProfile() {
   const handleSave = async () => {
     try {
       const token = localStorage.getItem('rim_auth_token');
+      setIsLoading(true);
+
+      let finalAvatarUrl = formData.avatar;
+
+      // Əgər yeni profil kaveri (avatar) seçilibsə əvvəlcə R2-yə yüklə
+      if (avatarFile) {
+        const presignReq = await fetch(
+          `http://localhost:5000/api/upload/presign?filename=${encodeURIComponent(avatarFile.name)}&contentType=${encodeURIComponent(avatarFile.type)}`,
+          { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        const presignData = await presignReq.json();
+        if (presignData.success) {
+          const { signedUrl, publicUrl } = presignData.data;
+          await fetch(signedUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': avatarFile.type },
+            body: avatarFile
+          });
+          finalAvatarUrl = publicUrl;
+        }
+      }
+
       const updatedProfile = {
         ...formData,
+        avatar: finalAvatarUrl,
         specialties: formData.specialties.split(',').map((s: string) => s.trim()).filter(Boolean),
         socialLinks: {
           facebook: formData.facebook,
@@ -107,6 +131,8 @@ export default function TeacherProfile() {
       const d = await res.json();
       if (d.success) {
         setTeacher({ ...d.data, studentCount: teacher.studentCount, courseCount: teacher.courseCount, rating: teacher.rating });
+        setFormData(prev => ({ ...prev, avatar: finalAvatarUrl }));
+        setAvatarFile(null);
         setIsEditing(false);
         toast.success('Profil yeniləndi!');
       } else {
@@ -114,6 +140,8 @@ export default function TeacherProfile() {
       }
     } catch(err) {
       toast.error('Sunucu ilə əlaqə qurula bilmədi');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -127,11 +155,9 @@ export default function TeacherProfile() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData(prev => ({ ...prev, avatar: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+      const fakeUrl = URL.createObjectURL(file);
+      setFormData(prev => ({ ...prev, avatar: fakeUrl }));
+      setAvatarFile(file);
     }
   };
 
@@ -161,17 +187,19 @@ export default function TeacherProfile() {
                 alt={`${formData.name} ${formData.surname}`}
                 className="w-32 h-32 lg:w-40 lg:h-40 rounded-3xl object-cover border-4 border-gray-50 shadow-sm"
               />
-              <div className="absolute bottom-2 right-2">
-                <label className="w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center hover:bg-gray-50 cursor-pointer border border-gray-100">
-                  <Camera className="w-5 h-5 text-gray-600" />
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                  />
-                </label>
-              </div>
+              {isEditing && (
+                <div className="absolute bottom-2 right-2">
+                  <label className="w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center hover:bg-gray-50 cursor-pointer border border-gray-100">
+                    <Camera className="w-5 h-5 text-[#00D084]" />
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                    />
+                  </label>
+                </div>
+              )}
             </div>
             
             <div className="flex-1 text-center md:text-left">

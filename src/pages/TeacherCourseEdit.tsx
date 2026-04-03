@@ -17,7 +17,6 @@ import {
   CheckCircle2,
   ShieldCheck
 } from 'lucide-react';
-import { mockDb } from '@/services/mockDb';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -45,26 +44,66 @@ export default function TeacherCourseEdit() {
   const [editingLesson, setEditingLesson] = useState<any>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    window.scrollTo(0, 0); // Always scroll to top on visit
-    const allCourses = mockDb.getCourses();
-    const foundCourse = allCourses.find(c => c.id === id);
-    if (foundCourse) {
-      setCourse({ ...foundCourse });
-      setLessons(mockDb.getLessons(id || ''));
-      setTests(mockDb.getTests(id || ''));
-    }
+    window.scrollTo(0, 0); 
+    
+    // Əgər ID "undefined" və ya hələ saxta mock ID-dirsə, API-yə sorğu atma
+    if (!id || id === 'undefined' || id.length < 10) return;
+
+    const fetchCourse = async () => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/courses/${id}`);
+        const data = await res.json();
+        
+        if (data.success) {
+          setCourse(data.data);
+          // UI expects flat lessons arrays right now, we can map modules
+          const flatLessons = (data.data.modules || []).flatMap((m: any) => m.videos) || [];
+          setLessons(flatLessons);
+          
+          // Testləri fetch et (Opsional gələcək inteqrasiya)
+          if (data.data.tests) {
+            setTests(data.data.tests);
+          }
+        } else {
+          toast.error('Kurs tapılmadı', { id: 'course-not-found' });
+        }
+      } catch (err) {
+        toast.error('Serverlə əlaqə kəsildi', { id: 'server-connection-error' });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchCourse();
   }, [id]);
 
 
 
 
 
-  const removeLesson = (lessonId: number) => {
-    if (id) {
-      mockDb.deleteLesson(id, lessonId);
-      setLessons(mockDb.getLessons(id));
-      toast.info('Video dərsi silindi');
+  const removeLesson = async (lessonId: string) => {
+    const newLessons = lessons.filter(l => l._id !== lessonId && l.id !== lessonId);
+    setLessons(newLessons);
+    
+    // Yadda saxla (Avtomatik backend eşləmə)
+    try {
+      const token = localStorage.getItem('rim_auth_token');
+      const existingModules = course.modules && course.modules.length > 0 ? course.modules : [{ title: 'Dərslər', videos: [] }];
+      existingModules[0].videos = newLessons;
+
+      await fetch(`http://localhost:5000/api/courses/${course._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ modules: existingModules })
+      });
+      toast.success('Dərs silindi');
+    } catch(err) {
+      console.error(err);
     }
   };
 
@@ -73,35 +112,130 @@ export default function TeacherCourseEdit() {
     setIsEditorOpen(true);
   };
 
-  const handleUpdateLesson = () => {
-    if (id && editingLesson) {
-      mockDb.updateLesson(id, editingLesson.id, {
-        title: editingLesson.title,
-        description: editingLesson.description,
-        thumbnail: editingLesson.thumbnail
+  const handleUpdateLesson = async () => {
+    setIsLoading(true);
+    let finalThumbnail = editingLesson.thumbnail;
+
+    try {
+      const token = localStorage.getItem('rim_auth_token');
+
+      // Əgər yeni şəkil (kaver) seçilibsə əvvəlcə R2-yə yüklə
+      if (editingLesson.thumbnailFile) {
+        const presignReq = await fetch(
+          `http://localhost:5000/api/upload/presign?filename=${encodeURIComponent(editingLesson.thumbnailFile.name)}&contentType=${encodeURIComponent(editingLesson.thumbnailFile.type)}`,
+          { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        const presignData = await presignReq.json();
+        if (presignData.success) {
+          const { signedUrl, publicUrl } = presignData.data;
+          await fetch(signedUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': editingLesson.thumbnailFile.type },
+            body: editingLesson.thumbnailFile
+          });
+          finalThumbnail = publicUrl;
+        }
+      }
+
+      const updatedEditingLesson = { ...editingLesson, thumbnail: finalThumbnail };
+      delete updatedEditingLesson.thumbnailFile;
+
+      const updatedLessons = lessons.map(l => 
+         (l._id === editingLesson._id || l.id === editingLesson.id) ? updatedEditingLesson : l
+      );
+      
+      setLessons(updatedLessons);
+      
+      // Backend yaz
+      const existingModules = course.modules && course.modules.length > 0 ? course.modules : [{ title: 'Dərslər', videos: [] }];
+      existingModules[0].videos = updatedLessons;
+
+      const res = await fetch(`http://localhost:5000/api/courses/${course._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ modules: existingModules })
       });
-      setLessons(mockDb.getLessons(id));
-      setIsEditorOpen(false);
-      setEditingLesson(null);
-      toast.success('Video məlumatları yeniləndi');
+      
+      const data = await res.json();
+      if(data.success) {
+        toast.success('Video backend-də yeniləndi!');
+        setCourse({ ...course, modules: existingModules });
+      }
+    } catch(err) {
+      toast.error('Videonu yeniləyərkən xəta baş verdi');
     }
+
+    setIsLoading(false);
+    setIsEditorOpen(false);
+    setEditingLesson(null);
   };
 
 
 
-  const handleSave = () => {
-    if (id) {
-      mockDb.updateCourse(id, {
+  const handleSave = async () => {
+    try {
+      const token = localStorage.getItem('rim_auth_token');
+      setIsLoading(true);
+
+      let finalImageUrl = course.image;
+
+      // Kurs kaveri üçün upload
+      if (course.imageFile) {
+        const presignReq = await fetch(
+          `http://localhost:5000/api/upload/presign?filename=${encodeURIComponent(course.imageFile.name)}&contentType=${encodeURIComponent(course.imageFile.type)}`,
+          { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        const presignData = await presignReq.json();
+        if (presignData.success) {
+          const { signedUrl, publicUrl } = presignData.data;
+          await fetch(signedUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': course.imageFile.type },
+            body: course.imageFile
+          });
+          finalImageUrl = publicUrl;
+        }
+      }
+
+      const payload = {
         title: course.title,
         category: course.category,
         description: course.description,
-        image: course.image,
+        image: finalImageUrl,
         learningPoints: course.learningPoints || [],
-        includes: course.includes || []
+        includes: course.includes || [],
+        modules: [{ title: 'Dərslər', videos: lessons }]
+      };
+
+      const res = await fetch(`http://localhost:5000/api/courses/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
       });
-      toast.success('Kurs məlumatları uğurla yeniləndi');
+      
+      const data = await res.json();
+      if(data.success) {
+        toast.success('Kurs məlumatları uğurla yeniləndi');
+        setCourse({ ...course, image: finalImageUrl, imageFile: undefined });
+      } else {
+        toast.error('Xəta: ' + data.message);
+      }
+    } catch(err) {
+      toast.error('Server problemi');
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  if (isLoading) {
+    return <div className="min-h-screen pt-24 text-center">Yüklənir...</div>;
+  }
 
   if (!course) {
     return (
@@ -113,7 +247,7 @@ export default function TeacherCourseEdit() {
 
   return (
     <>
-    <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24 pb-12">
+    <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24 pb-32">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
@@ -174,13 +308,13 @@ export default function TeacherCourseEdit() {
                       </div>
                     </SelectTrigger>
                     <SelectContent className="bg-white border-gray-100 rounded-xl shadow-xl">
-                      {mockDb.getCategories().map((cat: any) => (
+                      {['İmtahanlara Hazırlıq', 'Xarici Dillər', 'IT və Proqramlaşdırma', 'Dizayn', 'Biznes və İdarəetmə', 'Məktəbəqədər'].map((cat: string) => (
                         <SelectItem 
-                          key={cat.id} 
-                          value={cat.id}
+                          key={cat} 
+                          value={cat}
                           className="py-2.5 px-4 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
                         >
-                          {cat.name}
+                          {cat}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -215,8 +349,8 @@ export default function TeacherCourseEdit() {
                 </Button>
               </div>
               <div className="space-y-3">
-                {lessons.map((lesson) => (
-                  <div key={lesson.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 group">
+                {lessons.map((lesson: any) => (
+                  <div key={lesson.id || lesson._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100 group">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
                         <PlayCircle className="w-6 h-6 text-[#00D084]" />
@@ -239,7 +373,7 @@ export default function TeacherCourseEdit() {
                         variant="ghost" 
                         size="icon" 
                         className="h-8 w-8 text-red-400 hover:text-red-600 transition-all hover:scale-110"
-                        onClick={() => removeLesson(lesson.id)}
+                        onClick={() => removeLesson(lesson.id || lesson._id)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -265,8 +399,8 @@ export default function TeacherCourseEdit() {
                 </Button>
               </div>
               <div className="space-y-3">
-                {tests.map((test) => (
-                  <div key={test.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                {tests.map((test: any) => (
+                  <div key={test.id || test._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
                     <div className="flex items-center gap-4 text-sm font-bold text-gray-900">
                       <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
                         <FileText className="w-6 h-6 text-blue-500" />
@@ -298,7 +432,6 @@ export default function TeacherCourseEdit() {
                   </div>
                 ))}
               </div>
-            </div>
             </div>
 
             {/* What You'll Learn */}
@@ -413,7 +546,7 @@ export default function TeacherCourseEdit() {
                     <ImageIcon className="w-6 h-6 text-[#00D084]" />
                   </div>
                 </div>
-                <input 
+                  <input 
                   type="file" 
                   accept="image/*"
                   className="absolute inset-0 opacity-0 cursor-pointer"
@@ -421,7 +554,7 @@ export default function TeacherCourseEdit() {
                     const file = e.target.files?.[0];
                     if (file) {
                       const fakeUrl = URL.createObjectURL(file);
-                      setCourse({ ...course, image: fakeUrl });
+                      setCourse({ ...course, image: fakeUrl, imageFile: file });
                     }
                   }}
                 />
@@ -450,6 +583,7 @@ export default function TeacherCourseEdit() {
             </Button>
         </div>
       </div>
+    </div>
 
       {/* Video Edit Dialog */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
@@ -480,7 +614,7 @@ export default function TeacherCourseEdit() {
                     const file = e.target.files?.[0];
                     if (file) {
                       const fakeUrl = URL.createObjectURL(file);
-                      setEditingLesson({ ...editingLesson, thumbnail: fakeUrl });
+                      setEditingLesson({ ...editingLesson, thumbnail: fakeUrl, thumbnailFile: file });
                     }
                   }}
                 />

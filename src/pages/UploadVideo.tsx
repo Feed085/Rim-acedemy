@@ -13,8 +13,6 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { mockDb } from '@/services/mockDb';
-import { teachers } from '@/data/mockData';
 
 export default function UploadVideo() {
   const { t } = useTranslation();
@@ -37,9 +35,27 @@ export default function UploadVideo() {
     description: '',
     courseId: '',
   });
+  
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [teacherCourses, setTeacherCourses] = useState<any[]>([]);
 
-  const teacher = teachers[0];
-  const teacherCourses = mockDb.getTeacherCourses(teacher.id);
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const token = localStorage.getItem('rim_auth_token');
+        const res = await fetch('http://localhost:5000/api/courses/my-courses', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          setTeacherCourses(data.data);
+        }
+      } catch (err) {
+        toast.error('Kurslar yüklənmədi');
+      }
+    };
+    fetchCourses();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -108,15 +124,101 @@ export default function UploadVideo() {
     }
 
     setIsUploading(true);
+    setUploadProgress(0);
     
-    // Simulate upload
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    mockDb.addLessonToCourse(formData.courseId, formData.title);
-    
-    setIsUploading(false);
-    setIsUploaded(true);
-    toast.success('Video dərsi uğurla əlavə edildi!');
+    try {
+      const token = localStorage.getItem('rim_auth_token');
+
+      // 1. Get Presigned URL for Video
+      const presignVideoReq = await fetch(
+        `http://localhost:5000/api/upload/presign?filename=${encodeURIComponent(videoFile.name)}&contentType=${encodeURIComponent(videoFile.type)}`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      const presignVideoData = await presignVideoReq.json();
+      if (!presignVideoData.success) throw new Error('Presigned URL (video) xətası');
+
+      const videoSignedUrl = presignVideoData.data.signedUrl;
+      const videoPublicUrl = presignVideoData.data.publicUrl;
+
+      // 2. Upload Video via native XMLHttpRequest for tracking
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', videoSignedUrl, true);
+        xhr.setRequestHeader('Content-Type', videoFile.type);
+        
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percentage = Math.round((event.loaded * 100) / event.total);
+            setUploadProgress(percentage);
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(xhr.responseText);
+          } else {
+            reject(new Error(`Upload status ${xhr.status}`));
+          }
+        };
+        xhr.onerror = () => reject(new Error('Şəbəkə xətası (upload)'));
+        xhr.send(videoFile);
+      });
+
+      // 3. Optional: Thumbnail Upload
+      let thumbnailPublicUrl = '';
+      if (thumbnail) {
+        const presignThumbReq = await fetch(
+          `http://localhost:5000/api/upload/presign?filename=${encodeURIComponent(thumbnail.name)}&contentType=${encodeURIComponent(thumbnail.type)}`,
+          { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        const presignThumbData = await presignThumbReq.json();
+        if (presignThumbData.success) {
+          const thumbSignedUrl = presignThumbData.data.signedUrl;
+          thumbnailPublicUrl = presignThumbData.data.publicUrl;
+          await fetch(thumbSignedUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': thumbnail.type },
+            body: thumbnail
+          });
+        }
+      }
+
+      // 4. Update Course with new Video Module
+      // Mövcud kursu çəkib, modullarını yeniləyəcəyik
+      const courseReq = await fetch(`http://localhost:5000/api/courses/${formData.courseId}`);
+      const courseData = await courseReq.json();
+      if (!courseData.success) throw new Error('Kurs tapılmadı');
+      
+      const course = courseData.data;
+      const newVideo = {
+         title: formData.title,
+         description: formData.description,
+         duration: '0', // TODO: video duration can be extracted locally
+         thumbnail: thumbnailPublicUrl || 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80',
+         videoUrl: videoPublicUrl
+      };
+
+      const existingModules = course.modules && course.modules.length > 0 ? course.modules : [{ title: 'Dərslər', videos: [] }];
+      existingModules[0].videos.push(newVideo);
+
+      const updateReq = await fetch(`http://localhost:5000/api/courses/${formData.courseId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ modules: existingModules })
+      });
+      const updateData = await updateReq.json();
+      if (!updateData.success) throw new Error('Kurs güncəllənə bilmədi');
+
+      setIsUploaded(true);
+      toast.success('Video dərsi uğurla əlavə edildi!');
+    } catch(err: any) {
+      toast.error('Xəta: ' + err.message);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   if (isUploaded) {
@@ -257,7 +359,7 @@ export default function UploadVideo() {
               >
                 <option value="">Kurs seçin</option>
                 {teacherCourses.map(course => (
-                  <option key={course.id} value={course.id}>
+                  <option key={course._id} value={course._id}>
                     {course.title}
                   </option>
                 ))}
@@ -337,9 +439,16 @@ export default function UploadVideo() {
             className="w-full bg-[#00D084] hover:bg-[#00B873] text-white font-semibold rounded-xl h-14 text-lg"
           >
             {isUploading ? (
-              <div className="flex items-center gap-3">
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>Yüklənir...</span>
+              <div className="flex flex-col items-center gap-2 w-full px-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Yüklənir... {uploadProgress}%</span>
+                </div>
+                {uploadProgress > 0 && uploadProgress < 100 && (
+                  <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
+                    <div className="h-full bg-white transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-3">
