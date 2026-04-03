@@ -96,27 +96,40 @@ export default function TeacherStudents() {
         <div className="flex flex-wrap gap-2 mb-8">
           <button
             onClick={() => setSelectedCourse(null)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
               selectedCourse === null
                 ? 'bg-[#00D084] text-white shadow-md'
                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
             }`}
           >
-            Sıfırla
+            Hamısı
+            <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
+              selectedCourse === null ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+            }`}>
+              {students.length}
+            </span>
           </button>
-          {allCourses.map((course) => (
-            <button
-              key={course}
-              onClick={() => setSelectedCourse(course)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                selectedCourse === course
-                  ? 'bg-[#00D084] text-white shadow-md'
-                  : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
-              }`}
-            >
-              {course}
-            </button>
-          ))}
+          {allCourses.map((course) => {
+            const count = students.filter(s => s.course === course).length;
+            return (
+              <button
+                key={course}
+                onClick={() => setSelectedCourse(course)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                  selectedCourse === course
+                    ? 'bg-[#00D084] text-white shadow-md'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
+                }`}
+              >
+                {course}
+                <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${
+                  selectedCourse === course ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Students Table/Grid */}

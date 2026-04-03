@@ -2,20 +2,12 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { tests } from '@/data/mockData';
 import { mockDb } from '@/services/mockDb';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { 
   BookOpen, 
   FileText, 
-  Clock, 
   Play,
   Award
 } from 'lucide-react';
@@ -28,9 +20,8 @@ export default function StudentDashboard() {
   const enrolledCourses = user ? mockDb.getEnrolledCourses(user.email) : [];
   const myCourses = enrolledCourses;
   
-  // Back-end'den API ile güncel istatistikleri çek
   const [apiStats, setApiStats] = useState({
-    activeCoursesCount: enrolledCourses.length, // Fallback
+    activeCoursesCount: enrolledCourses.length,
     completedTestsCount: 0,
     certificatesCount: 0
   });
@@ -62,24 +53,6 @@ export default function StudentDashboard() {
       fetchStats();
     }
   }, [user]);
-
-  // Filter tests only for enrolled courses (Şimdilik mock)
-  const filteredTests = tests.filter(test => enrolledCourses.some(c => c.id === test.courseId));
-  const myTests = filteredTests.slice(0, 5);
-
-  const groupedCourseTests = Object.values(
-    myTests.reduce((acc, test) => {
-      if (!acc[test.courseId]) {
-        acc[test.courseId] = {
-          courseId: test.courseId,
-          courseName: test.courseName || 'Naməlum Kurs',
-          tests: []
-        };
-      }
-      acc[test.courseId].tests.push(test);
-      return acc;
-    }, {} as Record<string, { courseId: string; courseName: string; tests: typeof tests }>)
-  );
 
   const scrollToCourses = () => {
     const el = document.getElementById('my-courses-section');
@@ -118,13 +91,6 @@ export default function StudentDashboard() {
               <BookOpen className="w-4 h-4 mr-2" />
               Kurslara bax
             </Button>
-            <Button
-              onClick={() => navigate('/tests')}
-              className="bg-[#00D084] hover:bg-[#00B873] rounded-xl"
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Testə başla
-            </Button>
           </div>
         </div>
 
@@ -156,7 +122,6 @@ export default function StudentDashboard() {
                 <h2 className="text-xl font-bold text-gray-900">
                   {t('student.dashboard.my_courses')}
                 </h2>
-
               </div>
 
               <div className="space-y-4">
@@ -214,100 +179,18 @@ export default function StudentDashboard() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Upcoming Tests */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                {t('student.dashboard.tests')}
-              </h2>
-              <Accordion type="multiple" className="w-full space-y-3">
-                {groupedCourseTests.map((group) => (
-                  <AccordionItem 
-                    key={group.courseId} 
-                    value={group.courseId} 
-                    className="border border-gray-100 bg-gray-50 rounded-2xl overflow-hidden px-4"
-                  >
-                    <AccordionTrigger className="hover:no-underline py-4">
-                      <div className="flex items-center gap-3 text-left w-full pr-2">
-                        <div className="w-10 h-10 bg-[#00D084]/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <BookOpen className="w-5 h-5 text-[#00D084]" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-gray-900 text-sm truncate">
-                            {group.courseName}
-                          </h4>
-                          <p className="text-xs text-gray-500 font-normal mt-0.5">
-                            {group.tests.length} test mövcuddur
-                          </p>
-                        </div>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-0 pb-4">
-                      <div className="space-y-3 mt-1">
-                        {group.tests.map((test) => (
-                          <div
-                            key={test.id}
-                            className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-sm"
-                          >
-                            <div className="flex items-center gap-3 min-w-0">
-                              <div className="w-8 h-8 bg-[#0082F3]/10 rounded-md flex items-center justify-center flex-shrink-0">
-                                <FileText className="w-4 h-4 text-[#0082F3]" />
-                              </div>
-                              <div className="min-w-0 pr-4">
-                                <h5 className="font-medium text-gray-900 text-sm truncate">
-                                  {test.title}
-                                </h5>
-                                <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                                  <Clock className="w-3 h-3" />
-                                  <span>{test.duration} dəq</span>
-                                </div>
-                              </div>
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => navigate(`/tests/${test.id}`, { state: { from: 'dashboard' } })}
-                              className="rounded-lg text-xs h-8 shrink-0 hover:bg-[#0082F3] hover:text-white hover:border-[#0082F3] transition-colors"
-                            >
-                              Başla
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </div>
-
-
-
-            {/* Calendar */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">
-                Yaxınlaşan
-              </h2>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 bg-[#00D084]/10 rounded-xl flex flex-col items-center justify-center flex-shrink-0">
-                    <span className="text-xs text-[#00D084] font-medium">MAR</span>
-                    <span className="text-lg font-black text-[#00D084]">25</span>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 text-sm">SAT Mock İmtahanı</h4>
-                    <p className="text-xs text-gray-500">10:00 - 13:00</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 bg-[#0082F3]/10 rounded-xl flex flex-col items-center justify-center flex-shrink-0">
-                    <span className="text-xs text-[#0082F3] font-medium">MAR</span>
-                    <span className="text-lg font-black text-[#0082F3]">28</span>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-900 text-sm">IELTS Speaking</h4>
-                    <p className="text-xs text-gray-500">14:00 - 15:00</p>
-                  </div>
-                </div>
-              </div>
+            <div className="bg-white rounded-3xl p-8 shadow-sm text-center">
+               <div className="w-16 h-16 bg-[#00D084]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Award className="w-8 h-8 text-[#00D084]" />
+               </div>
+               <h3 className="text-lg font-bold text-gray-900 mb-2">Hədəflərinizə yaxınsınız!</h3>
+               <p className="text-sm text-gray-500 mb-6">Kursları tamamlayaraq sertifikatlarınızı əldə edin və biliklərinizi rəsmiləşdirin.</p>
+               <Button 
+                 onClick={() => navigate('/courses')}
+                 className="w-full bg-[#00D084] hover:bg-[#00B873] rounded-xl font-bold"
+               >
+                 Yeni Kurs Kəşf Et
+               </Button>
             </div>
           </div>
         </div>
