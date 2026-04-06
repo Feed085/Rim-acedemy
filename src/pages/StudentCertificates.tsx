@@ -30,7 +30,7 @@ export default function StudentCertificates() {
         const data = await response.json();
         if (data.success && data.data) {
           // Filter only passed and graded results
-          const passedTests = data.data.filter((r: any) => r.scorePercentage >= 50 && !r.hasPendingAnswers);
+          const passedTests = (data.data || []).filter((r: any) => (r.scorePercentage || 0) >= 50 && !r.hasPendingAnswers);
           setCertificates(passedTests);
         }
       } catch (err) {
@@ -89,20 +89,26 @@ export default function StudentCertificates() {
            </div>
           ) : (
             certificates.map((result: any) => {
+               if (!result) return null;
                const testTitle = result.test?.title || 'Bilinməyən Test';
                const courseTitle = result.test?.course?.title || 'Kurs Sertifikatı';
-               const instructorName = result.test?.course?.instructor 
-                 ? `${result.test.course.instructor.name} ${result.test.course.instructor.surname}` 
+               const instructorName = result.test?.course?.instructor?.name 
+                 ? `${result.test.course.instructor.name} ${result.test.course.instructor.surname || ''}` 
                  : 'Rim Academy';
+                 
+               const dateStr = result.completedAt || result.createdAt;
+               const displayDate = dateStr ? new Date(dateStr).toLocaleDateString('az-AZ') : 'Tarix yoxdur';
+               
+               const safeScore = Number(result.scorePercentage || 0);
                
                return (
             <div
-              key={result._id}
+              key={result._id || Math.random().toString()}
               className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col transition-all hover:shadow-md group"
             >
               {/* Certificate Ribbon */}
               <div className="relative h-48 rounded-2xl bg-gray-50 overflow-hidden mb-6 border border-gray-100 flex items-center justify-center group-hover:bg-[#F59E0B]/5 transition-colors">
-                < Award className="w-16 h-16 text-[#F59E0B] opacity-50 absolute right-6 top-6" />
+                <Award className="w-16 h-16 text-[#F59E0B] opacity-50 absolute right-6 top-6" />
                 <div className="text-center relative z-10 px-4">
                   <h3 className="text-2xl font-black text-gray-900 serif-font tracking-tight mb-2">
                     {testTitle}
@@ -119,7 +125,7 @@ export default function StudentCertificates() {
                     <CalendarCheck className="w-4 h-4 text-gray-400" />
                     <span className="text-sm font-medium text-gray-700">Tarix:</span>
                   </div>
-                  <span className="text-sm font-bold text-gray-900">{new Date(result.completedAt || result.createdAt).toLocaleDateString('az-AZ')}</span>
+                  <span className="text-sm font-bold text-gray-900">{displayDate}</span>
                 </div>
                 
                 <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
@@ -127,7 +133,7 @@ export default function StudentCertificates() {
                     <Award className="w-4 h-4 text-gray-400" />
                     <span className="text-sm font-medium text-gray-700">Nəticə (Dərəcə):</span>
                   </div>
-                  <span className="text-sm font-bold text-[#00D084]">{result.scorePercentage.toFixed(0)}%</span>
+                  <span className="text-sm font-bold text-[#00D084]">{safeScore.toFixed(0)}%</span>
                 </div>
 
                 <div className="flex items-center justify-between">

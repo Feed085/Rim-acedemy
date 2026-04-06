@@ -128,7 +128,7 @@ export default function StudentCompletedTests() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 border-t sm:border-t-0 sm:border-l border-gray-100 pt-4 sm:pt-0 sm:pl-6 shrink-0">
                 <div className="text-left sm:text-center">
                   <div className={`text-2xl font-black ${hasPending ? 'text-yellow-500' : isPassed ? 'text-[#00D084]' : 'text-red-500'}`}>
-                    {percentage.toFixed(0)}%
+                    {(percentage || 0).toFixed(0)}%
                   </div>
                   <div className={`flex items-center gap-1 mt-0.5 ${hasPending ? 'text-yellow-500' : isPassed ? 'text-[#00D084]' : 'text-red-500'}`}>
                     {hasPending ? (

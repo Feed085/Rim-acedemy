@@ -13,6 +13,7 @@ import Register from '@/pages/Register';
 import StudentDashboard from '@/pages/StudentDashboard';
 import StudentCompletedTests from '@/pages/StudentCompletedTests';
 import StudentCertificates from '@/pages/StudentCertificates';
+import StudentProfile from '@/pages/StudentProfile';
 import CourseWatch from '@/pages/CourseWatch';
 import TeacherDashboard from '@/pages/TeacherDashboard';
 import TeacherProfile from '@/pages/TeacherProfile';
@@ -170,6 +171,16 @@ function AppRoutes() {
           <ProtectedRoute allowedRoles={['student']}>
             <MainLayout>
               <StudentDashboard />
+            </MainLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/dashboard/profile" 
+        element={
+          <ProtectedRoute allowedRoles={['student']}>
+            <MainLayout>
+              <StudentProfile />
             </MainLayout>
           </ProtectedRoute>
         } 

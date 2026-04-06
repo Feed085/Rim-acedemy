@@ -80,11 +80,17 @@ export default function StudentDashboard() {
               Xoş gəldiniz, {user?.name}!
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => navigate('/dashboard/profile')}
+              variant="outline"
+              className="rounded-xl border-gray-200"
+            >
+              Mənim Profilim
+            </Button>
             <Button
               onClick={() => navigate('/courses')}
-              variant="outline"
-              className="rounded-xl"
+              className="bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl"
             >
               <BookOpen className="w-4 h-4 mr-2" />
               Kurslara bax
