@@ -1,8 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { testResults } from '@/data/mockData';
-import { mockDb } from '@/services/mockDb';
 import { 
   ArrowLeft, 
   User, 
@@ -10,7 +8,8 @@ import {
   XCircle, 
   Clock, 
   Search,
-  FileText
+  FileText,
+  AlertTriangle
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import {
@@ -19,20 +18,60 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toast } from 'sonner';
 
 export default function TeacherTestResults() {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  const test = mockDb.getTestById(id || '');
-  const results = testResults.filter(r => r.testId === id);
-  
+  const [test, setTest] = useState<any>(null);
+  const [results, setResults] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedResult, setSelectedResult] = useState<any>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const fetchResults = async () => {
+    const token = localStorage.getItem('rim_auth_token');
+    try {
+      // 1. Fetch Test Details
+      const testRes = await fetch(`http://localhost:5000/api/tests/${id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const testData = await testRes.json();
+      if (testData.success) {
+        setTest(testData.data);
+      }
+
+      // 2. Fetch Results
+      const resRes = await fetch(`http://localhost:5000/api/tests/${id}/results`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const resData = await resRes.json();
+      if (resData.success) {
+        setResults(resData.data);
+         // if dialog is open, update the selected result
+         if (selectedResult) {
+            const updatedResult = resData.data.find((r:any) => r._id === selectedResult._id);
+            if (updatedResult) setSelectedResult(updatedResult);
+         }
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (id) {
+      fetchResults();
+    }
+  }, [id]);
 
   const filteredResults = results.filter(r => 
-    r.studentName?.toLowerCase().includes(searchQuery.toLowerCase())
+    r.student?.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    r.student?.surname?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleShowDetail = (result: any) => {
@@ -40,9 +79,41 @@ export default function TeacherTestResults() {
     setIsDetailOpen(true);
   };
 
+  const handleEvaluateOpenEnded = async (resultId: string, questionId: string, isCorrect: boolean) => {
+    const token = localStorage.getItem('rim_auth_token');
+    try {
+       const evaluations = [{ questionId, isCorrect }];
+       const res = await fetch(`http://localhost:5000/api/tests/results/${resultId}/evaluate`, {
+          method: 'PUT',
+          headers: {
+             'Content-Type': 'application/json',
+             'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ evaluations })
+       });
+       const data = await res.json();
+       if (data.success) {
+          toast.success('Cavab qiymətləndirildi');
+          fetchResults(); // refresh data
+       } else {
+          toast.error('Xəta baş verdi');
+       }
+    } catch (error) {
+       toast.error('Server xətası');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F3F3F3] pt-24 flex items-center justify-center">
+        <p>Yüklənir...</p>
+      </div>
+    );
+  }
+
   if (!test) {
     return (
-      <div className="min-h-screen pt-24 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F3F3F3] pt-24 flex items-center justify-center">
         <p>Test tapılmadı</p>
       </div>
     );
@@ -84,53 +155,68 @@ export default function TeacherTestResults() {
 
         {/* Results List */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredResults.map((result) => (
-            <div 
-              key={result.id}
-              onClick={() => handleShowDetail(result)}
-              className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer group"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <img 
-                      src={result.studentAvatar} 
-                      alt={result.studentName}
-                      className="w-12 h-12 rounded-2xl object-cover"
-                    />
-                    <div className={cn(
-                      "absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center",
-                      result.score >= 60 ? "bg-[#00D084]" : "bg-red-500"
-                    )}>
-                      {result.score >= 60 ? (
-                        <CheckCircle className="w-3 h-3 text-white" />
-                      ) : (
-                        <XCircle className="w-3 h-3 text-white" />
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900">{result.studentName}</h4>
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                      <Clock className="w-3 h-3" />
-                      <span>{new Date(result.completedAt).toLocaleDateString('az-AZ')}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className={cn(
-                    "text-xl font-black",
-                    result.score >= 60 ? "text-[#00D084]" : "text-red-500"
-                  )}>
-                    {result.score}%
-                  </div>
-                  <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
-                    Nəticə
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+          {filteredResults.map((result) => {
+            const isPassed = result.scorePercentage >= 60;
+            return (
+               <div 
+                 key={result._id}
+                 onClick={() => handleShowDetail(result)}
+                 className="bg-white rounded-3xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer group"
+               >
+                 <div className="flex items-center justify-between">
+                   <div className="flex items-center gap-4">
+                     <div className="relative">
+                       <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center font-bold text-gray-600">
+                          {result.student?.name?.[0]}{result.student?.surname?.[0]}
+                       </div>
+                       {result.hasPendingAnswers ? (
+                         <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white bg-yellow-500 flex items-center justify-center">
+                           <AlertTriangle className="w-3 h-3 text-white" />
+                         </div>
+                       ) : (
+                         <div className={cn(
+                           "absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-white flex items-center justify-center",
+                           isPassed ? "bg-[#00D084]" : "bg-red-500"
+                         )}>
+                           {isPassed ? (
+                             <CheckCircle className="w-3 h-3 text-white" />
+                           ) : (
+                             <XCircle className="w-3 h-3 text-white" />
+                           )}
+                         </div>
+                       )}
+                     </div>
+                     <div>
+                       <h4 className="font-bold text-gray-900">{result.student?.name} {result.student?.surname}</h4>
+                       <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                         <Clock className="w-3 h-3" />
+                         <span>{new Date(result.completedAt).toLocaleDateString('az-AZ')}</span>
+                       </div>
+                     </div>
+                   </div>
+                   <div className="text-right">
+                     {result.hasPendingAnswers ? (
+                         <div className="text-sm font-bold text-yellow-600 bg-yellow-50 px-2 py-1 rounded-lg">
+                           Yoxlamada
+                         </div>
+                     ) : (
+                        <>
+                           <div className={cn(
+                             "text-xl font-black",
+                             isPassed ? "text-[#00D084]" : "text-red-500"
+                           )}>
+                             {(result.scorePercentage || 0).toFixed(0)}%
+                           </div>
+                           <div className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">
+                             Nəticə
+                           </div>
+                        </>
+                     )}
+                   </div>
+                 </div>
+               </div>
+            )
+          })}
         </div>
 
         {filteredResults.length === 0 && (
@@ -144,11 +230,11 @@ export default function TeacherTestResults() {
 
       {/* Result Detail Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <DialogContent className="sm:max-w-[600px] rounded-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[700px] rounded-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <FileText className="w-5 h-5 text-[#00D084]" />
-              Test Detalları: {selectedResult?.studentName}
+              Test Detalları: {selectedResult?.student?.name} {selectedResult?.student?.surname}
             </DialogTitle>
           </DialogHeader>
           
@@ -156,16 +242,16 @@ export default function TeacherTestResults() {
             <div className="py-4 space-y-6">
               <div className="grid grid-cols-3 gap-4">
                 <div className="bg-gray-50 rounded-2xl p-4 text-center">
-                  <div className="text-2xl font-black text-[#00D084]">{selectedResult.correctAnswers}</div>
+                  <div className="text-2xl font-black text-[#00D084]">{selectedResult.answers.filter((a:any)=>a.isCorrect).length}</div>
                   <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Doğru</div>
                 </div>
                 <div className="bg-gray-50 rounded-2xl p-4 text-center">
-                  <div className="text-2xl font-black text-red-500">{selectedResult.wrongAnswers}</div>
+                  <div className="text-2xl font-black text-red-500">{selectedResult.answers.filter((a:any)=>!a.isCorrect && a.status === 'graded').length}</div>
                   <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Yanlış</div>
                 </div>
                 <div className="bg-gray-50 rounded-2xl p-4 text-center">
-                  <div className="text-2xl font-black text-blue-500">{selectedResult.totalQuestions}</div>
-                  <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Sual</div>
+                  <div className="text-2xl font-black text-yellow-500">{selectedResult.answers.filter((a:any)=>a.status === 'pending').length}</div>
+                  <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Gözləyən</div>
                 </div>
               </div>
 
@@ -175,51 +261,108 @@ export default function TeacherTestResults() {
                 </h3>
                 <div className="space-y-3">
                   {test.questions.map((q: any, idx: number) => {
-                    const studentAnswerIndex = selectedResult.answers[q.id];
-                    const correctAnswerIndex = typeof q.correctAnswer === 'string' 
-                      ? q.options.indexOf(q.correctAnswer) 
-                      : q.correctAnswer;
+                    const studentAnsObj = selectedResult.answers.find((a:any) => a.questionId === q._id);
                     
-                    const isCorrect = Number(studentAnswerIndex) === Number(correctAnswerIndex);
+                    if (!studentAnsObj) return null;
+
+                    const isPending = studentAnsObj.status === 'pending';
+                    const isCorrect = studentAnsObj.isCorrect;
                     
                     return (
-                      <div key={q.id} className={cn(
+                      <div key={q._id} className={cn(
                         "p-4 rounded-2xl border transition-all",
-                        isCorrect ? "bg-green-50/50 border-green-100" : "bg-red-50/50 border-red-100"
+                        isPending ? "bg-yellow-50/50 border-yellow-200" 
+                                  : isCorrect ? "bg-green-50/50 border-green-100" : "bg-red-50/50 border-red-100"
                       )}>
-                        <div className="flex gap-3 mb-3">
-                          <span className="font-bold text-gray-400">{idx + 1}.</span>
-                          <p className="font-medium text-gray-900 text-sm leading-relaxed">{q.question || q.text}</p>
-                        </div>
-                        <div className="grid gap-2 ml-7">
-                          {q.options.map((option: string, optIdx: number) => (
-                            <div 
-                              key={optIdx}
-                              className={cn(
-                                "flex items-center gap-2 p-2 rounded-lg text-xs font-medium",
-                                optIdx === correctAnswerIndex 
-                                  ? "bg-[#00D084]/10 text-[#00D084] border border-[#00D084]/20" 
-                                  : optIdx === Number(studentAnswerIndex) && !isCorrect
-                                  ? "bg-red-100 text-red-600 border border-red-200"
-                                  : "bg-white text-gray-500 border border-gray-100"
-                              )}
-                            >
-                              <div className={cn(
-                                "w-5 h-5 rounded flex items-center justify-center shrink-0",
-                                optIdx === correctAnswerIndex 
-                                  ? "bg-[#00D084] text-white" 
-                                  : optIdx === Number(studentAnswerIndex) && !isCorrect
-                                  ? "bg-red-500 text-white"
-                                  : "bg-gray-100 text-gray-400"
-                              )}>
-                                {String.fromCharCode(65 + optIdx)}
+                        <div className="flex flex-col mb-3">
+                           <div className="flex gap-3 mb-2">
+                             <span className="font-bold text-gray-400">{idx + 1}.</span>
+                             <div className="font-medium text-gray-900 text-sm leading-relaxed w-full">
+                                {q.questionType === 'image' ? (
+                                   <div className="w-full max-w-sm rounded-lg overflow-hidden my-2">
+                                      <img src={q.content} alt="Sual" className="w-full h-auto" />
+                                   </div>
+                                ) : q.content}
+                             </div>
+                           </div>
+                           
+                           {/* Məntiqi cavab növünə görə Rendering */}
+                           {q.answerType === 'open_ended' ? (
+                              <div className="ml-7 mt-3">
+                                 <div className="bg-white p-3 rounded-lg border border-gray-100 text-sm mb-3">
+                                    <span className="text-xs text-gray-400 block mb-1 uppercase font-bold">Tələbənin Cavabı:</span>
+                                    {studentAnsObj.answer}
+                                 </div>
+                                 <div className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
+                                    {isPending ? (
+                                       <span className="text-sm font-bold text-yellow-600 flex items-center gap-1">
+                                          <Clock className="w-4 h-4"/> Yoxlama Gözləyir
+                                       </span>
+                                    ) : (
+                                       <span className={isCorrect ? "text-sm font-bold text-green-600 flex items-center gap-1" : "text-sm font-bold text-red-600 flex items-center gap-1"}>
+                                          {isCorrect ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                                          {isCorrect ? 'Doğru Qiymətləndirildi' : 'Yanlış Qiymətləndirildi'}
+                                       </span>
+                                    )}
+                                    <div className="flex gap-2">
+                                       <Button 
+                                          title="Doğru Qəbul Et"
+                                          size="sm" 
+                                          variant="outline" 
+                                          className="text-green-600 hover:bg-green-50 border-green-200" 
+                                          onClick={() => handleEvaluateOpenEnded(selectedResult._id, q._id, true)}
+                                       >
+                                          <CheckCircle className="w-4 h-4" />
+                                       </Button>
+                                       <Button 
+                                          title="Yanlış Qəbul Et"
+                                          size="sm" 
+                                          variant="outline" 
+                                          className="text-red-600 hover:bg-red-50 border-red-200" 
+                                          onClick={() => handleEvaluateOpenEnded(selectedResult._id, q._id, false)}
+                                       >
+                                          <XCircle className="w-4 h-4" />
+                                       </Button>
+                                    </div>
+                                 </div>
                               </div>
-                              {option}
-                              {optIdx === Number(studentAnswerIndex) && (
-                                <span className="ml-auto text-[10px] font-black uppercase opacity-60">Cavab</span>
-                              )}
-                            </div>
-                          ))}
+                           ) : (
+                              <div className="grid gap-2 ml-7 mt-2">
+                                {q.options.map((option: string, optIdx: number) => {
+                                   const isSelected = studentAnsObj.answer === option;
+                                   const isActualCorrect = q.correctAnswer === option;
+   
+                                   return (
+                                     <div 
+                                       key={optIdx}
+                                       className={cn(
+                                         "flex items-center gap-2 p-2 rounded-lg text-xs font-medium",
+                                         isActualCorrect 
+                                           ? "bg-[#00D084]/10 text-[#00D084] border border-[#00D084]/20" 
+                                           : isSelected && !isCorrect
+                                           ? "bg-red-100 text-red-600 border border-red-200"
+                                           : "bg-white text-gray-500 border border-gray-100"
+                                       )}
+                                     >
+                                       <div className={cn(
+                                         "w-5 h-5 rounded flex items-center justify-center shrink-0",
+                                         isActualCorrect 
+                                           ? "bg-[#00D084] text-white" 
+                                           : isSelected && !isCorrect
+                                           ? "bg-red-500 text-white"
+                                           : "bg-gray-100 text-gray-400"
+                                       )}>
+                                         {String.fromCharCode(65 + optIdx)}
+                                       </div>
+                                       {option}
+                                       {isSelected && (
+                                         <span className="ml-auto text-[10px] font-black uppercase opacity-60">Cavab</span>
+                                       )}
+                                     </div>
+                                   )
+                                })}
+                              </div>
+                           )}
                         </div>
                       </div>
                     );

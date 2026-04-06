@@ -457,6 +457,13 @@ export default function TeacherProfile() {
                 </div>
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
                   <div className="flex items-center gap-3">
+                    <BookOpen className="w-5 h-5 text-[#F59E0B]" />
+                    <span className="text-gray-600">Testlər</span>
+                  </div>
+                  <span className="font-bold text-gray-900">{teacher?.testCount}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                  <div className="flex items-center gap-3">
                     <Star className="w-5 h-5 text-yellow-500" />
                     <span className="text-gray-600">Reytinq</span>
                   </div>

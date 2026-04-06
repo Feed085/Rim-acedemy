@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { mockDb } from '@/services/mockDb';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { 
@@ -16,12 +15,10 @@ export default function StudentDashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
-
-  const enrolledCourses = user ? mockDb.getEnrolledCourses(user.email) : [];
-  const myCourses = enrolledCourses;
+  const [myCourses, setMyCourses] = useState<any[]>([]);
   
   const [apiStats, setApiStats] = useState({
-    activeCoursesCount: enrolledCourses.length,
+    activeCoursesCount: 0,
     completedTestsCount: 0,
     certificatesCount: 0
   });
@@ -43,6 +40,7 @@ export default function StudentDashboard() {
             completedTestsCount: data.data.stats.completedTestsCount,
             certificatesCount: data.data.stats.certificatesCount
           });
+          setMyCourses(data.data.activeCourses || []);
         }
       } catch (err) {
         console.error('Statistika yüklənərkən xəta baş verdi', err);
@@ -127,7 +125,7 @@ export default function StudentDashboard() {
               <div className="space-y-4">
                 {myCourses.map((course) => (
                   <div
-                    key={course.id}
+                    key={course._id || course.id}
                     className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors"
                   >
                     <img
@@ -137,7 +135,7 @@ export default function StudentDashboard() {
                     />
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-900 mb-1">{course.title}</h3>
-                      <p className="text-sm text-gray-500 mb-3">{course.teacherName}</p>
+                      <p className="text-sm text-gray-500 mb-3">{course.category}</p>
                       <div className="flex items-center gap-4">
                         <div className="flex-1">
                           <div className="flex items-center justify-between text-xs mb-1">
@@ -147,7 +145,7 @@ export default function StudentDashboard() {
                           <Progress value={0} className="h-2" />
                         </div>
                         <Button
-                          onClick={() => navigate(`/course-watch/${course.id}`, { state: { from: 'dashboard' } })}
+                          onClick={() => navigate(`/courses/${course._id}/watch`, { state: { from: 'dashboard' } })}
                           size="sm"
                           className="bg-[#00D084] hover:bg-[#00B873] rounded-lg"
                         >

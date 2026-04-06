@@ -54,22 +54,27 @@ export default function TeacherCourseEdit() {
 
     const fetchCourse = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/courses/${id}`);
-        const data = await res.json();
+        const token = localStorage.getItem('rim_auth_token');
+        const [courseRes, testsRes] = await Promise.all([
+           fetch(`http://localhost:5000/api/courses/${id}`),
+           fetch(`http://localhost:5000/api/tests/course/${id}`, { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
         
-        if (data.success) {
-          setCourse(data.data);
-          // UI expects flat lessons arrays right now, we can map modules
-          const flatLessons = (data.data.modules || []).flatMap((m: any) => m.videos) || [];
+        const courseData = await courseRes.json();
+        
+        if (courseData.success) {
+          setCourse(courseData.data);
+          const flatLessons = (courseData.data.modules || []).flatMap((m: any) => m.videos) || [];
           setLessons(flatLessons);
-          
-          // Testləri fetch et (Opsional gələcək inteqrasiya)
-          if (data.data.tests) {
-            setTests(data.data.tests);
-          }
         } else {
           toast.error('Kurs tapılmadı', { id: 'course-not-found' });
         }
+
+        const testsData = await testsRes.json();
+        if (testsData.success) {
+           setTests(testsData.data);
+        }
+
       } catch (err) {
         toast.error('Serverlə əlaqə kəsildi', { id: 'server-connection-error' });
       } finally {
@@ -412,7 +417,7 @@ export default function TeacherCourseEdit() {
                          variant="ghost" 
                          size="icon" 
                          className="h-8 w-8 text-[#00D084] hover:bg-[#00D084]/10 transition-colors"
-                         onClick={() => navigate(`/teacher/tests/${test.id}/results`)}
+                         onClick={() => navigate(`/teacher/tests/${test._id}/results`)}
                          title="Nəticələrə bax"
                        >
                          <Users className="w-5 h-5" />
@@ -421,7 +426,7 @@ export default function TeacherCourseEdit() {
                          variant="ghost" 
                          size="icon" 
                          className="h-8 w-8 text-gray-400 hover:text-gray-900 transition-colors"
-                         onClick={() => navigate(`/teacher/tests/${test.id}`)}
+                         onClick={() => navigate(`/teacher/tests/${test._id}`)}
                        >
                          <Settings className="w-4 h-4" />
                        </Button>

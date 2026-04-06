@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { mockDb } from '@/services/mockDb';
+import { Input } from '@/components/ui/input';
 import { 
   Clock, 
   ChevronLeft, 
@@ -20,21 +20,38 @@ export default function TestDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
+  
   const [test, setTest] = useState<any>(null);
   const [isStarted, setIsStarted] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, number>>({});
+  
+  // selectedAnswers => { "questionId": "verilen cavab (string)" }
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [timeLeft, setTimeLeft] = useState(0);
-  const [score, setScore] = useState(0);
+  
+  const [resultData, setResultData] = useState<any>(null);
 
   useEffect(() => {
-    if (id) {
-      const found = mockDb.getTestById(id);
-      if (found) {
-        setTest(found);
+    const fetchTest = async () => {
+      if (!id) return;
+      const token = localStorage.getItem('rim_auth_token');
+      try {
+        const res = await fetch(`http://localhost:5000/api/tests/${id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          setTest(data.data);
+          setTimeLeft(data.data.duration * 60);
+        } else {
+          toast.error('Test yüklənərkən xəta: ' + data.message);
+        }
+      } catch (err) {
+        toast.error('Test yüklənmədi');
       }
-    }
+    };
+    fetchTest();
   }, [id]);
 
   useEffect(() => {
@@ -50,13 +67,13 @@ export default function TestDetail() {
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [isStarted, timeLeft, isFinished]);
+  }, [isStarted, timeLeft, isFinished, test]);
 
   if (!test) {
     return (
       <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Test tapılmadı</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Məlumat yüklənir...</h1>
           <Button onClick={() => navigate(-1)}>
             Geri qayıt
           </Button>
@@ -67,26 +84,45 @@ export default function TestDetail() {
 
   const startTest = () => {
     setIsStarted(true);
-    setTimeLeft(test.duration * 60);
     toast.success('Test başladı! Uğurlar!');
   };
 
-  const finishTest = () => {
-    let correct = 0;
-    test.questions.forEach((q: any) => {
-      if (selectedAnswers[q.id] === q.correctAnswerIdx) {
-        correct++;
+  const finishTest = async () => {
+    setIsFinished(true); // freeze screen UI
+    const token = localStorage.getItem('rim_auth_token');
+    
+    // format answers array
+    const formattedAnswers = Object.keys(selectedAnswers).map(qId => ({
+       questionId: qId,
+       answer: selectedAnswers[qId]
+    }));
+
+    try {
+      const res = await fetch(`http://localhost:5000/api/tests/${id}/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ answers: formattedAnswers })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setResultData(data.data);
+        toast.success(data.data.hasPendingAnswers ? 'İmtahan bitdi! Bəzi açıq suallar sonradan yoxlanılacaq.' : 'Test tamamlandı!');
+      } else {
+        toast.error('Xəta baş verdi!');
       }
-    });
-    setScore(correct);
-    setIsFinished(true);
-    toast.success('Test tamamlandı!');
+    } catch(err) {
+      toast.error('Nəticə göndərilmədi!');
+    }
   };
 
-  const selectAnswer = (answerIndex: number) => {
+  // selectAnswer qapalı test və açıq test üçün eyni cür string alır, "Məsələn şıq, və ya açıq yazılan söz"
+  const handleSelectAnswer = (qId: string, answerValue: string) => {
     setSelectedAnswers(prev => ({
       ...prev,
-      [test.questions[currentQuestion].id]: answerIndex
+      [qId]: answerValue
     }));
   };
 
@@ -119,12 +155,12 @@ export default function TestDetail() {
               {test.title}
             </h1>
             <p className="text-gray-500 text-center mb-8">
-              {test.courseName}
+              Özünü Sına
             </p>
 
             <div className="grid grid-cols-3 gap-4 mb-8">
               <div className="bg-gray-50 rounded-2xl p-4 text-center">
-                <div className="text-2xl font-black text-[#00D084]">{test.questionCount}</div>
+                <div className="text-2xl font-black text-[#00D084]">{test.questions.length}</div>
                 <div className="text-sm text-gray-500">Sual</div>
               </div>
               <div className="bg-gray-50 rounded-2xl p-4 text-center">
@@ -140,9 +176,9 @@ export default function TestDetail() {
             <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-4 mb-8">
               <h3 className="font-bold text-yellow-800 mb-2">Qaydalar:</h3>
               <ul className="text-sm text-yellow-700 space-y-1">
-                <li>• Hər sual üçün bir cavab seçin</li>
+                <li>• Qapalı suallar üçün yalnız bir seçim edin</li>
+                <li>• Açıq suallar (əgər varsa) müəllim tərəfindən sonra yoxlanacaq</li>
                 <li>• Vaxt bitdikdə test avtomatik bağlanacaq</li>
-                <li>• Testə yenidən başlaya bilərsiniz</li>
               </ul>
             </div>
 
@@ -150,7 +186,7 @@ export default function TestDetail() {
               onClick={startTest}
               className="w-full bg-[#00D084] hover:bg-[#00B873] text-white font-semibold rounded-xl h-14 text-lg"
             >
-              {t('test.start')}
+              İmtahana Başla
             </Button>
           </div>
         </div>
@@ -160,8 +196,17 @@ export default function TestDetail() {
 
   // Results Screen
   if (isFinished) {
-    const percentage = Math.round((score / test.questions.length) * 100);
+    if (!resultData) {
+      return (
+        <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24 flex items-center justify-center">
+          <div className="text-center">İstatistika hesablanır...</div>
+        </div>
+      )
+    }
+
+    const percentage = resultData.scorePercentage || 0;
     const isPassed = percentage >= 60;
+    const hasPending = resultData.hasPendingAnswers;
 
     return (
       <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
@@ -169,9 +214,11 @@ export default function TestDetail() {
           <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-lg">
             <div className="text-center">
               <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 ${
-                isPassed ? 'bg-green-100' : 'bg-red-100'
+                hasPending ? 'bg-yellow-100' : isPassed ? 'bg-green-100' : 'bg-red-100'
               }`}>
-                {isPassed ? (
+                {hasPending ? (
+                  <Clock className="w-12 h-12 text-yellow-600" />
+                ) : isPassed ? (
                   <Trophy className="w-12 h-12 text-green-600" />
                 ) : (
                   <XCircle className="w-12 h-12 text-red-600" />
@@ -179,63 +226,62 @@ export default function TestDetail() {
               </div>
 
               <h1 className="text-2xl lg:text-3xl font-black text-gray-900 mb-2">
-                {isPassed ? 'Təbriklər!' : 'Uğursuz oldu'}
+                {hasPending ? 'Nəticə Gözlənilir' : isPassed ? 'Təbriklər!' : 'Uğursuz oldu'}
               </h1>
               <p className="text-gray-500 mb-8">
-                {isPassed 
-                  ? 'Test uğurla tamamladınız!' 
-                  : 'Növbəti dəfə daha yaxşı nəticə göstərəcəyinizə əminik!'}
+                {hasPending 
+                  ? 'Bəzi suallar açıq tiplidir. Müəllim yoxladıqdan sonra yekun nəticəni görə bilərsiniz!' 
+                  : isPassed 
+                    ? 'Test uğurla tamamladınız!' 
+                    : 'Növbəti dəfə daha yaxşı nəticə göstərəcəyinizə əminik!'}
               </p>
 
-              <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-2 gap-4 mb-8">
                 <div className="bg-gray-50 rounded-2xl p-4">
-                  <div className="text-2xl font-black text-[#00D084]">{score}</div>
-                  <div className="text-sm text-gray-500">Düzgün</div>
+                  <div className="text-2xl font-black text-[#0082F3]">{percentage.toFixed(0)}%</div>
+                  <div className="text-sm text-gray-500">Mövcud Nəticə</div>
                 </div>
                 <div className="bg-gray-50 rounded-2xl p-4">
-                  <div className="text-2xl font-black text-red-500">{test.questions.length - score}</div>
-                  <div className="text-sm text-gray-500">Səhv</div>
-                </div>
-                <div className="bg-gray-50 rounded-2xl p-4">
-                  <div className="text-2xl font-black text-[#0082F3]">{percentage}%</div>
-                  <div className="text-sm text-gray-500">Nəticə</div>
+                  <div className="text-2xl font-black text-yellow-500">
+                    {resultData.answers.filter((a:any) => a.status === 'pending').length}
+                  </div>
+                  <div className="text-sm text-gray-500">Gözləyən Suallar</div>
                 </div>
               </div>
 
-              {test.questions.length - score > 0 && (
+              {resultData.answers.filter((a:any) => !a.isCorrect && a.status === 'graded').length > 0 && (
                 <div className="mb-8 text-left">
                   <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                     <XCircle className="w-5 h-5 text-red-500" />
-                    Səhv Cavablarınız
+                    Səhv Cavablarınız (Yoxlanmış)
                   </h3>
                   <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    {test.questions.map((q: any, idx: number) => {
-                      const selected = selectedAnswers[q.id];
-                      const isCorrect = selected === q.correctAnswer;
-                      if (isCorrect) return null;
+                    {resultData.answers.filter((a:any) => !a.isCorrect && a.status === 'graded').map((a: any, idx: number) => {
+                      const q = test.questions.find((x:any) => x._id === a.questionId);
+                      if (!q) return null;
                       
                       return (
-                        <div key={q.id} className="bg-red-50/50 border border-red-100 rounded-xl p-4">
+                        <div key={q._id} className="bg-red-50/50 border border-red-100 rounded-xl p-4">
                           <p className="font-medium text-gray-900 mb-2">
-                            {idx + 1}. {q.type === 'image' ? (
+                            {idx + 1}. {q.questionType === 'image' ? (
                               <div className="mt-2 rounded-lg overflow-hidden border border-gray-100 max-w-xs">
-                                <img src={q.image} alt="Sual" className="w-full h-auto" />
+                                <img src={q.content} alt="Sual" className="w-full h-auto" />
                               </div>
-                            ) : q.text || q.question}
+                            ) : q.content}
                           </p>
                           <div className="flex flex-col sm:flex-row gap-2 mt-3 text-sm">
                             <div className="flex-1 flex items-start gap-2 text-red-600 bg-red-100/50 px-3 py-2 rounded-lg">
                               <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
                               <div>
                                 <span className="font-medium block text-xs uppercase tracking-wider mb-0.5">Sizin cavabınız</span>
-                                <span>{selected !== undefined ? q.options[selected] : 'Cavab verilməyib'}</span>
+                                <span>{a.answer || 'Cavab verilməyib'}</span>
                               </div>
                             </div>
                             <div className="flex-1 flex items-start gap-2 text-[#00D084] bg-[#00D084]/10 px-3 py-2 rounded-lg">
                               <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
                               <div>
                                 <span className="font-medium block text-xs uppercase tracking-wider mb-0.5">Düzgün cavab</span>
-                                <span>{q.options[q.correctAnswerIdx] || q.options[q.correctAnswer] || String.fromCharCode(65 + q.correctAnswerIdx)}</span>
+                                <span>{q.correctAnswer || 'Ekspertiza tələb olunur'}</span>
                               </div>
                             </div>
                           </div>
@@ -246,26 +292,13 @@ export default function TestDetail() {
                 </div>
               )}
 
-              <div className="flex gap-4">
+              <div className="flex gap-4 mt-8">
                 <Button
                   variant="outline"
-                  onClick={() => navigate(-1)}
-                  className="flex-1 h-12 rounded-xl"
+                  onClick={() => navigate('/dashboard')}
+                  className="w-full h-12 rounded-xl"
                 >
-                  Geri qayıt
-                </Button>
-                <Button
-                  onClick={() => {
-                    setIsStarted(false);
-                    setIsFinished(false);
-                    setCurrentQuestion(0);
-                    setSelectedAnswers({});
-                    setScore(0);
-                  }}
-                  className="flex-1 bg-[#00D084] hover:bg-[#00B873] text-white h-12 rounded-xl"
-                >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Yenidən başla
+                  Paneline Qayıt
                 </Button>
               </div>
             </div>
@@ -303,38 +336,55 @@ export default function TestDetail() {
         <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-lg mb-6">
           <h2 className="text-lg lg:text-xl font-bold text-gray-900 mb-6">
              {currentQuestion + 1}. 
-             {question.type === 'image' ? (
-                <div className="mt-4 rounded-2xl overflow-hidden border-2 border-gray-50 shadow-sm">
-                   <img src={question.image} alt="Sual" className="w-full h-auto" />
+             {question.questionType === 'image' ? (
+                <div className="mt-4 rounded-2xl overflow-hidden border-2 border-gray-50 shadow-sm max-w-lg">
+                   <img src={question.content} alt="Sual" className="w-full h-auto" />
                 </div>
              ) : (
-                <span className="ml-2">{question.text || question.question}</span>
+                <span className="ml-2 block mt-2 text-xl font-medium">{question.content}</span>
              )}
           </h2>
 
           <div className="space-y-3">
-            {question.options.map((option: string, index: number) => (
-              <button
-                key={index}
-                onClick={() => selectAnswer(index)}
-                className={`w-full p-4 rounded-xl text-left transition-all ${
-                  selectedAnswers[question.id] === index
-                    ? 'bg-[#00D084] text-white'
-                    : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold ${
-                    selectedAnswers[question.id] === index
-                      ? 'bg-white text-[#00D084]'
-                      : 'bg-white text-gray-500'
-                  }`}>
-                    {String.fromCharCode(65 + index)}
-                  </div>
-                  <span>{option}</span>
+             {question.answerType === 'multiple_choice' ? (
+                question.options.map((option: string, index: number) => {
+                   // Əgər option mətni varsa onu, yoxsa "A" kimi hərf stringini yoxlayaq
+                   const answerVal = option; 
+                   return (
+                     <button
+                       key={index}
+                       onClick={() => handleSelectAnswer(question._id, answerVal)}
+                       className={`w-full p-4 rounded-xl text-left transition-all ${
+                         selectedAnswers[question._id] === answerVal
+                           ? 'bg-[#00D084] text-white'
+                           : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                       }`}
+                     >
+                       <div className="flex items-center gap-3">
+                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold ${
+                           selectedAnswers[question._id] === answerVal
+                             ? 'bg-white text-[#00D084]'
+                             : 'bg-white text-gray-500'
+                         }`}>
+                           {String.fromCharCode(65 + index)}
+                         </div>
+                         <span>{option}</span>
+                       </div>
+                     </button>
+                   );
+                })
+             ) : (
+                <div className="pt-4">
+                   <label className="text-sm font-bold text-gray-700 mb-2 block">Sizin Cavabınız (Açıq sual)</label>
+                   <textarea
+                      rows={5}
+                      className="w-full rounded-2xl border-gray-200 p-4 focus:border-[#00D084] focus:ring-[#00D084]"
+                      placeholder="Fikrinizi bura yazın..."
+                      value={selectedAnswers[question._id] || ''}
+                      onChange={(e) => handleSelectAnswer(question._id, e.target.value)}
+                   ></textarea>
                 </div>
-              </button>
-            ))}
+             )}
           </div>
         </div>
 
@@ -347,18 +397,18 @@ export default function TestDetail() {
             className="rounded-xl"
           >
             <ChevronLeft className="w-4 h-4 mr-1" />
-            {t('test.prev')}
+            Əvvəlki
           </Button>
 
-          <div className="flex gap-2">
-            {test.questions.map((_: any, idx: number) => (
+          <div className="flex gap-2 flex-wrap max-w-[50%] justify-center overflow-x-auto">
+            {test.questions.map((q: any, idx: number) => (
               <button
                 key={idx}
                 onClick={() => setCurrentQuestion(idx)}
-                className={`w-8 h-8 rounded-lg text-sm font-medium transition-all ${
+                className={`w-8 h-8 shrink-0 rounded-lg text-sm font-medium transition-all ${
                   idx === currentQuestion
                     ? 'bg-[#00D084] text-white'
-                    : selectedAnswers[test.questions[idx].id] !== undefined
+                    : selectedAnswers[q._id] 
                     ? 'bg-[#00D084]/20 text-[#00D084]'
                     : 'bg-gray-200 text-gray-500'
                 }`}
@@ -371,17 +421,17 @@ export default function TestDetail() {
           {currentQuestion < test.questions.length - 1 ? (
             <Button
               onClick={() => setCurrentQuestion(prev => Math.min(test.questions.length - 1, prev + 1))}
-              className="bg-[#00D084] hover:bg-[#00B873] rounded-xl"
+              className="bg-[#00D084] hover:bg-[#00B873] rounded-xl text-white"
             >
-              {t('test.next')}
+              Növbəti
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           ) : (
             <Button
               onClick={finishTest}
-              className="bg-[#00D084] hover:bg-[#00B873] rounded-xl"
+              className="bg-[#00D084] hover:bg-[#00B873] rounded-xl text-white shadow-lg shadow-[#00D084]/30"
             >
-              {t('test.finish')}
+              İmtahanı Bitir
               <CheckCircle className="w-4 h-4 ml-1" />
             </Button>
           )}

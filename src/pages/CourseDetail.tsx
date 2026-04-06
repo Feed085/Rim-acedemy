@@ -260,7 +260,7 @@ export default function CourseDetail() {
                       </div>
                     ) : enrollmentStatus === 'approved' ? (
                       <Button 
-                        onClick={() => navigate(`/course-watch/${course.id}`)}
+                        onClick={() => navigate(`/courses/${course.id || course._id}/watch`)}
                         className="w-full h-14 bg-[#00D084] hover:bg-[#00B873] text-white font-black rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-[#00D084]/20"
                       >
                         <PlayCircle className="w-5 h-5" />
