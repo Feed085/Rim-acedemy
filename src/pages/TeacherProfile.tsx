@@ -367,12 +367,12 @@ export default function TeacherProfile() {
                   {t('teacher.profile.experience')}
                 </h2>
                 {isEditing ? (
-                  <Input
+                  <Textarea
                     name="experience"
-                    type="number"
                     value={formData.experience}
                     onChange={handleChange}
-                    className="rounded-xl"
+                    placeholder="Təcrübəniz haqqında qısa məlumat..."
+                    className="rounded-xl min-h-[80px]"
                   />
                 ) : (
                   <div className="flex items-start gap-3">
@@ -380,8 +380,8 @@ export default function TeacherProfile() {
                       <BookOpen className="w-5 h-5 text-[#0082F3]" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{formData.experience} il</p>
-                      <p className="text-sm text-gray-500">Tədris təcrübəsi</p>
+                      <p className="font-medium text-gray-900 leading-relaxed italic">{formData.experience || 'Qeyd edilməyib'}</p>
+                      <p className="text-sm text-gray-500 mt-1">Tədris təcrübəsi</p>
                     </div>
                   </div>
                 )}

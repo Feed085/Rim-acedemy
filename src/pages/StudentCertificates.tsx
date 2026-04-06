@@ -22,14 +22,16 @@ export default function StudentCertificates() {
         return;
       }
       try {
-        const response = await fetch('http://localhost:5000/api/student/me', {
+        const response = await fetch('http://localhost:5000/api/tests/results/my', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         const data = await response.json();
         if (data.success && data.data) {
-          setCertificates(data.data.certificates);
+          // Filter only passed and graded results
+          const passedTests = data.data.filter((r: any) => r.scorePercentage >= 50 && !r.hasPendingAnswers);
+          setCertificates(passedTests);
         }
       } catch (err) {
         console.error('Sertifikatlar gətirilərkən xəta baş verdi', err);
@@ -86,20 +88,27 @@ export default function StudentCertificates() {
              </p>
            </div>
           ) : (
-            certificates.map((cert) => (
+            certificates.map((result: any) => {
+               const testTitle = result.test?.title || 'Bilinməyən Test';
+               const courseTitle = result.test?.course?.title || 'Kurs Sertifikatı';
+               const instructorName = result.test?.course?.instructor 
+                 ? `${result.test.course.instructor.name} ${result.test.course.instructor.surname}` 
+                 : 'Rim Academy';
+               
+               return (
             <div
-              key={cert.id}
+              key={result._id}
               className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col transition-all hover:shadow-md group"
             >
               {/* Certificate Ribbon */}
               <div className="relative h-48 rounded-2xl bg-gray-50 overflow-hidden mb-6 border border-gray-100 flex items-center justify-center group-hover:bg-[#F59E0B]/5 transition-colors">
-                <Award className="w-16 h-16 text-[#F59E0B] opacity-50 absolute right-6 top-6" />
+                < Award className="w-16 h-16 text-[#F59E0B] opacity-50 absolute right-6 top-6" />
                 <div className="text-center relative z-10 px-4">
                   <h3 className="text-2xl font-black text-gray-900 serif-font tracking-tight mb-2">
-                    {cert.title}
+                    {testTitle}
                   </h3>
                   <div className="text-sm font-semibold text-[#F59E0B]">
-                    {cert.category}
+                    {courseTitle}
                   </div>
                 </div>
               </div>
@@ -110,7 +119,7 @@ export default function StudentCertificates() {
                     <CalendarCheck className="w-4 h-4 text-gray-400" />
                     <span className="text-sm font-medium text-gray-700">Tarix:</span>
                   </div>
-                  <span className="text-sm font-bold text-gray-900">{cert.issueDate}</span>
+                  <span className="text-sm font-bold text-gray-900">{new Date(result.completedAt || result.createdAt).toLocaleDateString('az-AZ')}</span>
                 </div>
                 
                 <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
@@ -118,14 +127,14 @@ export default function StudentCertificates() {
                     <Award className="w-4 h-4 text-gray-400" />
                     <span className="text-sm font-medium text-gray-700">Nəticə (Dərəcə):</span>
                   </div>
-                  <span className="text-sm font-bold text-[#00D084]">{cert.grade}</span>
+                  <span className="text-sm font-bold text-[#00D084]">{result.scorePercentage.toFixed(0)}%</span>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div className="text-sm font-medium text-gray-500">
                     Təlimçi:
                   </div>
-                  <span className="text-sm font-semibold text-gray-900">{cert.instructor}</span>
+                  <span className="text-sm font-semibold text-gray-900">{instructorName}</span>
                 </div>
               </div>
 
@@ -138,7 +147,8 @@ export default function StudentCertificates() {
                 </Button>
               </div>
             </div>
-            ))
+            );
+          })
           )}
         </div>
       </div>

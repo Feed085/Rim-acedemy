@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { teachers } from '@/data/mockData';
-import { mockDb } from '@/services/mockDb';
 import { Button } from '@/components/ui/button';
 import { 
   Star, 
@@ -30,18 +28,32 @@ export default function CourseDetail() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const dbCourses = mockDb.getCourses();
-    const foundCourse = dbCourses.find(c => c.id === id);
-    if (foundCourse) {
-      setCourse(foundCourse);
-      const foundTeacher = teachers.find(t => t.id === foundCourse.teacherId);
-      setTeacher(foundTeacher);
-      
-      // Check enrollment status
-      if (user && user.role === 'student') {
-        setEnrollmentStatus(mockDb.getEnrollmentStatus(user.email, foundCourse.id));
+    const fetchCourse = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/courses/${id}`);
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          setCourse(data.data);
+          setTeacher(data.data.instructor);
+          
+          if (user && user.role === 'student') {
+            // Hələlik enrollment yoxdur API kimi. Amma activeCourses yoxlanıla bilər
+            const studentCheck = await fetch(`http://localhost:5000/api/student/me`, {
+               headers: { 'Authorization': `Bearer ${localStorage.getItem('rim_auth_token')}` }
+            });
+            const stData = await studentCheck.json();
+            if(stData.success && stData.data.activeCourses) {
+               const hasCourse = stData.data.activeCourses.some((c: any) => c._id === id);
+               if(hasCourse) setEnrollmentStatus('approved');
+            }
+          }
+        }
+      } catch (err) {
+        toast.error('Kurs yüklənə bilmədi');
       }
-    }
+    };
+    fetchCourse();
   }, [id, user]);
 
   const handleRequest = async () => {
@@ -52,16 +64,13 @@ export default function CourseDetail() {
     }
     
     setIsRequesting(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    const success = mockDb.requestEnrollment(user!.email, user!.name, course.id);
-    if (success) {
+    // Gələcəkdə qeydiyyat logikası bura yazılacaq.
+    setTimeout(() => {
       setEnrollmentStatus('pending');
       toast.success('Müraciətiniz qəbul olundu! Admin ilə WhatsApp-da əlaqə saxlayın.');
-    } else {
-      toast.error('Müraciətiniz artıq mövcuddur.');
-    }
-    setIsRequesting(false);
+      setIsRequesting(false);
+    }, 1000);
   };
 
   const openWhatsApp = () => {
@@ -138,12 +147,12 @@ export default function CourseDetail() {
               
               <div className="flex items-center gap-2 text-gray-300">
                 <Users className="w-5 h-5 text-[#00D084]" />
-                <span className="font-medium text-sm">{course.studentCount} Tələbə</span>
+                <span className="font-medium text-sm">214 Tələbə</span>
               </div>
 
               <div className="flex items-center gap-2 text-gray-300">
                 <Calendar className="w-5 h-5 text-[#0082F3]" />
-                <span className="font-medium text-sm">Son yenilənmə: {course.lastUpdated}</span>
+                <span className="font-medium text-sm">Son yenilənmə: {new Date(course.updatedAt || course.createdAt).toLocaleDateString('az-AZ')}</span>
               </div>
             </div>
             
@@ -189,35 +198,35 @@ export default function CourseDetail() {
                 <div className="shrink-0 flex flex-col items-center">
                   <div className="relative mb-4">
                     <img
-                      src={course.teacherAvatar}
-                      alt={course.teacherName}
-                      className="w-24 h-24 lg:w-32 lg:h-32 rounded-3xl object-cover border-4 border-gray-50"
+                      src={teacher?.avatar || "https://ui-avatars.com/api/?name=Teacher"}
+                      alt={teacher?.name}
+                      className="w-24 h-24 lg:w-32 lg:h-32 rounded-3xl object-cover border-4 border-gray-50 bg-white"
                     />
                     <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-white p-1.5 rounded-xl shadow-lg">
                       <Star className="w-4 h-4 fill-white" />
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-sm font-bold text-gray-900">{teacher?.rating} Reytinq</div>
-                    <div className="text-xs text-gray-500">{teacher?.studentCount} Tələbə</div>
+                    <div className="text-sm font-bold text-gray-900">{teacher?.rating || '5.0'} Reytinq</div>
+                    <div className="text-xs text-gray-500">Müəllim</div>
                   </div>
                 </div>
                 <div className="flex-1">
                   <Link 
-                    to={`/teachers/${course.teacherId}`}
+                    to={`/teachers/${teacher?._id}`}
                     className="text-xl font-bold text-gray-900 hover:text-[#00D084] transition-colors block mb-2"
                   >
-                    {course.teacherName}
+                    {teacher?.name} {teacher?.surname}
                   </Link>
                   <p className="text-sm font-medium text-[#00D084] uppercase tracking-wider mb-4">
-                    {teacher?.specialties.join(', ')}
+                    {(teacher?.specializedAreas || []).join(', ')}
                   </p>
-                  <p className="text-gray-600 text-sm leading-relaxed mb-6 italic">
-                    {teacher?.bio}
+                  <p className="text-gray-600 text-sm leading-relaxed mb-6 italic line-clamp-3">
+                    {teacher?.experience || 'Ali təhsilli və peşəkar kurs instruktoru.'}
                   </p>
                   <Button 
                     variant="outline" 
-                    onClick={() => navigate(`/teachers/${course.teacherId}`)}
+                    onClick={() => navigate(`/teachers/${teacher?._id}`)}
                     className="rounded-xl border-gray-200 hover:border-[#00D084] hover:text-[#00D084]"
                   >
                     Profilə bax
@@ -283,8 +292,9 @@ export default function CourseDetail() {
                     ) : (
                       <>
                         <div className="flex items-center gap-4 mb-2">
-                           <span className="text-4xl font-black text-gray-900">49.00 AZN</span>
-                           <span className="text-lg text-gray-400 line-through">120.00 AZN</span>
+                           <span className="text-4xl font-black text-gray-900">
+                             {course.price > 0 ? `${course.price} AZN` : 'Pulsuz!'}
+                           </span>
                         </div>
                         <Button 
                           onClick={handleRequest}

@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
-import { teachers, courses } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 import { 
   Star, 
@@ -10,8 +9,6 @@ import {
   BookOpen, 
   Award, 
   ArrowLeft,
-  Mail,
-  Phone,
   MapPin,
   Facebook,
   Instagram,
@@ -29,10 +26,35 @@ export default function TeacherDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
-  const teacher = teachers.find(t => t.id === id);
+  
+  const [teacher, setTeacher] = useState<any>(null);
+  const [teacherCourses, setTeacherCourses] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
   const [activeTab, setActiveTab] = useState<'courses' | 'about' | 'reviews'>('courses');
   const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    const fetchTeacher = async () => {
+      try {
+        const response = await fetch(`http://localhost:5000/api/teacher/public/${id}`);
+        const data = await response.json();
+        if (data.success && data.data) {
+           setTeacher(data.data);
+           setTeacherCourses(data.courses || []);
+           setStats(data.stats || {});
+        }
+      } catch (err) {
+        toast.error('Müəllim yüklənə bilmədi');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchTeacher();
+  }, [id]);
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +72,10 @@ export default function TeacherDetail() {
     setIsSubmitting(false);
   };
 
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center">Yüklənir...</div>;
+  }
+
   if (!teacher) {
     return (
       <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24 flex items-center justify-center">
@@ -63,7 +89,6 @@ export default function TeacherDetail() {
     );
   }
 
-  const teacherCourses = courses.filter(c => c.teacherId === teacher.id);
 
   const reviews = [
     {
@@ -128,21 +153,13 @@ export default function TeacherDetail() {
                     {teacher.name} {teacher.surname}
                   </h1>
                   <p className="text-gray-500 mt-1">
-                    {teacher.specialties.join(', ')}
+                    {(teacher.specializedAreas || []).join(', ')}
                   </p>
                   
                   <div className="flex flex-wrap gap-4 mt-4">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <MapPin className="w-4 h-4" />
-                      Bakı, Azərbaycan
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Mail className="w-4 h-4" />
-                      {teacher.email}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Phone className="w-4 h-4" />
-                      {teacher.phone}
+                      {teacher.location || 'Bakı, Azərbaycan'}
                     </div>
                   </div>
                 </div>
@@ -171,21 +188,21 @@ export default function TeacherDetail() {
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-2 mb-1">
                     <Users className="w-5 h-5 text-[#00D084]" />
-                    <span className="text-2xl font-black text-gray-900">{teacher.studentCount}</span>
+                    <span className="text-2xl font-black text-gray-900">{stats?.studentCount || 0}</span>
                   </div>
                   <p className="text-sm text-gray-500">{t('teachers.students')}</p>
                 </div>
                 <div className="text-center border-x border-gray-100">
                   <div className="flex items-center justify-center gap-2 mb-1">
                     <BookOpen className="w-5 h-5 text-[#0082F3]" />
-                    <span className="text-2xl font-black text-gray-900">{teacher.courseCount}</span>
+                    <span className="text-2xl font-black text-gray-900">{stats?.courseCount || 0}</span>
                   </div>
                   <p className="text-sm text-gray-500">{t('teachers.courses')}</p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-2 mb-1">
                     <Award className="w-5 h-5 text-[#F59E0B]" />
-                    <span className="text-2xl font-black text-gray-900">{teacher.experience}</span>
+                    <span className="text-2xl font-black text-gray-900">{teacher.experience || '1 İl'}</span>
                   </div>
                   <p className="text-sm text-gray-500">{t('teachers.experience')}</p>
                 </div>
@@ -220,32 +237,34 @@ export default function TeacherDetail() {
           <div className="p-6 lg:p-8">
             {activeTab === 'courses' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {teacherCourses.map((course) => (
-                  <div
-                    key={course.id}
-                    className="flex gap-4 p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors cursor-pointer"
-                    onClick={() => navigate(`/courses/${course.id}`)}
-                  >
-                    <img
-                      src={course.image}
-                      alt={course.title}
-                      className="w-24 h-20 object-cover rounded-xl"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-bold text-gray-900 mb-1">{course.title}</h3>
-                      <div className="flex items-center gap-3 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" />
-                          {course.duration}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Users className="w-3.5 h-3.5" />
-                          {course.studentCount}
-                        </span>
+                {teacherCourses.length === 0 ? (
+                  <div className="text-center text-gray-400 py-8">
+                    Bu müəllimin hələ ki aktiv kursu yoxdur.
+                  </div>
+                ) : (
+                  teacherCourses.map((course) => (
+                    <div
+                      key={course._id}
+                      className="flex gap-4 p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/courses/${course._id}`)}
+                    >
+                      <img
+                        src={course.image || 'https://images.unsplash.com/photo-1546410531-bea5aadcb6ce'}
+                        alt={course.title}
+                        className="w-24 h-20 object-cover rounded-xl"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-bold text-gray-900 mb-1">{course.title}</h3>
+                        <div className="flex items-center gap-3 text-sm text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            {course.duration || '0:00'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             )}
 
@@ -264,13 +283,13 @@ export default function TeacherDetail() {
 
                 <div>
                   <h3 className="text-lg font-bold text-gray-900 mb-3">Təcrübə</h3>
-                  <p className="text-gray-600 leading-relaxed">{teacher.bio}</p>
+                  <p className="text-gray-600 leading-relaxed">{teacher.experience || 'Müəllim təcrübəsini paylaşmayıb.'}</p>
                 </div>
 
                 <div>
                   <h3 className="text-lg font-bold text-gray-900 mb-3">İxtisaslar</h3>
                   <div className="flex flex-wrap gap-2">
-                    {teacher.specialties.map((specialty, index) => (
+                    {(teacher.specializedAreas || []).map((specialty: string, index: number) => (
                       <span
                         key={index}
                         className="px-4 py-2 bg-[#00D084]/10 text-[#00D084] rounded-full text-sm font-medium"
