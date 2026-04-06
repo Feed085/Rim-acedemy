@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { mockDb } from '@/services/mockDb';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -25,26 +25,37 @@ export default function CoursesPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [dbCourses, setDbCourses] = useState<any[]>(mockDb.getCourses());
-  
+  const [dbCourses, setDbCourses] = useState<any[]>([]);
+
   useEffect(() => {
-    setDbCourses(mockDb.getCourses());
-    const interval = setInterval(() => {
-      setDbCourses(mockDb.getCourses());
-    }, 2000);
-    return () => clearInterval(interval);
+    const fetchCourses = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/courses');
+        const data = await response.json();
+        if (data.success) {
+           setDbCourses(data.data || []);
+        }
+      } catch (err) {
+        console.error('Kurslar yüklənə bilmədi', err);
+      }
+    };
+    fetchCourses();
   }, []);
 
+  // Düymələrdə göstərmək üçün unikal kateqoriyaları tapırıq
+  const uniqueCategoryNames = Array.from(new Set(dbCourses.map(c => c.category).filter(Boolean)));
   const categories = [
     { id: 'all', name: 'Hamısı' },
-    ...mockDb.getCategories(),
+    ...uniqueCategoryNames.map(name => ({ id: name as string, name: name as string }))
   ];
 
   const filteredCourses = dbCourses.filter(course => {
-    const matchesSearch = 
-      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.teacherName?.toLowerCase().includes(searchQuery.toLowerCase());
+    const titleMatch = course.title?.toLowerCase().includes(searchQuery.toLowerCase());
+    const descMatch = course.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const teacherMatch = course.instructor?.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         course.instructor?.surname?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesSearch = titleMatch || descMatch || teacherMatch;
     
     const matchesCategory = 
       selectedCategory === 'all' || 
@@ -108,13 +119,13 @@ export default function CoursesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredCourses.map((course) => (
             <div
-              key={course.id}
+              key={course._id || course.id}
               className="group bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-lg transition-all hover:-translate-y-1"
             >
               {/* Image */}
               <div className="relative h-48 overflow-hidden">
                 <img
-                  src={course.image}
+                  src={course.image || 'https://via.placeholder.com/600x400'}
                   alt={course.title}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
@@ -123,7 +134,7 @@ export default function CoursesPage() {
                 {/* Rating badge */}
                 <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full">
                   <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                  <span className="text-xs font-semibold">{course.rating}</span>
+                  <span className="text-xs font-semibold">{course.rating || '0.0'}</span>
                 </div>
 
               </div>
@@ -141,11 +152,11 @@ export default function CoursesPage() {
                 <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
                   <div className="flex items-center gap-1">
                     <Clock className="w-3.5 h-3.5" />
-                    <span>{course.duration}</span>
+                    <span>{course.modules?.length ? `${course.modules.length} Modul` : 'Dərslər hazırlanır'}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Users className="w-3.5 h-3.5" />
-                    <span>{course.studentCount}</span>
+                    <span>{course.hasCertificate ? 'Sertifikatlı' : 'Sertifikat yoxdur'}</span>
                   </div>
                 </div>
 
@@ -153,19 +164,23 @@ export default function CoursesPage() {
                 <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                   <div className="flex items-center gap-2">
                     <img
-                      src={course.teacherAvatar}
-                      alt={course.teacherName}
+                      src={course.instructor?.avatar || 'https://cloudflare-ipfs.com/ipfs/Qmd3W5DuhgHirKVGVwei6Df8ct23tMACbeRpeM4981E21T/avatar/1149.jpg'}
+                      alt={course.instructor?.name || 'Müəllim'}
                       className="w-8 h-8 rounded-full object-cover"
                     />
-                    <span className="text-xs font-medium text-gray-600 truncate max-w-[80px]">
-                      {course.teacherName}
+                    <span className="text-xs font-medium text-gray-600 truncate max-w-[120px]">
+                      {course.instructor ? `${course.instructor.name} ${course.instructor.surname || ''}` : 'Rim Academy'}
                     </span>
+                  </div>
+                  {/* Price info if available */}
+                  <div className="text-sm font-bold text-[#00D084]">
+                    {course.price === 0 ? 'Ödənişsiz' : `${course.price} AZN`}
                   </div>
                 </div>
 
                 {/* Button */}
                 <Button
-                  onClick={() => navigate(`/courses/${course.id}`)}
+                  onClick={() => navigate(`/courses/${course._id}`)}
                   className="w-full mt-4 bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl group/btn"
                 >
                   Dərslərə bax

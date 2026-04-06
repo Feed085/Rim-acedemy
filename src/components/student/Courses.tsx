@@ -3,18 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { courses } from '@/data/mockData';
+
 import { Button } from '@/components/ui/button';
-import { Clock, Users, Star, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 gsap.registerPlugin(ScrollTrigger);
-
-const categories = [
-  { key: 'all', label: 'Hamısı' },
-  { key: 'language', label: 'Dil Kursları' },
-  { key: 'exam', label: 'İmtahan Hazırlığı' },
-  { key: 'computer', label: 'Komputer' },
-];
 
 export default function Courses() {
   const { t } = useTranslation();
@@ -23,10 +16,33 @@ export default function Courses() {
   const titleRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const [activeCategory, setActiveCategory] = useState('all');
+  const [dbCourses, setDbCourses] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/courses');
+        const data = await response.json();
+        if (data.success) {
+           setDbCourses(data.data || []);
+        }
+      } catch (err) {
+        console.error('Kurslar yüklənə bilmədi', err);
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  // Düymələrdə göstərmək üçün unikal kateqoriyaları çıxarırıq (maks 4 dənə ana səhifə üçün)
+  const uniqueCategoryNames = Array.from(new Set(dbCourses.map(c => c.category).filter(Boolean)));
+  const dynamicCategories = [
+    { key: 'all', label: 'Hamısı' },
+    ...uniqueCategoryNames.slice(0, 4).map(name => ({ key: name as string, label: name as string }))
+  ];
 
   const filteredCourses = activeCategory === 'all'
-    ? courses
-    : courses.filter(course => course.category === activeCategory);
+    ? dbCourses
+    : dbCourses.filter(course => course.category === activeCategory);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -94,7 +110,7 @@ export default function Courses() {
 
         {/* Category Filter */}
         <div className="flex flex-wrap justify-center gap-3 mb-12">
-          {categories.map((cat) => (
+          {dynamicCategories.map((cat) => (
             <button
               key={cat.key}
               onClick={() => setActiveCategory(cat.key)}
@@ -116,58 +132,53 @@ export default function Courses() {
         >
           {filteredCourses.slice(0, 8).map((course) => (
             <div
-              key={course.id}
-              onClick={() => navigate(`/courses/${course.id}`)}
+              key={course._id || course.id}
+              onClick={() => navigate(`/courses/${course._id || course.id}`)}
               className="course-card group cursor-pointer bg-white rounded-3xl overflow-hidden shadow-lg shadow-gray-200/50 hover:shadow-xl hover:shadow-gray-300/50 transition-all duration-300 hover:-translate-y-2"
             >
               {/* Image */}
               <div className="relative h-48 overflow-hidden">
                 <img
-                  src={course.image}
+                  src={course.image || 'https://via.placeholder.com/600x400'}
                   alt={course.title}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                 
                 {/* Rating badge */}
+                {/* 
                 <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full">
                   <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                  <span className="text-xs font-semibold">{course.rating}</span>
+                  <span className="text-xs font-semibold">{course.rating || '0.0'}</span>
                 </div>
-
+                */}
               </div>
 
               {/* Content */}
-              <div className="p-5">
-                <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1">
-                  {course.title}
-                </h3>
-                <p className="text-gray-500 text-sm mb-4 line-clamp-2">
-                  {course.description}
-                </p>
-
-                {/* Meta */}
-                <div className="flex items-center gap-4 text-xs text-gray-500 mb-4">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>{course.duration}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5" />
-                    <span>{course.studentCount}</span>
-                  </div>
+              <div className="p-5 flex flex-col justify-between h-[180px]">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1">
+                    {course.title}
+                  </h3>
+                  <p className="text-gray-500 text-sm line-clamp-2">
+                    {course.description}
+                  </p>
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-4">
                   <div className="flex items-center gap-2">
                     <img
-                      src={course.teacherAvatar}
-                      alt={course.teacherName}
+                      src={course.instructor?.avatar || 'https://cloudflare-ipfs.com/ipfs/Qmd3W5DuhgHirKVGVwei6Df8ct23tMACbeRpeM4981E21T/avatar/1149.jpg'}
+                      alt={course.instructor?.name || 'Müəllim'}
                       className="w-8 h-8 rounded-full object-cover"
                     />
-                    <span className="text-xs font-medium text-gray-600">
-                      {course.teacherName}
+                    <span className="text-xs font-medium text-gray-600 truncate max-w-[120px]">
+                      {course.instructor ? `${course.instructor.name} ${course.instructor.surname || ''}` : 'Rim Academy'}
                     </span>
+                  </div>
+                  <div className="text-sm font-bold text-[#00D084]">
+                    {course.price === 0 ? 'Ödənişsiz' : `${course.price} AZN`}
                   </div>
                 </div>
               </div>
