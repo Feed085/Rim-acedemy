@@ -41,6 +41,7 @@ export default function TeacherCourseEdit() {
   const [course, setCourse] = useState<any>(null);
   const [lessons, setLessons] = useState<any[]>([]);
   const [tests, setTests] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [editingLesson, setEditingLesson] = useState<any>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
@@ -73,6 +74,25 @@ export default function TeacherCourseEdit() {
         const testsData = await testsRes.json();
         if (testsData.success) {
            setTests(testsData.data);
+        }
+
+        try {
+          const categoriesRes = await fetch('http://localhost:5000/api/categories');
+          const categoriesData = await categoriesRes.json();
+          if (categoriesData.success) {
+            const normalizedCategories = (categoriesData.data || []).map((category: any) => ({
+              id: category.id || category.slug,
+              name: category.name
+            }));
+
+            if (courseData.success && courseData.data?.category && !normalizedCategories.some((category: any) => category.name === courseData.data.category)) {
+              normalizedCategories.unshift({ id: courseData.data.category, name: courseData.data.category });
+            }
+
+            setCategories(normalizedCategories);
+          }
+        } catch (categoryError) {
+          console.error('Kateqoriyalar yüklənmədi', categoryError);
         }
 
       } catch (err) {
@@ -313,13 +333,13 @@ export default function TeacherCourseEdit() {
                       </div>
                     </SelectTrigger>
                     <SelectContent className="bg-white border-gray-100 rounded-xl shadow-xl">
-                      {['İmtahanlara Hazırlıq', 'Xarici Dillər', 'IT və Proqramlaşdırma', 'Dizayn', 'Biznes və İdarəetmə', 'Məktəbəqədər'].map((cat: string) => (
+                      {categories.map((cat: any) => (
                         <SelectItem 
-                          key={cat} 
-                          value={cat}
+                          key={cat.id}
+                          value={cat.name}
                           className="py-2.5 px-4 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
                         >
-                          {cat}
+                          {cat.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

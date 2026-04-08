@@ -1,0 +1,1210 @@
+import { useEffect, useMemo, useState } from 'react';
+import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-dom';
+import {
+  ArrowUpRight,
+  BookOpen,
+  Check,
+  Copy,
+  Edit3,
+  GraduationCap,
+  Grid,
+  LayoutDashboard,
+  LogOut,
+  MoreVertical,
+  Plus,
+  RefreshCw,
+  Search,
+  Shield,
+  Tag as TagIcon,
+  Trash2,
+  UserPlus,
+  Users,
+  X,
+  Clock
+} from 'lucide-react';
+import { toast, Toaster } from 'sonner';
+import { adminApi } from './services/api';
+
+type ModalProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+};
+
+type DashboardCard = {
+  key: string;
+  label: string;
+  value: number | null;
+  displayValue?: string;
+  trendLabel: string;
+  trendType: 'up' | 'down' | 'neutral';
+  note?: string;
+};
+
+type DashboardData = {
+  cards: DashboardCard[];
+  topCourses: Array<{
+    id: string;
+    title: string;
+    category: string;
+    instructorName: string;
+    studentCount: number;
+  }>;
+  latestStudents: Array<{
+    id: string;
+    name: string;
+    email: string;
+    activeCoursesCount: number;
+    assignedTestsCount: number;
+    createdAt: string;
+  }>;
+  latestTeachers: Array<{
+    id: string;
+    name: string;
+    surname: string;
+    email: string;
+    categories: string[];
+    courseCount: number;
+    testCount: number;
+    rating: number;
+  }>;
+};
+
+type CategoryItem = {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  icon?: string;
+  order?: number;
+  isActive?: boolean;
+};
+
+type TeacherItem = {
+  id: string;
+  name: string;
+  surname: string;
+  email: string;
+  phoneNumber?: string;
+  avatar?: string;
+  categories: string[];
+  rating: number;
+  courseCount: number;
+  testCount: number;
+  education?: string;
+  experience?: string;
+  location?: string;
+};
+
+type StudentItem = {
+  id: string;
+  name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber?: string;
+  avatar?: string;
+  educationLevel?: string;
+  activeCourses: Array<{ _id: string; title: string; category: string }>;
+  assignedTests: Array<{ _id: string; title: string; courseTitle?: string }>;
+  activeCoursesCount: number;
+  assignedTestsCount: number;
+  completedTestsCount: number;
+  createdAt: string;
+};
+
+type CourseItem = {
+  id: string;
+  title: string;
+  category: string;
+  instructor: string;
+  price: number;
+  isActive: boolean;
+  studentCount: number;
+};
+
+type TestItem = {
+  id: string;
+  title: string;
+  courseTitle: string;
+  instructorName: string;
+  duration: number;
+  questionCount: number;
+};
+
+type AssignmentMode = 'course' | 'test';
+
+const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="w-full max-w-lg overflow-hidden rounded-[32px] bg-white shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="flex items-center justify-between border-b border-gray-50 bg-gray-50/30 p-8">
+          <h3 className="text-xl font-black text-gray-900">{title}</h3>
+          <button onClick={onClose} className="rounded-xl p-2 transition-colors hover:bg-white">
+            <X className="h-5 w-5 text-gray-400" />
+          </button>
+        </div>
+        <div className="p-8">{children}</div>
+      </div>
+    </div>
+  );
+};
+
+const formatNumber = (value: number | null | undefined) => {
+  if (value === null || value === undefined) return '0';
+  return new Intl.NumberFormat('az-AZ').format(value);
+};
+
+const formatDate = (value?: string) => {
+  if (!value) return '-';
+  return new Intl.DateTimeFormat('az-AZ', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }).format(new Date(value));
+};
+
+const resolveCategoryName = (categoryId: string, categories: CategoryItem[]) => {
+  return categories.find((category) => category.id === categoryId)?.name || categoryId || '---';
+};
+
+const Sidebar = () => {
+  const location = useLocation();
+  const menuItems = [
+    { icon: LayoutDashboard, label: 'Panel', path: '/' },
+    { icon: Users, label: 'Müəllimlər', path: '/teachers' },
+    { icon: GraduationCap, label: 'Tələbələr', path: '/students' },
+    { icon: Grid, label: 'Kateqoriyalar', path: '/categories' }
+  ];
+
+  return (
+    <aside className="fixed z-50 flex h-full w-72 flex-col border-r border-gray-100 bg-white">
+      <div className="flex h-24 items-center px-8">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#00D084] shadow-lg shadow-[#00D084]/20">
+            <span className="text-xl font-black italic text-white">R</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-xl font-black uppercase italic tracking-tight text-gray-900">Rim</span>
+            <span className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] leading-none text-[#00D084]">Academy</span>
+          </div>
+        </div>
+      </div>
+
+      <nav className="flex-1 space-y-2 px-4 py-4">
+        {menuItems.map((item) => {
+          const isActive = location.pathname === item.path;
+
+          return (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex items-center gap-4 rounded-2xl px-6 py-4 transition-all ${
+                isActive
+                  ? 'bg-[#00D084] font-bold text-white shadow-lg shadow-[#00D084]/20'
+                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <item.icon className="h-5 w-5" />
+              <span className="text-sm">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="border-t border-gray-50 p-4">
+        <button className="flex w-full items-center gap-4 rounded-2xl px-6 py-4 font-bold text-red-500 transition-all hover:bg-red-50">
+          <LogOut className="h-5 w-5" />
+          <span className="text-sm">Çıxış</span>
+        </button>
+      </div>
+    </aside>
+  );
+};
+
+const Dashboard = () => {
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const loadDashboard = async () => {
+    setLoading(true);
+
+    try {
+      const response = await adminApi.getDashboard();
+      if (response.success) {
+        setDashboard(response.data);
+      } else {
+        toast.error(response.message || 'Dashboard məlumatları alınmadı');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Dashboard məlumatları alınmadı');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDashboard();
+  }, []);
+
+  const cards = dashboard?.cards || [];
+
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900">Admin panel</h1>
+          <p className="mt-1 text-gray-500">Kurs, tələbə və müəllim axınına canlı baxış.</p>
+        </div>
+        <button
+          onClick={loadDashboard}
+          className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 shadow-sm transition-all hover:border-[#00D084] hover:text-[#00D084]"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Yenilə
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        {(loading ? Array.from({ length: 4 }) : cards).map((card: DashboardCard | undefined, index) => {
+          if (loading) {
+            return (
+              <div key={index} className="rounded-[32px] border border-gray-100 bg-white p-8 shadow-sm">
+                <div className="mb-4 h-3 w-24 animate-pulse rounded-full bg-gray-100" />
+                <div className="h-9 w-32 animate-pulse rounded-2xl bg-gray-100" />
+                <div className="mt-4 h-5 w-28 animate-pulse rounded-full bg-gray-100" />
+              </div>
+            );
+          }
+
+          if (!card) return null;
+
+          return (
+            <div key={card.key} className="rounded-[32px] border border-gray-100 bg-white p-8 shadow-sm transition-shadow hover:shadow-md">
+              <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-gray-400">{card.label}</p>
+              <div className="flex items-end justify-between gap-3">
+                <h3 className="text-3xl font-black leading-none text-gray-900">
+                  {card.displayValue || formatNumber(card.value)}
+                </h3>
+                <span
+                  className={`rounded-lg px-2 py-1 text-xs font-bold ${
+                    card.trendType === 'up'
+                      ? 'bg-[#00D084]/10 text-[#00D084]'
+                      : card.trendType === 'down'
+                        ? 'bg-red-50 text-red-500'
+                        : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  {card.trendLabel}
+                </span>
+              </div>
+              <p className="mt-3 text-sm text-gray-500">{card.note}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
+        <div className="rounded-[32px] border border-gray-100 bg-white p-8 shadow-sm">
+          <div className="mb-8 flex items-center justify-between">
+            <h3 className="text-xl font-black text-gray-900">Ən aktiv kurslar</h3>
+            <span className="rounded-full bg-gray-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-gray-500">
+              Canlı
+            </span>
+          </div>
+          <div className="space-y-5">
+            {(dashboard?.topCourses || []).map((course) => (
+              <div key={course.id} className="flex items-center justify-between gap-4 rounded-2xl border border-gray-50 p-4 transition-colors hover:bg-gray-50/50">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 font-black text-[#00D084] transition-all group-hover:bg-[#00D084] group-hover:text-white">
+                    {course.title[0]}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900">{course.title}</h4>
+                    <p className="text-xs text-gray-500">{course.instructorName} · {course.category}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="font-bold text-gray-900">{formatNumber(course.studentCount)} tələbə</div>
+                  <div className="text-[10px] font-black uppercase text-[#00D084]">Aktiv</div>
+                </div>
+              </div>
+            ))}
+            {!loading && dashboard && dashboard.topCourses.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-400">
+                Hələ aktiv kurs yoxdur.
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-[32px] bg-[#0A0A0A] p-8 text-white shadow-sm relative overflow-hidden">
+          <div className="relative z-10 flex h-full flex-col justify-between">
+            <div>
+              <h3 className="mb-2 text-2xl font-black opacity-90">Aylıq gəlir</h3>
+              <p className="max-w-[300px] text-sm leading-relaxed text-gray-400">
+                Kazanç sistemi hazır deyil. Bu blok, gelir altyapısı tamamlandığında otomatik dolacak.
+              </p>
+            </div>
+            <div className="mt-10 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+                <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">Status</div>
+                <div className="mt-2 text-lg font-black">Hazırlanır</div>
+              </div>
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+                <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">Növbəti mərhələ</div>
+                <div className="mt-2 text-lg font-black">Gelir sistemi</div>
+              </div>
+            </div>
+          </div>
+          <div className="absolute right-0 top-0 h-64 w-64 translate-x-1/2 -translate-y-1/2 rounded-full bg-[#00D084]/10 blur-[80px] transition-all duration-700 group-hover:bg-[#00D084]/20" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
+        <div className="rounded-[32px] border border-gray-100 bg-white p-8 shadow-sm">
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#00D084]/10">
+                <Users className="h-6 w-6 text-[#00D084]" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-gray-900">Son müəllimlər</h3>
+                <p className="text-sm text-gray-500">Backend-dən gələn ən son qeydiyyatlar</p>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-4">
+            {(dashboard?.latestTeachers || []).map((teacher) => (
+              <div key={teacher.id} className="rounded-2xl border border-gray-50 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className="font-bold text-gray-900">{teacher.name} {teacher.surname}</div>
+                    <div className="text-sm text-gray-500">{teacher.email}</div>
+                  </div>
+                  <div className="text-right text-sm font-bold text-gray-900">
+                    {teacher.courseCount} kurs · {teacher.testCount} test
+                  </div>
+                </div>
+              </div>
+            ))}
+            {!loading && dashboard && dashboard.latestTeachers.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-400">
+                Hələ müəllim yoxdur.
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-[32px] border border-gray-100 bg-white p-8 shadow-sm">
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50">
+                <GraduationCap className="h-6 w-6 text-blue-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-gray-900">Son tələbələr</h3>
+                <p className="text-sm text-gray-500">Yeni qoşulan tələbələr</p>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-4">
+            {(dashboard?.latestStudents || []).map((student) => (
+              <div key={student.id} className="rounded-2xl border border-gray-50 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className="font-bold text-gray-900">{student.name}</div>
+                    <div className="text-sm text-gray-500">{student.email}</div>
+                  </div>
+                  <div className="text-right text-sm font-bold text-gray-900">
+                    {student.activeCoursesCount} kurs · {student.assignedTestsCount} test
+                  </div>
+                </div>
+              </div>
+            ))}
+            {!loading && dashboard && dashboard.latestStudents.length === 0 && (
+              <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-400">
+                Hələ tələbə yoxdur.
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Teachers = () => {
+  const [teachers, setTeachers] = useState<TeacherItem[]>([]);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTeacherId, setEditingTeacherId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [createdInfo, setCreatedInfo] = useState<{ email: string; password: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [newTeacher, setNewTeacher] = useState({
+    name: '',
+    surname: '',
+    email: '',
+    password: '',
+    category: '',
+    phoneNumber: ''
+  });
+
+  const loadData = async () => {
+    setLoading(true);
+
+    try {
+      const [teachersResponse, categoriesResponse] = await Promise.all([
+        adminApi.getTeachers(),
+        adminApi.getCategories()
+      ]);
+
+      if (teachersResponse.success) {
+        setTeachers(teachersResponse.data);
+      }
+
+      if (categoriesResponse.success) {
+        setCategories(categoriesResponse.data);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Müəllim məlumatları alınmadı');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const filteredTeachers = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return teachers;
+
+    return teachers.filter((teacher) => {
+      const categoryName = resolveCategoryName(teacher.categories?.[0] || '', categories);
+      return [teacher.name, teacher.surname, teacher.email, categoryName]
+        .join(' ')
+        .toLowerCase()
+        .includes(query);
+    });
+  }, [teachers, categories, search]);
+
+  const handleCreate = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    try {
+      const payload = {
+        name: newTeacher.name,
+        surname: newTeacher.surname,
+        email: newTeacher.email,
+        phoneNumber: newTeacher.phoneNumber,
+        categories: newTeacher.category ? [newTeacher.category] : []
+      };
+
+      const response = editingTeacherId
+        ? await adminApi.updateTeacher(editingTeacherId, payload)
+        : await adminApi.createTeacher({ ...payload, password: newTeacher.password });
+
+      if (response.success) {
+        if (!editingTeacherId) {
+          setCreatedInfo({ email: newTeacher.email, password: newTeacher.password });
+        } else {
+          setCreatedInfo(null);
+        }
+        setNewTeacher({ name: '', surname: '', email: '', password: '', category: '', phoneNumber: '' });
+        setIsModalOpen(false);
+        setEditingTeacherId(null);
+        toast.success('Müəllim hesabı yaradıldı');
+        await loadData();
+      } else {
+        toast.error(response.message || 'Müəllim əməliyyatı uğursuz oldu');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Serverlə əlaqə qurula bilmədi');
+    }
+  };
+
+  const copyCredentials = async (text: string) => {
+    await navigator.clipboard.writeText(text);
+    toast.success('Kopyalandı');
+  };
+
+  const openCreateModal = () => {
+    setEditingTeacherId(null);
+    setNewTeacher({ name: '', surname: '', email: '', password: '', category: '', phoneNumber: '' });
+    setCreatedInfo(null);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (teacher: TeacherItem) => {
+    setEditingTeacherId(teacher.id);
+    setNewTeacher({
+      name: teacher.name,
+      surname: teacher.surname,
+      email: teacher.email,
+      password: '',
+      category: teacher.categories?.[0] || '',
+      phoneNumber: teacher.phoneNumber || ''
+    });
+    setCreatedInfo(null);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteTeacher = async (teacher: TeacherItem) => {
+    const confirmed = window.confirm(`${teacher.name} ${teacher.surname} silinsin?`);
+    if (!confirmed) return;
+
+    try {
+      const response = await adminApi.deleteTeacher(teacher.id);
+      if (response.success) {
+        toast.success('Müəllim silindi');
+        await loadData();
+      } else {
+        toast.error(response.message || 'Müəllim silinmədi');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Müəllim silinmədi');
+    }
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900">Müəllimlər</h1>
+          <p className="mt-1 text-gray-500">Yalnız müəllim hesabları burada göstərilir.</p>
+        </div>
+        <button
+          onClick={openCreateModal}
+          className="inline-flex items-center gap-2 rounded-2xl bg-[#00D084] px-6 py-3 font-bold text-white shadow-lg shadow-[#00D084]/20 transition-all active:scale-95 hover:bg-[#00B873]"
+        >
+          <Plus className="h-5 w-5" />
+          Yeni Müəllim
+        </button>
+      </div>
+
+      <div className="rounded-[32px] border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="relative max-w-md">
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            type="text"
+            placeholder="Müəllim adı, email və ya kateqoriya ilə axtar..."
+            className="w-full rounded-xl border border-gray-100 bg-white py-3 pl-12 pr-4 text-sm outline-none transition-all focus:border-[#00D084] focus:ring-0"
+          />
+        </div>
+      </div>
+
+      {createdInfo && (
+        <div className="animate-in slide-in-from-top-4 rounded-[32px] bg-[#00D084] p-8 text-white shadow-xl shadow-[#00D084]/20 duration-500">
+          <h3 className="mb-4 flex items-center gap-2 text-xl font-black">
+            <Check className="h-6 w-6" />
+            Hesab yaradıldı
+          </h3>
+          <p className="mb-6 text-sm opacity-90">Aşağıdakı giriş məlumatlarını müəllimə göndərin:</p>
+          <div className="space-y-4 rounded-2xl border border-white/10 bg-white/10 p-6 backdrop-blur-md">
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-xs font-black uppercase tracking-widest opacity-60">Email</span>
+              <div className="flex items-center gap-3">
+                <span className="font-bold">{createdInfo.email}</span>
+                <button onClick={() => copyCredentials(createdInfo.email)} className="rounded-lg p-2 transition-colors hover:bg-white/10">
+                  <Copy className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-xs font-black uppercase tracking-widest opacity-60">Şifrə</span>
+              <div className="flex items-center gap-3">
+                <span className="font-mono font-bold tracking-wider">{createdInfo.password}</span>
+                <button onClick={() => copyCredentials(createdInfo.password)} className="rounded-lg p-2 transition-colors hover:bg-white/10">
+                  <Copy className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <button onClick={() => setCreatedInfo(null)} className="mt-6 text-xs font-black uppercase tracking-widest hover:underline">
+            Bağla
+          </button>
+        </div>
+      )}
+
+      <div className="overflow-hidden rounded-[32px] border border-gray-100 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="bg-gray-50/50">
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Müəllim</th>
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Email</th>
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Kateqoriya</th>
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Kurslar</th>
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Testlər</th>
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400 text-right">Əməliyyat</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {loading && (
+                <tr>
+                  <td colSpan={6} className="px-8 py-12 text-center text-gray-400">Müəllimlər yüklənir...</td>
+                </tr>
+              )}
+              {!loading && filteredTeachers.map((teacher) => (
+                <tr key={teacher.id} className="group transition-colors hover:bg-gray-50/50">
+                  <td className="px-8 py-6 font-bold text-gray-900">{teacher.name} {teacher.surname}</td>
+                  <td className="px-8 py-6 font-medium text-gray-500">{teacher.email}</td>
+                  <td className="px-8 py-6">
+                    <span className="rounded bg-blue-50 px-2 py-1 text-[10px] font-black uppercase text-blue-600">
+                      {resolveCategoryName(teacher.categories?.[0] || '', categories)}
+                    </span>
+                  </td>
+                  <td className="px-8 py-6 font-bold text-gray-900">{teacher.courseCount} kurs</td>
+                  <td className="px-8 py-6 font-bold text-gray-900">{teacher.testCount} test</td>
+                  <td className="px-8 py-6 text-right">
+                    <div className="inline-flex items-center gap-2">
+                      <button
+                        onClick={() => openEditModal(teacher)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-gray-100 px-4 py-2 text-xs font-black uppercase tracking-widest text-gray-600 transition-colors hover:border-[#00D084] hover:text-[#00D084]"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                        Düzəlt
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTeacher(teacher)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-gray-100 px-4 py-2 text-xs font-black uppercase tracking-widest text-red-500 transition-colors hover:border-red-200 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Sil
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {!loading && filteredTeachers.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-8 py-12 text-center italic text-gray-400">
+                    Hələ ki, heç bir müəllim hesabı yaradılmayıb.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => { setIsModalOpen(false); setEditingTeacherId(null); }}
+        title={editingTeacherId ? 'Müəllim Redaktə Et' : 'Yeni Müəllim Hesabı'}
+      >
+        <form onSubmit={handleCreate} className="space-y-6">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Ad</label>
+              <input
+                required
+                value={newTeacher.name}
+                onChange={(event) => setNewTeacher({ ...newTeacher, name: event.target.value })}
+                type="text"
+                className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
+                placeholder="Məryəm"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Soyad</label>
+              <input
+                required
+                value={newTeacher.surname}
+                onChange={(event) => setNewTeacher({ ...newTeacher, surname: event.target.value })}
+                type="text"
+                className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
+                placeholder="Ələkbərli"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Email</label>
+            <input
+              required
+              value={newTeacher.email}
+              onChange={(event) => setNewTeacher({ ...newTeacher, email: event.target.value })}
+              type="email"
+              className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
+              placeholder="name@rimacademy.az"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Telefon</label>
+            <input
+              value={newTeacher.phoneNumber}
+              onChange={(event) => setNewTeacher({ ...newTeacher, phoneNumber: event.target.value })}
+              type="text"
+              className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
+              placeholder="+994 50 000 00 00"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Müvəqqəti Şifrə</label>
+            <input
+              required={!editingTeacherId}
+              value={newTeacher.password}
+              onChange={(event) => setNewTeacher({ ...newTeacher, password: event.target.value })}
+              type="text"
+              className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-mono font-bold tracking-widest outline-none transition-all focus:border-[#00D084] focus:bg-white"
+              placeholder={editingTeacherId ? 'Boş buraxın' : 'RIM2026!#'}
+              disabled={Boolean(editingTeacherId)}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Kateqoriya</label>
+            <select
+              required
+              value={newTeacher.category}
+              onChange={(event) => setNewTeacher({ ...newTeacher, category: event.target.value })}
+              className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
+            >
+              <option value="">Kateqoriya seçin...</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>{category.name}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="submit"
+            className="mt-4 w-full rounded-2xl bg-[#00D084] py-5 text-lg font-black text-white shadow-xl shadow-[#00D084]/20 transition-all active:scale-95 hover:bg-[#00B873]"
+          >
+            {editingTeacherId ? 'Düzəlişi Saxla' : 'Hesabı Yarat'}
+          </button>
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+const Students = () => {
+  const [students, setStudents] = useState<StudentItem[]>([]);
+  const [courses, setCourses] = useState<CourseItem[]>([]);
+  const [tests, setTests] = useState<TestItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<StudentItem | null>(null);
+  const [assignmentType, setAssignmentType] = useState<AssignmentMode>('course');
+  const [selectedTargetId, setSelectedTargetId] = useState('');
+
+  const loadData = async () => {
+    setLoading(true);
+
+    try {
+      const [studentsResponse, coursesResponse, testsResponse] = await Promise.all([
+        adminApi.getStudents(),
+        adminApi.getCourses(),
+        adminApi.getTests()
+      ]);
+
+      if (studentsResponse.success) setStudents(studentsResponse.data);
+      if (coursesResponse.success) setCourses(coursesResponse.data);
+      if (testsResponse.success) setTests(testsResponse.data);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Tələbə məlumatları alınmadı');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const filteredStudents = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return students;
+
+    return students.filter((student) =>
+      [student.name, student.email, student.phoneNumber || '', student.educationLevel || '']
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [students, search]);
+
+  const openAssignment = (student: StudentItem, mode: AssignmentMode = 'course') => {
+    setSelectedStudent(student);
+    setAssignmentType(mode);
+    setSelectedTargetId('');
+    setAssignmentModalOpen(true);
+  };
+
+  const handleAssign = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!selectedStudent) return;
+
+    try {
+      const response = await adminApi.assignStudentItem(selectedStudent.id, {
+        type: assignmentType,
+        targetId: selectedTargetId
+      });
+
+      if (response.success) {
+        toast.success(assignmentType === 'course' ? 'Kurs tələbəyə verildi' : 'Test tələbəyə verildi');
+        setAssignmentModalOpen(false);
+        setSelectedStudent(null);
+        setSelectedTargetId('');
+        await loadData();
+      } else {
+        toast.error(response.message || 'Təyinat edilə bilmədi');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Təyinat edilə bilmədi');
+    }
+  };
+
+  const activeResources = assignmentType === 'course' ? courses : tests;
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900">Tələbələr</h1>
+          <p className="mt-1 text-gray-500">Tələbələr görünür və onlara kurs və ya test təyin edilir.</p>
+        </div>
+        <button
+          onClick={() => loadData()}
+          className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 shadow-sm transition-all hover:border-[#00D084] hover:text-[#00D084]"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Yenilə
+        </button>
+      </div>
+
+      <div className="rounded-[32px] border border-gray-100 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="relative max-w-md flex-1">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              type="text"
+              placeholder="Tələbə adı, email və ya telefon ilə axtar..."
+              className="w-full rounded-xl border border-gray-100 bg-white py-3 pl-12 pr-4 text-sm outline-none transition-all focus:border-[#00D084] focus:ring-0"
+            />
+          </div>
+          <div className="rounded-2xl bg-gray-50 px-4 py-3 text-sm font-bold text-gray-600">
+            {filteredStudents.length} tələbə
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-[32px] border border-gray-100 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="bg-gray-50/50">
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Tələbə</th>
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Əlaqə</th>
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Kurslar</th>
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Testlər</th>
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Son qeydiyyat</th>
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400 text-right">Əməliyyat</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {loading && (
+                <tr>
+                  <td colSpan={6} className="px-8 py-12 text-center text-gray-400">Tələbələr yüklənir...</td>
+                </tr>
+              )}
+              {!loading && filteredStudents.map((student) => (
+                <tr key={student.id} className="transition-colors hover:bg-gray-50/50">
+                  <td className="px-8 py-6">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50">
+                        <GraduationCap className="h-5 w-5 text-blue-500" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-gray-900">{student.name}</div>
+                        <div className="text-xs text-gray-400">{student.educationLevel || 'Təyin edilməyib'}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-8 py-6 text-sm text-gray-500">
+                    <div className="font-medium text-gray-700">{student.email}</div>
+                    <div>{student.phoneNumber || '-'}</div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex flex-wrap gap-2">
+                      {student.activeCourses.map((course) => (
+                        <span key={course._id} className="rounded-lg bg-gray-100 px-3 py-1 text-xs font-bold text-gray-600">
+                          {course.title}
+                        </span>
+                      ))}
+                      {student.activeCourses.length === 0 && <span className="text-sm text-gray-400">Yoxdur</span>}
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="flex flex-wrap gap-2">
+                      {student.assignedTests.map((test) => (
+                        <span key={test._id} className="rounded-lg bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
+                          {test.title}
+                        </span>
+                      ))}
+                      {student.assignedTests.length === 0 && <span className="text-sm text-gray-400">Yoxdur</span>}
+                    </div>
+                  </td>
+                  <td className="px-8 py-6 text-sm text-gray-500">
+                    {formatDate(student.createdAt)}
+                  </td>
+                  <td className="px-8 py-6 text-right">
+                    <button
+                      onClick={() => openAssignment(student)}
+                      className="inline-flex items-center gap-2 rounded-xl bg-[#00D084] px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[#00D084]/20 transition-all hover:bg-[#00B873] active:scale-95"
+                    >
+                      <UserPlus className="h-3.5 w-3.5" />
+                      Kurs/Test ver
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!loading && filteredStudents.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-8 py-12 text-center italic text-gray-400">
+                    Hələ ki, heç bir tələbə yoxdur.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <Modal
+        isOpen={assignmentModalOpen}
+        onClose={() => setAssignmentModalOpen(false)}
+        title={selectedStudent ? `${selectedStudent.name} üçün təyinat` : 'Təyinat'}
+      >
+        <form onSubmit={handleAssign} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Tip</label>
+            <select
+              value={assignmentType}
+              onChange={(event) => {
+                const nextType = event.target.value as AssignmentMode;
+                setAssignmentType(nextType);
+                setSelectedTargetId('');
+              }}
+              className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
+            >
+              <option value="course">Kurs ver</option>
+              <option value="test">Test ver</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">
+              {assignmentType === 'course' ? 'Kurs seçin' : 'Test seçin'}
+            </label>
+            <select
+              required
+              value={selectedTargetId}
+              onChange={(event) => setSelectedTargetId(event.target.value)}
+              className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
+            >
+              <option value="">Seçim edin...</option>
+              {assignmentType === 'course'
+                ? activeResources.map((course) => (
+                  <option key={course.id} value={course.id}>{course.title}</option>
+                ))
+                : activeResources.map((test) => (
+                  <option key={test.id} value={test.id}>{test.title} · {test.courseTitle}</option>
+                ))}
+            </select>
+          </div>
+          <button
+            type="submit"
+            className="w-full rounded-2xl bg-[#00D084] py-5 text-lg font-black text-white shadow-xl shadow-[#00D084]/20 transition-all hover:bg-[#00B873] active:scale-95"
+          >
+            Təyin et
+          </button>
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+const Categories = () => {
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState({ name: '' });
+
+  const loadCategories = async () => {
+    setLoading(true);
+
+    try {
+      const response = await adminApi.getCategories();
+      if (response.success) {
+        setCategories(response.data);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Kateqoriyalar alınmadı');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const handleAdd = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    try {
+      const response = await adminApi.createCategory({ name: newCategory.name });
+      if (response.success) {
+        toast.success('Yeni kateqoriya əlavə edildi');
+        setIsModalOpen(false);
+        setNewCategory({ name: '' });
+        await loadCategories();
+      } else {
+        toast.error(response.message || 'Kateqoriya əlavə edilə bilmədi');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Kateqoriya əlavə edilə bilmədi');
+    }
+  };
+
+  const handleDelete = async (categoryId: string) => {
+    try {
+      const response = await adminApi.deleteCategory(categoryId);
+      if (response.success) {
+        toast.success('Kateqoriya silindi');
+        await loadCategories();
+      } else {
+        toast.error(response.message || 'Kateqoriya silinmədi');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Kateqoriya silinmədi');
+    }
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#00D084]/10">
+            <Grid className="h-6 w-6 text-[#00D084]" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-gray-900">Kateqoriyalar</h1>
+            <p className="text-gray-500 font-medium">Kateqoriyalar artıq backend üzərində idarə olunur.</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="inline-flex items-center gap-2 rounded-2xl bg-black px-6 py-3 font-bold text-white shadow-lg transition-all active:scale-95 hover:bg-gray-900"
+        >
+          <Plus className="h-5 w-5" />
+          Yeni Kateqoriya
+        </button>
+      </div>
+
+      <div className="overflow-hidden rounded-[32px] border border-gray-100 bg-white shadow-sm">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="bg-gray-50/50">
+              <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Rəng</th>
+              <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Kateqoriya</th>
+              <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Sistem ID</th>
+              <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400 text-right">Əməliyyat</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {loading && (
+              <tr>
+                <td colSpan={4} className="px-8 py-12 text-center text-gray-400">Kateqoriyalar yüklənir...</td>
+              </tr>
+            )}
+            {!loading && categories.map((category) => (
+              <tr key={category.id} className="transition-colors hover:bg-gray-50/30">
+                <td className="px-8 py-6">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: `${category.color || '#E5E7EB'}22` }}>
+                    <TagIcon className="h-5 w-5" style={{ color: category.color || '#9CA3AF' }} />
+                  </div>
+                </td>
+                <td className="px-8 py-6">
+                  <div className="font-bold text-lg text-gray-900">{category.name}</div>
+                  <div className="text-sm text-gray-500">{category.description || 'Açıklama yoxdur'}</div>
+                </td>
+                <td className="px-8 py-6">
+                  <code className="rounded-md bg-blue-50 px-2 py-1 text-xs font-black text-blue-500">{category.id}</code>
+                </td>
+                <td className="px-8 py-6 text-right">
+                  <button
+                    onClick={() => handleDelete(category.id)}
+                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-gray-500 transition-colors hover:bg-red-50 hover:text-red-500"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Sil
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {!loading && categories.length === 0 && (
+              <tr>
+                <td colSpan={4} className="px-8 py-12 text-center italic text-gray-400">
+                  Hələ kateqoriya yoxdur.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Yeni Kateqoriya">
+        <form onSubmit={handleAdd} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Kateqoriya adı</label>
+            <input
+              required
+              value={newCategory.name}
+              onChange={(event) => setNewCategory({ name: event.target.value })}
+              type="text"
+              className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
+              placeholder="Məs: Proqramlaşdırma"
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full rounded-2xl bg-[#00D084] py-5 text-lg font-black text-white shadow-xl shadow-[#00D084]/20 transition-all hover:bg-[#00B873]"
+          >
+            Yarat
+          </button>
+        </form>
+      </Modal>
+    </div>
+  );
+};
+
+export default function AppAdmin() {
+  return (
+    <BrowserRouter>
+      <Toaster position="top-right" richColors closeButton />
+      <div className="flex min-h-screen bg-[#F8FAFC]">
+        <Sidebar />
+        <main className="ml-72 flex-1 p-12 transition-all">
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/teachers" element={<Teachers />} />
+            <Route path="/students" element={<Students />} />
+            <Route path="/categories" element={<Categories />} />
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
+  );
+}

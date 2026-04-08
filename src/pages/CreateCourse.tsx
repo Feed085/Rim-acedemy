@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,16 +24,50 @@ import {
 export default function CreateCourse() {
   const navigate = useNavigate();
   const [isSaving, setIsSaving] = useState(false);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(true);
   
   const [formData, setFormData] = useState({
     title: '',
-    category: 'Design', // Default selected
+    category: '',
     price: '',
     hasCertificate: false,
     description: '',
     image: null as File | null,
     imageUrl: '' as string
   });
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/categories');
+        const data = await response.json();
+
+        if (data.success) {
+          const normalizedCategories = (data.data || []).map((category: any) => ({
+            id: category.id || category.slug,
+            name: category.name
+          }));
+
+          setCategories(normalizedCategories);
+
+          setFormData((prev) => {
+            if (prev.category || normalizedCategories.length === 0) {
+              return prev;
+            }
+
+            return { ...prev, category: normalizedCategories[0].name };
+          });
+        }
+      } catch (error) {
+        console.error('Kateqoriyalar yüklənə bilmədi', error);
+      } finally {
+        setIsCategoriesLoading(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -121,35 +155,25 @@ export default function CreateCourse() {
   return (
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24 pb-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => navigate(-1)}
-            className="p-2"
-          >
+          <Button variant="ghost" onClick={() => navigate(-1)} className="p-2">
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl lg:text-3xl font-black text-gray-900">
-              Yeni Kurs Yarat
-            </h1>
-            <p className="text-gray-600">
-              Tələbələr üçün yeni bir təlim proqramı hazırlayın
-            </p>
+            <h1 className="text-2xl lg:text-3xl font-black text-gray-900">Yeni Kurs Yarat</h1>
+            <p className="text-gray-600">Tələbələr üçün yeni bir təlim proqramı hazırlayın</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Info */}
             <div className="lg:col-span-2 space-y-6">
               <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-sm border border-gray-100">
                 <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                   <Layout className="w-5 h-5 text-[#00D084]" />
                   Kursun Məlumatları
                 </h2>
-                
+
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Kursun Adı</label>
@@ -165,31 +189,38 @@ export default function CreateCourse() {
                     </div>
                   </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Kateqoriya</label>
-                      <Select 
-                        value={formData.category} 
-                        onValueChange={(val) => setFormData({ ...formData, category: val })}
-                      >
-                        <SelectTrigger className="w-full h-12 rounded-xl bg-white border-gray-200">
-                          <div className="flex items-center gap-3">
-                            <Tag className="w-5 h-5 text-gray-400" />
-                            <SelectValue placeholder="Kateqoriya seçin" />
-                          </div>
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border-gray-100 rounded-xl shadow-xl">
-                      {['İmtahanlara Hazırlıq', 'Xarici Dillər', 'IT və Proqramlaşdırma', 'Dizayn', 'Biznes və İdarəetmə', 'Məktəbəqədər'].map((cat: string) => (
-                        <SelectItem 
-                          key={cat} 
-                          value={cat}
-                          className="py-2.5 px-4 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
-                        >
-                          {cat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                      </Select>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Kateqoriya</label>
+                    <Select value={formData.category} onValueChange={(val) => setFormData({ ...formData, category: val })}>
+                      <SelectTrigger className="w-full h-12 rounded-xl bg-white border-gray-200">
+                        <div className="flex items-center gap-3">
+                          <Tag className="w-5 h-5 text-gray-400" />
+                          <SelectValue placeholder="Kateqoriya seçin" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border-gray-100 rounded-xl shadow-xl">
+                        {isCategoriesLoading && (
+                          <SelectItem value="loading" disabled className="py-2.5 px-4 rounded-lg">
+                            Kateqoriyalar yüklənir...
+                          </SelectItem>
+                        )}
+                        {!isCategoriesLoading && categories.length === 0 && (
+                          <SelectItem value="empty" disabled className="py-2.5 px-4 rounded-lg">
+                            Kateqoriya tapılmadı
+                          </SelectItem>
+                        )}
+                        {!isCategoriesLoading && categories.map((cat: any) => (
+                          <SelectItem
+                            key={cat.id}
+                            value={cat.name}
+                            className="py-2.5 px-4 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                          >
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Haqqında</label>
@@ -214,48 +245,38 @@ export default function CreateCourse() {
                       />
                     </div>
                     <div className="flex items-center pt-8">
-                       <label className="flex items-center gap-3 cursor-pointer">
-                         <input 
-                           type="checkbox" 
-                           checked={formData.hasCertificate}
-                           onChange={(e) => setFormData({ ...formData, hasCertificate: e.target.checked })}
-                           className="w-5 h-5 rounded border-gray-300 text-[#00D084] focus:ring-[#00D084]"
-                         />
-                         <span className="text-sm font-medium text-gray-700">Sonda Sertifikat veriləcək</span>
-                       </label>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.hasCertificate}
+                          onChange={(e) => setFormData({ ...formData, hasCertificate: e.target.checked })}
+                          className="w-5 h-5 rounded border-gray-300 text-[#00D084] focus:ring-[#00D084]"
+                        />
+                        <span className="text-sm font-medium text-gray-700">Sonda Sertifikat veriləcək</span>
+                      </label>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Sidebar / Media */}
             <div className="space-y-6">
               <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100">
                 <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <ImageIcon className="w-5 h-5 text-[#00D084]" />
                   Kover Şəkli
                 </h3>
-                
+
                 <div className="aspect-video w-full rounded-2xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 relative group cursor-pointer">
                   {formData.imageUrl ? (
-                    <img 
-                      src={formData.imageUrl} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
                       <ImageIcon className="w-10 h-10 mb-2" />
                       <span className="text-xs">Şəkil seçin</span>
                     </div>
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
+                  <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
                 </div>
                 <p className="text-[10px] text-gray-500 mt-2 text-center uppercase tracking-wider">
                   Tövsiyə olunan ölçü: 1280x720 (16:9)
