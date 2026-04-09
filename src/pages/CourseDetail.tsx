@@ -222,7 +222,7 @@ export default function CourseDetail() {
                     {(teacher?.specializedAreas || []).join(', ')}
                   </p>
                   <p className="text-gray-600 text-sm leading-relaxed mb-6 italic line-clamp-3">
-                    {teacher?.experience || 'Ali təhsilli və peşəkar kurs instruktoru.'}
+                    {teacher?.experience ?? 0}
                   </p>
                   <Button 
                     variant="outline" 

@@ -5,7 +5,15 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowRight } from 'lucide-react';
+import {
+  buildFallbackCourseCategories,
+  getPublicCategories,
+  getPublicCourses,
+  normalizeCategoryKey,
+} from '@/services/publicApi';
+import type { PublicCategory, PublicCourse } from '@/services/publicApi';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -16,33 +24,50 @@ export default function Courses() {
   const titleRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const [activeCategory, setActiveCategory] = useState('all');
-  const [dbCourses, setDbCourses] = useState<any[]>([]);
+  const [courses, setCourses] = useState<PublicCourse[]>([]);
+  const [categories, setCategories] = useState<PublicCategory[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchCourses = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/courses');
-        const data = await response.json();
-        if (data.success) {
-           setDbCourses(data.data || []);
+        const [coursesResult, categoriesResult] = await Promise.allSettled([
+          getPublicCourses(),
+          getPublicCategories()
+        ]);
+
+        if (!isMounted) {
+          return;
         }
+
+        const loadedCourses = coursesResult.status === 'fulfilled' ? coursesResult.value : [];
+        const loadedCategories = categoriesResult.status === 'fulfilled' ? categoriesResult.value : [];
+
+        setCourses(loadedCourses);
+        setCategories(loadedCategories.length > 0 ? loadedCategories : buildFallbackCourseCategories(loadedCourses));
       } catch (err) {
         console.error('Kurslar yüklənə bilmədi', err);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
+
     fetchCourses();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Düymələrdə göstərmək üçün unikal kateqoriyaları çıxarırıq (maks 4 dənə ana səhifə üçün)
-  const uniqueCategoryNames = Array.from(new Set(dbCourses.map(c => c.category).filter(Boolean)));
-  const dynamicCategories = [
-    { key: 'all', label: 'Hamısı' },
-    ...uniqueCategoryNames.slice(0, 4).map(name => ({ key: name as string, label: name as string }))
-  ];
+  const courseCategories = categories.length > 0 ? categories : buildFallbackCourseCategories(courses);
 
   const filteredCourses = activeCategory === 'all'
-    ? dbCourses
-    : dbCourses.filter(course => course.category === activeCategory);
+    ? courses
+    : courses.filter((course) => normalizeCategoryKey(course.category) === normalizeCategoryKey(activeCategory));
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -86,7 +111,7 @@ export default function Courses() {
     }, sectionRef);
 
     return () => ctx.revert();
-  }, [filteredCourses]);
+  }, [filteredCourses.length]);
 
   return (
     <section
@@ -110,19 +135,36 @@ export default function Courses() {
 
         {/* Category Filter */}
         <div className="flex flex-wrap justify-center gap-3 mb-12">
-          {dynamicCategories.map((cat) => (
-            <button
-              key={cat.key}
-              onClick={() => setActiveCategory(cat.key)}
-              className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${
-                activeCategory === cat.key
-                  ? 'bg-[#00D084] text-white shadow-lg shadow-[#00D084]/30'
-                  : 'bg-white text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {cat.label}
-            </button>
-          ))}
+          <button
+            onClick={() => setActiveCategory('all')}
+            className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${
+              activeCategory === 'all'
+                ? 'bg-[#00D084] text-white shadow-lg shadow-[#00D084]/30'
+                : 'bg-white text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Hamısı
+          </button>
+
+          {isLoading && courseCategories.length === 0 ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <Skeleton key={index} className="h-12 w-28 rounded-full" />
+            ))
+          ) : (
+            courseCategories.slice(0, 6).map((category) => (
+              <button
+                key={category.id}
+                onClick={() => setActiveCategory(category.id)}
+                className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${
+                  activeCategory === category.id
+                    ? 'bg-[#00D084] text-white shadow-lg shadow-[#00D084]/30'
+                    : 'bg-white text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {category.name}
+              </button>
+            ))
+          )}
         </div>
 
         {/* Course Grid */}
@@ -130,61 +172,76 @@ export default function Courses() {
           ref={gridRef}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
         >
-          {filteredCourses.slice(0, 8).map((course) => (
-            <div
-              key={course._id || course.id}
-              onClick={() => navigate(`/courses/${course._id || course.id}`)}
-              className="course-card group cursor-pointer bg-white rounded-3xl overflow-hidden shadow-lg shadow-gray-200/50 hover:shadow-xl hover:shadow-gray-300/50 transition-all duration-300 hover:-translate-y-2"
-            >
-              {/* Image */}
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={course.image || 'https://via.placeholder.com/600x400'}
-                  alt={course.title}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                
-                {/* Rating badge */}
-                {/* 
-                <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur-sm rounded-full">
-                  <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                  <span className="text-xs font-semibold">{course.rating || '0.0'}</span>
-                </div>
-                */}
-              </div>
-
-              {/* Content */}
-              <div className="p-5 flex flex-col justify-between h-[180px]">
-                <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1">
-                    {course.title}
-                  </h3>
-                  <p className="text-gray-500 text-sm line-clamp-2">
-                    {course.description}
-                  </p>
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-4">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={course.instructor?.avatar || 'https://cloudflare-ipfs.com/ipfs/Qmd3W5DuhgHirKVGVwei6Df8ct23tMACbeRpeM4981E21T/avatar/1149.jpg'}
-                      alt={course.instructor?.name || 'Müəllim'}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                    <span className="text-xs font-medium text-gray-600 truncate max-w-[120px]">
-                      {course.instructor ? `${course.instructor.name} ${course.instructor.surname || ''}` : 'Rim Academy'}
-                    </span>
-                  </div>
-                  <div className="text-sm font-bold text-[#00D084]">
-                    {course.price === 0 ? 'Ödənişsiz' : `${course.price} AZN`}
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="rounded-3xl bg-white overflow-hidden shadow-lg shadow-gray-200/50">
+                <Skeleton className="h-48 w-full rounded-none" />
+                <div className="p-5 space-y-4">
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-5/6" />
+                  <div className="flex items-center justify-between pt-2">
+                    <Skeleton className="h-8 w-28 rounded-full" />
+                    <Skeleton className="h-5 w-20" />
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            filteredCourses.slice(0, 8).map((course) => (
+              <div
+                key={course.id}
+                onClick={() => navigate(`/courses/${course.id}`)}
+                className="course-card group cursor-pointer bg-white rounded-3xl overflow-hidden shadow-lg shadow-gray-200/50 hover:shadow-xl hover:shadow-gray-300/50 transition-all duration-300 hover:-translate-y-2"
+              >
+                {/* Image */}
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={course.image || 'https://via.placeholder.com/600x400'}
+                    alt={course.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                </div>
+
+                {/* Content */}
+                <div className="p-5 flex flex-col justify-between h-[180px]">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-1">
+                      {course.title}
+                    </h3>
+                    <p className="text-gray-500 text-sm line-clamp-2">
+                      {course.description}
+                    </p>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-4">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={course.instructor?.avatar || 'https://cloudflare-ipfs.com/ipfs/Qmd3W5DuhgHirKVGVwei6Df8ct23tMACbeRpeM4981E21T/avatar/1149.jpg'}
+                        alt={course.instructor?.name || 'Müəllim'}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                      <span className="text-xs font-medium text-gray-600 truncate max-w-[120px]">
+                        {course.instructor ? `${course.instructor.name} ${course.instructor.surname || ''}` : 'Rim Academy'}
+                      </span>
+                    </div>
+                    <div className="text-sm font-bold text-[#00D084]">
+                      {course.price === 0 ? 'Ödənişsiz' : `${course.price} AZN`}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
+
+        {!isLoading && filteredCourses.length === 0 && (
+          <div className="text-center py-10 text-gray-500">
+            Seçilmiş kateqoriya üzrə kurs tapılmadı.
+          </div>
+        )}
 
         {/* View All Button */}
         <div className="text-center mt-12">

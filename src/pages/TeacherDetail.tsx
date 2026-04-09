@@ -20,6 +20,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Textarea } from '@/components/ui/textarea';
+import { getPublicTeacher } from '@/services/publicApi';
 
 export default function TeacherDetail() {
   const { t } = useTranslation();
@@ -40,12 +41,16 @@ export default function TeacherDetail() {
     window.scrollTo(0, 0);
     const fetchTeacher = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/teacher/public/${id}`);
-        const data = await response.json();
-        if (data.success && data.data) {
-           setTeacher(data.data);
-           setTeacherCourses(data.courses || []);
-           setStats(data.stats || {});
+        if (!id) {
+          return;
+        }
+
+        const response = await getPublicTeacher(id);
+
+        if (response.success && response.data) {
+           setTeacher(response.data);
+           setTeacherCourses(response.courses || []);
+           setStats(response.stats || {});
         }
       } catch (err) {
         toast.error('Müəllim yüklənə bilmədi');
@@ -202,7 +207,7 @@ export default function TeacherDetail() {
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-2 mb-1">
                     <Award className="w-5 h-5 text-[#F59E0B]" />
-                    <span className="text-2xl font-black text-gray-900">{teacher.experience || '1 İl'}</span>
+                    <span className="text-2xl font-black text-gray-900">{teacher.experience ?? 0}</span>
                   </div>
                   <p className="text-sm text-gray-500">{t('teachers.experience')}</p>
                 </div>
@@ -283,7 +288,7 @@ export default function TeacherDetail() {
 
                 <div>
                   <h3 className="text-lg font-bold text-gray-900 mb-3">Təcrübə</h3>
-                  <p className="text-gray-600 leading-relaxed">{teacher.experience || 'Müəllim təcrübəsini paylaşmayıb.'}</p>
+                  <p className="text-gray-600 leading-relaxed">{teacher.experience ?? 0}</p>
                 </div>
 
                 <div>

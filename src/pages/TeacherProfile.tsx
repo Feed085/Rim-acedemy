@@ -65,7 +65,7 @@ export default function TeacherProfile() {
              email: d.data.email,
              phone: d.data.phoneNumber || '',
              education: d.data.education || '',
-             experience: d.data.experience || '',
+             experience: String(d.data.experience ?? ''),
              specialties: (d.data.specializedAreas || []).join(', '),
              facebook: d.data.socialNetworks?.facebook || '',
              instagram: d.data.socialNetworks?.instagram || '',
@@ -111,6 +111,7 @@ export default function TeacherProfile() {
       const updatedProfile = {
         ...formData,
         avatar: finalAvatarUrl,
+        experience: formData.experience ? Number(formData.experience) : 0,
         specialties: formData.specialties.split(',').map((s: string) => s.trim()).filter(Boolean),
         socialLinks: {
           facebook: formData.facebook,
@@ -191,9 +192,9 @@ export default function TeacherProfile() {
                 <div className="absolute bottom-2 right-2">
                   <label className="w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center hover:bg-gray-50 cursor-pointer border border-gray-100">
                     <Camera className="w-5 h-5 text-[#00D084]" />
-                    <input 
-                      type="file" 
-                      className="hidden" 
+                    <input
+                      type="file"
+                      className="hidden"
                       accept="image/*"
                       onChange={handleImageUpload}
                     />
@@ -367,12 +368,14 @@ export default function TeacherProfile() {
                   {t('teacher.profile.experience')}
                 </h2>
                 {isEditing ? (
-                  <Textarea
+                  <Input
                     name="experience"
                     value={formData.experience}
                     onChange={handleChange}
-                    placeholder="Təcrübəniz haqqında qısa məlumat..."
-                    className="rounded-xl min-h-[80px]"
+                    type="number"
+                    min="0"
+                    placeholder="Məs: 12"
+                    className="rounded-xl"
                   />
                 ) : (
                   <div className="flex items-start gap-3">
@@ -380,7 +383,7 @@ export default function TeacherProfile() {
                       <BookOpen className="w-5 h-5 text-[#0082F3]" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 leading-relaxed italic">{formData.experience || 'Qeyd edilməyib'}</p>
+                      <p className="font-medium text-gray-900 leading-relaxed italic">{formData.experience || 0}</p>
                       <p className="text-sm text-gray-500 mt-1">Tədris təcrübəsi</p>
                     </div>
                   </div>

@@ -25,36 +25,49 @@ export default function Contact() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.fromTo(
+      const timeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: 'top 88%',
+          toggleActions: 'play none none reverse',
+        },
+      });
+
+      timeline.fromTo(
         titleRef.current,
-        { opacity: 0, y: 50 },
+        { opacity: 0, y: 24 },
         {
           opacity: 1,
           y: 0,
-          duration: 0.8,
+          duration: 0.7,
           ease: 'power3.out',
-          scrollTrigger: {
-            trigger: titleRef.current,
-            start: 'top 80%',
-            toggleActions: 'play none none reverse',
-          },
         }
       );
 
-      gsap.fromTo(
-        contentRef.current,
-        { opacity: 0, y: 60 },
+      timeline.fromTo(
+        '.contact-reveal',
+        { opacity: 0, y: 36 },
         {
           opacity: 1,
           y: 0,
           duration: 0.8,
           ease: 'power3.out',
-          scrollTrigger: {
-            trigger: contentRef.current,
-            start: 'top 75%',
-            toggleActions: 'play none none reverse',
-          },
-        }
+          stagger: 0.12,
+        },
+        '-=0.3'
+      );
+
+      timeline.fromTo(
+        '.contact-info-card',
+        { opacity: 0, y: 18 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.5,
+          ease: 'power2.out',
+          stagger: 0.08,
+        },
+        '-=0.35'
       );
     }, sectionRef);
 
@@ -132,7 +145,7 @@ export default function Contact() {
         {/* Content */}
         <div ref={contentRef} className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Contact Form */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-3xl p-6 sm:p-8 lg:p-10 border border-white/10">
+          <div className="contact-reveal bg-white/5 backdrop-blur-sm rounded-3xl p-6 sm:p-8 lg:p-10 border border-white/10">
             <h3 className="text-xl font-bold text-white mb-6">
               Bizə yazın
             </h3>
@@ -220,7 +233,7 @@ export default function Contact() {
           {/* Map & Info */}
           <div className="space-y-6">
             {/* Map */}
-            <div className="relative h-64 lg:h-80 rounded-3xl overflow-hidden">
+            <div className="contact-reveal relative h-64 lg:h-80 rounded-3xl overflow-hidden">
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3039.428490145627!2d49.867092!3d40.409264!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDDCsDI0JzMzLjQiTiA0OcKwNTInMDEuNSJF!5e0!3m2!1sen!2s!4v1234567890"
                 width="100%"
@@ -238,7 +251,7 @@ export default function Contact() {
               {contactInfo.map((item) => (
                 <div
                   key={item.label}
-                  className="flex items-start gap-3 p-4 bg-white/5 rounded-2xl border border-white/10"
+                  className="contact-info-card flex items-start gap-3 p-4 bg-white/5 rounded-2xl border border-white/10"
                 >
                   <div className="w-10 h-10 bg-[#00D084]/20 rounded-xl flex items-center justify-center flex-shrink-0">
                     <item.icon className="w-5 h-5 text-[#00D084]" />

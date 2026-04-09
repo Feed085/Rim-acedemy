@@ -18,8 +18,8 @@ import {
 import { Menu, User, LogOut, BookOpen, Users, Phone, Home, ChevronDown, Settings } from 'lucide-react';
 import logo from '@/photos/new_logo.png';
 import { cn } from '@/lib/utils';
-import { teachers } from '@/data/mockData';
-import { mockDb } from '@/services/mockDb';
+import { getPublicCourses, getPublicTeachers } from '@/services/publicApi';
+import type { PublicCourse, PublicTeacher } from '@/services/publicApi';
 
 
 export default function Navbar() {
@@ -31,7 +31,8 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isCoursesHovered, setIsCoursesHovered] = useState(false);
   const [isTeachersHovered, setIsTeachersHovered] = useState(false);
-  const [dbCourses, setDbCourses] = useState<any[]>([]);
+  const [dbCourses, setDbCourses] = useState<PublicCourse[]>([]);
+  const [publicTeachers, setPublicTeachers] = useState<PublicTeacher[]>([]);
   
   const isWatchPage = location.pathname.includes('/watch');
   const isDarkPage = (location.pathname.startsWith('/courses/') && !isWatchPage) || location.pathname === '/contact';
@@ -40,11 +41,31 @@ export default function Navbar() {
   const teachersTimer = useRef<any>(null);
 
   useEffect(() => {
-    setDbCourses(mockDb.getCourses());
-    const interval = setInterval(() => {
-      setDbCourses(mockDb.getCourses());
-    }, 2000);
-    return () => clearInterval(interval);
+    let isMounted = true;
+
+    const loadPreviewData = async () => {
+      try {
+        const [coursesResult, teachersResult] = await Promise.allSettled([
+          getPublicCourses(),
+          getPublicTeachers()
+        ]);
+
+        if (!isMounted) {
+          return;
+        }
+
+        setDbCourses(coursesResult.status === 'fulfilled' ? coursesResult.value : []);
+        setPublicTeachers(teachersResult.status === 'fulfilled' ? teachersResult.value : []);
+      } catch (error) {
+        console.error('Navbar preview data could not be loaded', error);
+      }
+    };
+
+    loadPreviewData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleMouseEnter = (type: 'courses' | 'teachers') => {
@@ -240,7 +261,7 @@ export default function Navbar() {
                                   </Link>
                                 ))
                               ) : (
-                                teachers.slice(0, 4).map((teacher) => (
+                                publicTeachers.slice(0, 4).map((teacher) => (
                                   <Link
                                     key={teacher.id}
                                     to={`/teachers`}
@@ -260,7 +281,7 @@ export default function Navbar() {
                                           {teacher.name} {teacher.surname}
                                         </div>
                                         <p className="line-clamp-1 text-[10px] text-gray-500 mt-0.5">
-                                          {teacher.specialties.join(', ')}
+                                          {(teacher.specialties || []).join(', ')}
                                         </p>
                                       </div>
                                     </div>

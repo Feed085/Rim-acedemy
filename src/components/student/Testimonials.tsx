@@ -24,36 +24,35 @@ export default function Testimonials() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      gsap.fromTo(
+      const timeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: 'top 88%',
+          toggleActions: 'play none none reverse',
+        },
+      });
+
+      timeline.fromTo(
         titleRef.current,
-        { opacity: 0, y: 50 },
+        { opacity: 0, y: 40 },
         {
           opacity: 1,
           y: 0,
-          duration: 0.8,
+          duration: 0.7,
           ease: 'power3.out',
-          scrollTrigger: {
-            trigger: titleRef.current,
-            start: 'top 80%',
-            toggleActions: 'play none none reverse',
-          },
         }
       );
 
-      gsap.fromTo(
+      timeline.fromTo(
         sliderRef.current,
-        { opacity: 0, y: 60 },
+        { opacity: 0, y: 40 },
         {
           opacity: 1,
           y: 0,
           duration: 0.8,
           ease: 'power3.out',
-          scrollTrigger: {
-            trigger: sliderRef.current,
-            start: 'top 75%',
-            toggleActions: 'play none none reverse',
-          },
-        }
+        },
+        '-=0.35'
       );
     }, sectionRef);
 
