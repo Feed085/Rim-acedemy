@@ -58,6 +58,25 @@ export type PublicTeacher = {
   studentCount: number;
   courseCount: number;
   testCount: number;
+  courseReviewCount: number;
+  teacherReviewCount: number;
+  courseRating: number;
+  teacherRating: number;
+  createdAt?: string;
+};
+
+export type PublicTeacherReview = {
+  _id?: string;
+  user?: {
+    _id?: string;
+    id?: string;
+    name?: string;
+    surname?: string;
+    avatar?: string;
+  } | null;
+  name?: string;
+  rating: number;
+  comment: string;
   createdAt?: string;
 };
 
@@ -65,10 +84,15 @@ export type PublicTeacherDetailResponse = {
   success: boolean;
   data: PublicTeacher;
   courses: PublicCourse[];
+  teacherReviews?: PublicTeacherReview[];
   stats?: {
     studentCount: number;
     courseCount: number;
     testCount: number;
+    courseReviewCount?: number;
+    teacherReviewCount?: number;
+    courseRating?: number;
+    teacherRating?: number;
   };
   message?: string;
 };
@@ -113,7 +137,7 @@ const normalizeTeacher = (teacher: any): PublicTeacher => {
     surname: teacher.surname || '',
     avatar: teacher.avatar || '',
     categories: Array.isArray(teacher.categories) ? teacher.categories : [],
-    rating: Number(teacher.rating || 0),
+    rating: Number(teacher.teacherRating ?? teacher.rating ?? 0),
     education: teacher.education || '',
     experience: Number.isFinite(experience) ? experience : 0,
     location: teacher.location || '',
@@ -124,6 +148,10 @@ const normalizeTeacher = (teacher: any): PublicTeacher => {
     studentCount: Number(teacher.studentCount || 0),
     courseCount: Number(teacher.courseCount || 0),
     testCount: Number(teacher.testCount || 0),
+    courseReviewCount: Number(teacher.courseReviewCount || 0),
+    teacherReviewCount: Number(teacher.teacherReviewCount || 0),
+    courseRating: Number(teacher.courseRating || 0),
+    teacherRating: Number(teacher.teacherRating ?? teacher.rating ?? 0),
     createdAt: teacher.createdAt
   };
 };
@@ -248,6 +276,20 @@ export const getPublicTeacher = async (id: string) => {
   return {
     ...response,
     data: normalizeTeacher(response.data),
+    teacherReviews: (response.teacherReviews || []).map((review) => ({
+      ...review,
+      user: review.user && typeof review.user === 'object'
+        ? {
+            _id: review.user._id || review.user.id,
+            id: review.user.id || review.user._id,
+            name: review.user.name || '',
+            surname: review.user.surname || '',
+            avatar: review.user.avatar || ''
+          }
+        : review.user,
+      rating: Number(review.rating || 0),
+      comment: review.comment || ''
+    })),
     courses: (response.courses || []).map(normalizeCourse).sort(sortPublicCourses)
   };
 };

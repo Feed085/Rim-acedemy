@@ -25,6 +25,10 @@ type CourseReviewsListProps = {
   rating: number;
   pageSize?: number;
   showSummary?: boolean;
+  title?: string;
+  subtitle?: string;
+  summaryText?: string;
+  emptyMessage?: string;
 };
 
 const getUserName = (review: ReviewItem) => {
@@ -72,7 +76,11 @@ export default function CourseReviewsList({
   reviews,
   rating,
   pageSize = 3,
-  showSummary = true
+  showSummary = true,
+  title = 'Tələbələrin fikirləri',
+  subtitle = 'Bu kurs üçün',
+  summaryText = 'rəy toplanıb.',
+  emptyMessage = 'Hələ bu kurs üçün rəy yoxdur.'
 }: CourseReviewsListProps) {
   const orderedReviews = useMemo(() => [...reviews].sort((left, right) => {
     const rightTime = new Date(right.createdAt || 0).getTime();
@@ -103,8 +111,8 @@ export default function CourseReviewsList({
         <div className="flex flex-col gap-4 rounded-3xl bg-gray-50 p-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#00D084]">Rəylər</p>
-            <h3 className="mt-2 text-2xl font-black text-gray-900">Tələbələrin fikirləri</h3>
-            <p className="mt-2 text-sm text-gray-500">Bu kurs üçün {reviewCount} rəy toplanıb.</p>
+            <h3 className="mt-2 text-2xl font-black text-gray-900">{title}</h3>
+            <p className="mt-2 text-sm text-gray-500">{subtitle} {reviewCount} {summaryText}</p>
           </div>
 
           <div className="rounded-3xl bg-[#0A0A0A] px-6 py-5 text-white shadow-xl shadow-gray-200/50">
@@ -125,7 +133,7 @@ export default function CourseReviewsList({
       {reviewCount === 0 ? (
         <div className="rounded-3xl border border-dashed border-gray-200 bg-white p-8 text-center text-gray-500">
           <MessageCircle className="mx-auto mb-3 h-8 w-8 text-gray-300" />
-          Hələ bu kurs üçün rəy yoxdur.
+          {emptyMessage}
         </div>
       ) : (
         <div className="space-y-4">

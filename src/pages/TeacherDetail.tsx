@@ -14,13 +14,12 @@ import {
   Instagram,
   Linkedin,
   Clock,
-  Send,
-  MessageSquare
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { Textarea } from '@/components/ui/textarea';
 import { getPublicTeacher } from '@/services/publicApi';
+import TeacherReviewForm from '@/components/common/TeacherReviewForm';
+import CourseReviewsList from '@/components/common/CourseReviewsList';
 
 export default function TeacherDetail() {
   const { t } = useTranslation();
@@ -30,12 +29,11 @@ export default function TeacherDetail() {
   
   const [teacher, setTeacher] = useState<any>(null);
   const [teacherCourses, setTeacherCourses] = useState<any[]>([]);
+  const [teacherReviews, setTeacherReviews] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   
   const [activeTab, setActiveTab] = useState<'courses' | 'about' | 'reviews'>('courses');
-  const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -50,6 +48,7 @@ export default function TeacherDetail() {
         if (response.success && response.data) {
            setTeacher(response.data);
            setTeacherCourses(response.courses || []);
+            setTeacherReviews(response.teacherReviews || []);
            setStats(response.stats || {});
         }
       } catch (err) {
@@ -60,22 +59,6 @@ export default function TeacherDetail() {
     };
     fetchTeacher();
   }, [id]);
-
-  const handleReviewSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newReview.comment.trim()) {
-      toast.error('Zəhmət olmasa rəyinizi yazın');
-      return;
-    }
-
-    setIsSubmitting(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    toast.success('Rəyiniz uğurla göndərildi!');
-    setNewReview({ rating: 5, comment: '' });
-    setIsSubmitting(false);
-  };
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Yüklənir...</div>;
@@ -95,32 +78,8 @@ export default function TeacherDetail() {
   }
 
 
-  const reviews = [
-    {
-      id: 1,
-      name: 'Aysel Məmmədova',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop',
-      rating: 5,
-      date: '2 həftə əvvəl',
-      comment: 'Çox peşəkar müəllimdir. Dərsləri çox maraqlı və faydalı keçir.',
-    },
-    {
-      id: 2,
-      name: 'Orxan Əliyev',
-      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop',
-      rating: 5,
-      date: '1 ay əvvəl',
-      comment: 'IELTS imtahanında 7.5 bal almağıma kömək etdi. Təşəkkürlər!',
-    },
-    {
-      id: 3,
-      name: 'Günay Hüseynova',
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop',
-      rating: 4,
-      date: '2 ay əvvəl',
-      comment: 'Çox səbirli və başa salan müəllimdir.',
-    },
-  ];
+  const teacherReviewCount = Number(stats?.teacherReviewCount || teacherReviews.length || 0);
+  const teacherRating = Number(stats?.teacherRating || teacher.rating || 0);
 
   return (
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
@@ -171,19 +130,20 @@ export default function TeacherDetail() {
 
                 <div className="flex items-center gap-3">
                   <div className="text-center px-4 py-2 bg-[#00D084]/10 rounded-2xl">
-                    <div className="text-2xl font-black text-[#00D084]">{teacher.rating}</div>
+                    <div className="text-2xl font-black text-[#00D084]">{teacherRating.toFixed(1)}</div>
                     <div className="flex items-center gap-0.5 justify-center">
                       {[...Array(5)].map((_, i) => (
                         <Star
                           key={i}
                           className={`w-3 h-3 ${
-                            i < Math.floor(teacher.rating)
+                            i < Math.floor(teacherRating)
                               ? 'text-yellow-400 fill-yellow-400'
                               : 'text-gray-300'
                           }`}
                         />
                       ))}
                     </div>
+                    <p className="mt-1 text-xs font-medium text-gray-500">{teacherReviewCount} rəy</p>
                   </div>
                 </div>
               </div>
@@ -288,7 +248,7 @@ export default function TeacherDetail() {
 
                 <div>
                   <h3 className="text-lg font-bold text-gray-900 mb-3">Təcrübə</h3>
-                  <p className="text-gray-600 leading-relaxed">{teacher.experience ?? 0}</p>
+                  <p className="text-gray-600 leading-relaxed">{teacher.experience ?? 0} il</p>
                 </div>
 
                 <div>
@@ -345,55 +305,22 @@ export default function TeacherDetail() {
 
             {activeTab === 'reviews' && (
               <div className="space-y-6">
-                {/* Write Review Section */}
                 {isAuthenticated && user?.role === 'student' ? (
-                  <div className="bg-white border-2 border-[#00D084]/20 rounded-2xl p-6 mb-8">
-                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                      <MessageSquare className="w-5 h-5 text-[#00D084]" />
-                      Rəy yazın
-                    </h3>
-                    <form onSubmit={handleReviewSubmit} className="space-y-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-medium text-gray-700 mr-2">Qiymətləndirmə:</span>
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <button
-                            key={star}
-                            type="button"
-                            onClick={() => setNewReview(prev => ({ ...prev, rating: star }))}
-                            className="focus:outline-none transition-transform hover:scale-110"
-                          >
-                            <Star
-                              className={`w-6 h-6 ${
-                                star <= newReview.rating
-                                  ? 'text-yellow-400 fill-yellow-400'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          </button>
-                        ))}
-                      </div>
-                      <Textarea
-                        placeholder="Müəllim haqqında fikirlərinizi bölüşün..."
-                        value={newReview.comment}
-                        onChange={(e) => setNewReview(prev => ({ ...prev, comment: e.target.value }))}
-                        className="rounded-xl border-gray-100 min-h-[120px] focus:border-[#00D084]"
-                      />
-                      <Button 
-                        type="submit" 
-                        disabled={isSubmitting}
-                        className="bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl px-8 h-12 flex items-center gap-2"
-                      >
-                        {isSubmitting ? (
-                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : (
-                          <>
-                            <Send className="w-4 h-4" />
-                            Rəyi paylaş
-                          </>
-                        )}
-                      </Button>
-                    </form>
-                  </div>
+                  <TeacherReviewForm
+                    teacherId={teacher.id || teacher._id}
+                    initialRating={teacherRating || 5}
+                    initialComment=""
+                    onSubmitted={(updatedTeacher) => {
+                      if (updatedTeacher) {
+                        setTeacher((previousTeacher: any) => ({
+                          ...previousTeacher,
+                          rating: updatedTeacher.rating,
+                          teacherRating: updatedTeacher.rating,
+                        }));
+                        setTeacherReviews(updatedTeacher.reviews || []);
+                      }
+                    }}
+                  />
                 ) : !isAuthenticated ? (
                   <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-6 text-center mb-8">
                     <p className="text-gray-600 mb-4">Rəy yazmaq üçün qeydiyyatdan keçməlisiniz.</p>
@@ -407,40 +334,15 @@ export default function TeacherDetail() {
                   </div>
                 ) : null}
 
-                <div className="space-y-4">
-                  {reviews.map((review) => (
-                    <div key={review.id} className="p-4 bg-gray-50 rounded-2xl">
-                    <div className="flex items-start gap-4">
-                      <img
-                        src={review.avatar}
-                        alt={review.name}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <div>
-                            <h4 className="font-bold text-gray-900">{review.name}</h4>
-                            <p className="text-sm text-gray-500">{review.date}</p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`w-4 h-4 ${
-                                  i < review.rating
-                                    ? 'text-yellow-400 fill-yellow-400'
-                                    : 'text-gray-300'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        <p className="text-gray-600">{review.comment}</p>
-                      </div>
-                    </div>
-                  </div>
-                  ))}
-                </div>
+                <CourseReviewsList
+                  reviews={teacherReviews}
+                  rating={teacherRating}
+                  pageSize={3}
+                  title="Müəllim rəyləri"
+                  subtitle="Bu müəllim üçün"
+                  summaryText="rəy toplanıb."
+                  emptyMessage="Hələ bu müəllim üçün rəy yoxdur."
+                />
               </div>
             )}
           </div>
