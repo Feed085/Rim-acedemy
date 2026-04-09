@@ -146,9 +146,9 @@ export default function StudentDashboard() {
                         <div className="flex-1">
                           <div className="flex items-center justify-between text-xs mb-1">
                             <span className="text-gray-500">İrəliləyiş</span>
-                            <span className="font-medium text-[#00D084]">0%</span>
+                            <span className="font-medium text-[#00D084]">{course.progress ?? 0}%</span>
                           </div>
-                          <Progress value={0} className="h-2" />
+                          <Progress value={course.progress ?? 0} className="h-2" />
                         </div>
                         <Button
                           onClick={() => navigate(`/courses/${course._id}/watch`, { state: { from: 'dashboard' } })}

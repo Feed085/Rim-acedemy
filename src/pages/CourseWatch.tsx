@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, PlayCircle, Clock } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { ChevronLeft, PlayCircle, Clock, CheckCircle2 } from 'lucide-react';
 
 export default function CourseWatch() {
   const { id } = useParams();
@@ -12,6 +13,13 @@ export default function CourseWatch() {
   const [flatLessons, setFlatLessons] = useState<any[]>([]);
   const [tests, setTests] = useState<any[]>([]);
   const [activeLessonIndex, setActiveLessonIndex] = useState(0);
+  const [courseProgress, setCourseProgress] = useState({
+    progress: 0,
+    completedLessons: 0,
+    totalLessons: 0,
+    lastAccessed: null as string | null
+  });
+  const [isMarkingComplete, setIsMarkingComplete] = useState(false);
 
   useEffect(() => {
     const fetchCourseData = async () => {
@@ -19,28 +27,50 @@ export default function CourseWatch() {
         const token = localStorage.getItem('rim_auth_token');
         const headers: Record<string, string> = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-        // Fetch course
-        const response = await fetch(`http://localhost:5000/api/courses/${id}`, { headers });
+        // Fetch course, tests and progress in parallel
+        const [response, testsResponse, progressResponse] = await Promise.all([
+          fetch(`http://localhost:5000/api/courses/${id}`, { headers }),
+          fetch(`http://localhost:5000/api/tests/course/${id}`, { headers }),
+          fetch(`http://localhost:5000/api/student/me`, { headers })
+        ]);
+
         const data = await response.json();
-        
-        // Fetch tests
-        const testsResponse = await fetch(`http://localhost:5000/api/tests/course/${id}`, { headers });
         const testsData = await testsResponse.json();
+        const progressData = await progressResponse.json();
 
         if (data.success) {
           setCourse(data.data);
           
           // Dərsləri modullardan çıxardıb bir listə (flatten) yığırıq
+          let lessons: any[] = [];
           if (data.data.modules && data.data.modules.length > 0) {
-            const lessons = data.data.modules.reduce((acc: any[], module: any) => {
+            lessons = data.data.modules.reduce((acc: any[], module: any) => {
               const moduleVideos = module.videos.map((v: any) => ({
                 ...v,
                 moduleTitle: module.title
               }));
               return [...acc, ...moduleVideos];
             }, []);
-            setFlatLessons(lessons);
           }
+
+          setFlatLessons(lessons);
+
+          const matchedCourse = progressData.success
+            ? (progressData.data?.activeCourses || []).find((courseItem: any) => String(courseItem._id || courseItem.id) === String(id))
+            : null;
+
+          const completedLessons = matchedCourse?.completedLessons || 0;
+          const progress = matchedCourse?.progress || 0;
+          const totalLessons = matchedCourse?.totalLessons || lessons.length;
+
+          setCourseProgress({
+            progress,
+            completedLessons,
+            totalLessons,
+            lastAccessed: matchedCourse?.lastAccessed || null
+          });
+
+          setActiveLessonIndex(lessons.length > 0 ? Math.min(completedLessons, lessons.length - 1) : 0);
         }
         
         if (testsData.success) {
@@ -58,6 +88,47 @@ export default function CourseWatch() {
   }, [id]);
 
   const activeLesson = flatLessons[activeLessonIndex];
+
+  const handleLessonCompleted = async () => {
+    if (!course || !activeLesson || isMarkingComplete) {
+      return;
+    }
+
+    try {
+      setIsMarkingComplete(true);
+      const token = localStorage.getItem('rim_auth_token');
+      const response = await fetch('http://localhost:5000/api/student/progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          courseId: course._id || id,
+          lessonId: activeLesson._id || activeLesson.id
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        setCourseProgress({
+          progress: data.data.progress ?? courseProgress.progress,
+          completedLessons: data.data.completedLessons ?? courseProgress.completedLessons,
+          totalLessons: data.data.totalLessons ?? courseProgress.totalLessons,
+          lastAccessed: new Date().toISOString()
+        });
+
+        if (data.data.updated) {
+          setActiveLessonIndex((previousIndex) => Math.min(data.data.completedLessons, flatLessons.length - 1));
+        }
+      }
+    } catch (error) {
+      console.error('Dərs tamamlanma statusu göndərilərkən xəta baş verdi', error);
+    } finally {
+      setIsMarkingComplete(false);
+    }
+  };
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Yüklənir...</div>;
@@ -99,6 +170,7 @@ export default function CourseWatch() {
                 autoPlay
                 className="w-full h-full object-cover"
                 src={activeLesson?.videoUrl}
+                onEnded={handleLessonCompleted}
               >
                 Brauzeriniz video formatını dəstəkləmir.
               </video>
@@ -111,6 +183,17 @@ export default function CourseWatch() {
               <p className="text-gray-500 font-medium mb-6">
                 {course.title} — Məruzəçi: <span className="text-gray-900">{course.instructor?.name} {course.instructor?.surname}</span>
               </p>
+
+              <div className="rounded-2xl border border-[#00D084]/15 bg-[#00D084]/5 p-4 mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-gray-700">Kurs irəliləyişi</span>
+                  <span className="text-sm font-black text-[#00D084]">{courseProgress.progress}%</span>
+                </div>
+                <Progress value={courseProgress.progress} className="h-2" />
+                <p className="text-xs text-gray-500 mt-2">
+                  İrəliləyiş yalnız videonu sırayla tamamladıqda artır.
+                </p>
+              </div>
               
               <div className="flex flex-col sm:flex-row gap-4 items-center sm:justify-between border-t border-gray-100 pt-6 mt-4">
                 <Button 
@@ -162,10 +245,14 @@ export default function CourseWatch() {
                       }`}
                     >
                       <div className="shrink-0 mt-0.5">
-                        <PlayCircle className={`w-5 h-5 ${activeLessonIndex === index ? 'text-[#00D084]' : 'text-gray-400'}`} />
+                        {index < courseProgress.completedLessons ? (
+                          <CheckCircle2 className="w-5 h-5 text-[#00D084]" />
+                        ) : (
+                          <PlayCircle className={`w-5 h-5 ${activeLessonIndex === index ? 'text-[#00D084]' : 'text-gray-400'}`} />
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className={`font-medium text-sm truncate ${activeLessonIndex === index ? 'text-[#00D084]' : 'text-gray-700'}`}>
+                        <div className={`font-medium text-sm truncate ${index < courseProgress.completedLessons || activeLessonIndex === index ? 'text-[#00D084]' : 'text-gray-700'}`}>
                           {lesson.title}
                         </div>
                         <div className="flex items-center gap-1.5 mt-1.5 text-xs text-gray-500 font-medium">
