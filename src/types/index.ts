@@ -31,6 +31,22 @@ export interface Teacher {
   };
 }
 
+export interface Review {
+  id?: string;
+  _id?: string;
+  user?: {
+    id?: string;
+    _id?: string;
+    name?: string;
+    surname?: string;
+    avatar?: string;
+  } | string | null;
+  name?: string;
+  rating: number;
+  comment: string;
+  createdAt?: Date | string;
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -45,6 +61,7 @@ export interface Course {
   studentCount: number;
   price: number;
   rating: number;
+  reviews?: Review[];
   isActive: boolean;
   createdAt: Date;
 }

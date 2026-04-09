@@ -15,9 +15,12 @@ import {
   Users,
   Plus,
   CheckCircle2,
-  ShieldCheck
+  ShieldCheck,
+  Star,
+  MessageCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import CourseReviewsList from '@/components/common/CourseReviewsList';
 import {
   Dialog,
   DialogContent,
@@ -457,6 +460,33 @@ export default function TeacherCourseEdit() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Reviews */}
+            <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-sm border border-gray-100">
+              <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-6">
+                <div>
+                  <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#00D084]">Rəylər</p>
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2 mt-2">
+                    <MessageCircle className="w-5 h-5 text-[#00D084]" />
+                    Kurs rəyləri
+                  </h2>
+                </div>
+                <div className="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3 text-right">
+                  <div className="text-2xl font-black text-gray-900">{Number(course.rating || 0).toFixed(1)}</div>
+                  <div className="flex items-center justify-end gap-1 mt-1 mb-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-4 h-4 ${star <= Math.round(course.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+                      />
+                    ))}
+                  </div>
+                  <div className="text-xs text-gray-500">{(course.reviews || []).length} rəy</div>
+                </div>
+              </div>
+
+              <CourseReviewsList reviews={course.reviews || []} rating={course.rating || 0} pageSize={4} showSummary={false} />
             </div>
 
             {/* What You'll Learn */}

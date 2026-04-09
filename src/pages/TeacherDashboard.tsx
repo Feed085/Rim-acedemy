@@ -13,7 +13,8 @@ import {
   TrendingUp,
   Plus,
   ArrowRight,
-  UserPlus
+  UserPlus,
+  MessageSquare
 } from 'lucide-react';
 
 export default function TeacherDashboard() {
@@ -67,6 +68,7 @@ export default function TeacherDashboard() {
     { label: 'Aktiv Kurslar', value: stats.courseCount, icon: BookOpen, color: '#0082F3', trend: '---' },
     { label: 'Testlər', value: stats.testCount, icon: FileText, color: '#F59E0B', trend: '---' },
     { label: 'Video Dərslər', value: stats.videoCount, icon: Video, color: '#EC4899', trend: '---' },
+    { label: 'Rəylər', value: stats.reviewCount || 0, icon: MessageSquare, color: '#10B981', trend: '---' },
   ];
 
   const myCourses = teacher.courses || [];
@@ -121,7 +123,7 @@ export default function TeacherDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           {statCards.map((stat) => (
             <div
               key={stat.label}

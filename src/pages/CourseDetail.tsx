@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import CourseReviewForm from '@/components/common/CourseReviewForm';
+import CourseReviewsList from '@/components/common/CourseReviewsList';
 
 
 export default function CourseDetail() {
@@ -93,6 +95,17 @@ export default function CourseDetail() {
     );
   }
 
+  const courseReviews = Array.isArray(course.reviews) ? course.reviews : [];
+  const studentCount = Number(course.studentCount || 0);
+  const teacherExperience = Number(teacher?.experience || 0);
+  const teacherExperienceLabel = teacherExperience > 0
+    ? `${teacherExperience} il təcrübə`
+    : 'Təcrübə qeyd edilməyib';
+  const currentReview = courseReviews.find((review: any) => {
+    const reviewUserId = review?.user?._id || review?.user?.id || review?.user;
+    return reviewUserId && reviewUserId.toString() === user?.id;
+  });
+
 
 
 
@@ -141,18 +154,18 @@ export default function CourseDetail() {
                     />
                   ))}
                 </div>
-                <span className="text-white font-bold">{course.rating}</span>
-                <span className="text-gray-500">(1,250 rəy)</span>
+                <span className="text-white font-bold">{Number(course.rating || 0).toFixed(1)}</span>
+                <span className="text-gray-500">({courseReviews.length} rəy)</span>
               </div>
               
               <div className="flex items-center gap-2 text-gray-300">
                 <Users className="w-5 h-5 text-[#00D084]" />
-                <span className="font-medium text-sm">214 Tələbə</span>
+                <span className="font-medium text-sm">{studentCount} Tələbə</span>
               </div>
 
               <div className="flex items-center gap-2 text-gray-300">
                 <Calendar className="w-5 h-5 text-[#0082F3]" />
-                <span className="font-medium text-sm">Son yenilənmə: {new Date(course.updatedAt || course.createdAt).toLocaleDateString('az-AZ')}</span>
+                <span className="font-medium text-sm">Yenilənmə tarixi: {new Date(course.updatedAt || course.createdAt).toLocaleDateString('az-AZ')}</span>
               </div>
             </div>
             
@@ -207,7 +220,7 @@ export default function CourseDetail() {
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-sm font-bold text-gray-900">{teacher?.rating || '5.0'} Reytinq</div>
+                    <div className="text-sm font-bold text-gray-900">{Number(teacher?.rating || 0).toFixed(1)} Reytinq</div>
                     <div className="text-xs text-gray-500">Müəllim</div>
                   </div>
                 </div>
@@ -222,7 +235,7 @@ export default function CourseDetail() {
                     {(teacher?.specializedAreas || []).join(', ')}
                   </p>
                   <p className="text-gray-600 text-sm leading-relaxed mb-6 italic line-clamp-3">
-                    {teacher?.experience ?? 0}
+                    {teacherExperienceLabel}
                   </p>
                   <Button 
                     variant="outline" 
@@ -233,6 +246,54 @@ export default function CourseDetail() {
                   </Button>
                 </div>
               </div>
+            </section>
+
+            <section className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between mb-8">
+                <div>
+                  <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#00D084]">Rəylər</p>
+                  <h2 className="text-2xl font-bold text-gray-900 mt-2">Kurs haqqında fikirlər</h2>
+                  <p className="text-gray-500 mt-2">
+                    Orta reytinq {Number(course.rating || 0).toFixed(1)} və {courseReviews.length} rəy.
+                  </p>
+                </div>
+                <div className="rounded-3xl bg-gray-50 border border-gray-100 px-5 py-4 text-right">
+                  <div className="text-3xl font-black text-gray-900">{Number(course.rating || 0).toFixed(1)}</div>
+                  <div className="flex items-center justify-end gap-1 mt-1 mb-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-4 h-4 ${star <= Math.round(course.rating || 0) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+                      />
+                    ))}
+                  </div>
+                  <div className="text-sm text-gray-500">{courseReviews.length} rəy</div>
+                </div>
+              </div>
+
+              {user?.role === 'student' ? (
+                enrollmentStatus === 'approved' ? (
+                  <div className="space-y-6 mb-10">
+                    <CourseReviewForm
+                      key={course.id || course._id}
+                      courseId={course._id || course.id}
+                      initialRating={currentReview?.rating || 5}
+                      initialComment={currentReview?.comment || ''}
+                      onSubmitted={(updatedCourse) => setCourse(updatedCourse)}
+                    />
+                  </div>
+                ) : (
+                  <div className="mb-10 rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-6 text-gray-600">
+                    Kursa qeydiyyat təsdiqlənəndən sonra rəy yaza bilərsiniz.
+                  </div>
+                )
+              ) : !isAuthenticated ? (
+                <div className="mb-10 rounded-3xl border border-dashed border-gray-200 bg-gray-50 p-6 text-gray-600">
+                  Rəy yazmaq üçün tələbə hesabı ilə daxil olun.
+                </div>
+              ) : null}
+
+              <CourseReviewsList reviews={courseReviews} rating={course.rating || 0} />
             </section>
           </div>
 
@@ -247,11 +308,6 @@ export default function CourseDetail() {
                     alt={course.title}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center group cursor-pointer">
-                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 group-hover:scale-110 transition-transform">
-                      <PlayCircle className="w-8 h-8 text-white fill-white" />
-                    </div>
-                  </div>
                 </div>
 
                 {/* Card Content */}
