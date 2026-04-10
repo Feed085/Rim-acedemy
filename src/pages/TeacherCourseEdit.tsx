@@ -47,6 +47,7 @@ export default function TeacherCourseEdit() {
   const [categories, setCategories] = useState<any[]>([]);
   const [editingLesson, setEditingLesson] = useState<any>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -261,6 +262,51 @@ export default function TeacherCourseEdit() {
     }
   };
 
+  const handleDeleteCourse = async () => {
+    if (!course) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      'Bu kursu silmək istədiyinizə əminsiniz? Bu əməliyyat geri alına bilməz və bağlı testlər də silinəcək.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('rim_auth_token');
+      if (!token) {
+        toast.error('Sessiyanız bitib, yenidən giriş edin');
+        navigate('/login');
+        return;
+      }
+
+      setIsDeleting(true);
+
+      const res = await fetch(`http://localhost:5000/api/courses/${course._id || id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success('Kurs silindi');
+        navigate('/teacher/dashboard', { replace: true });
+      } else {
+        throw new Error(data.message || 'Kurs silinmədi');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Kurs silinmədi');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="min-h-screen pt-24 text-center">Yüklənir...</div>;
   }
@@ -295,6 +341,15 @@ export default function TeacherCourseEdit() {
           <div className="flex gap-3">
             <Button variant="outline" className="rounded-xl" onClick={() => navigate(-1)}>
               Ləğv et
+            </Button>
+            <Button
+              variant="outline"
+              className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={handleDeleteCourse}
+              disabled={isDeleting}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              {isDeleting ? 'Silinir...' : 'Kursu Sil'}
             </Button>
             <Button 
               className="bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl px-8 font-bold shadow-lg shadow-[#00D084]/20 transition-all active:scale-95" 
