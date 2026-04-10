@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { API_BASE_URL } from '@/services/publicApi';
 import { 
   FileText, 
   ChevronLeft, 
@@ -24,7 +25,7 @@ export default function StudentCompletedTests() {
         return;
       }
       try {
-        const response = await fetch('http://localhost:5000/api/tests/results/my', {
+        const response = await fetch(`${API_BASE_URL}/tests/results/my`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

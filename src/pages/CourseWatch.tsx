@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ChevronLeft, PlayCircle, Clock, CheckCircle2 } from 'lucide-react';
+import { API_BASE_URL } from '@/services/publicApi';
 
 export default function CourseWatch() {
   const { id } = useParams();
@@ -29,9 +30,9 @@ export default function CourseWatch() {
 
         // Fetch course, tests and progress in parallel
         const [response, testsResponse, progressResponse] = await Promise.all([
-          fetch(`http://localhost:5000/api/courses/${id}`, { headers }),
-          fetch(`http://localhost:5000/api/tests/course/${id}`, { headers }),
-          fetch(`http://localhost:5000/api/student/me`, { headers })
+          fetch(`${API_BASE_URL}/courses/${id}`, { headers }),
+          fetch(`${API_BASE_URL}/tests/course/${id}`, { headers }),
+          fetch(`${API_BASE_URL}/student/me`, { headers })
         ]);
 
         const data = await response.json();
@@ -97,7 +98,7 @@ export default function CourseWatch() {
     try {
       setIsMarkingComplete(true);
       const token = localStorage.getItem('rim_auth_token');
-      const response = await fetch('http://localhost:5000/api/student/progress', {
+      const response = await fetch(`${API_BASE_URL}/student/progress`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

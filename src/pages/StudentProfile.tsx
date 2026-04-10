@@ -14,6 +14,7 @@ import {
   User
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/services/publicApi';
 
 export default function StudentProfile() {
   const navigate = useNavigate();
@@ -39,7 +40,7 @@ export default function StudentProfile() {
           navigate('/login');
           return;
         }
-        const res = await fetch('http://localhost:5000/api/student/me', {
+        const res = await fetch(`${API_BASE_URL}/student/me`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const d = await res.json();
@@ -72,7 +73,7 @@ export default function StudentProfile() {
 
       if (avatarFile) {
         const presignReq = await fetch(
-          `http://localhost:5000/api/upload/presign?filename=${encodeURIComponent(avatarFile.name)}&contentType=${encodeURIComponent(avatarFile.type)}`,
+          `${API_BASE_URL}/upload/presign?filename=${encodeURIComponent(avatarFile.name)}&contentType=${encodeURIComponent(avatarFile.type)}`,
           { headers: { 'Authorization': `Bearer ${token}` } }
         );
         const presignData = await presignReq.json();
@@ -95,7 +96,7 @@ export default function StudentProfile() {
         educationLevel: formData.educationLevel
       };
 
-      const res = await fetch('http://localhost:5000/api/student/me', {
+      const res = await fetch(`${API_BASE_URL}/student/me`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',

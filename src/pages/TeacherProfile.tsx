@@ -21,6 +21,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/services/publicApi';
 
 export default function TeacherProfile() {
   const { t } = useTranslation();
@@ -53,7 +54,7 @@ export default function TeacherProfile() {
           navigate('/login');
           return;
         }
-        const res = await fetch('http://localhost:5000/api/teacher/me', {
+        const res = await fetch(`${API_BASE_URL}/teacher/me`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const d = await res.json();
@@ -93,7 +94,7 @@ export default function TeacherProfile() {
       // Əgər yeni profil kaveri (avatar) seçilibsə əvvəlcə R2-yə yüklə
       if (avatarFile) {
         const presignReq = await fetch(
-          `http://localhost:5000/api/upload/presign?filename=${encodeURIComponent(avatarFile.name)}&contentType=${encodeURIComponent(avatarFile.type)}`,
+          `${API_BASE_URL}/upload/presign?filename=${encodeURIComponent(avatarFile.name)}&contentType=${encodeURIComponent(avatarFile.type)}`,
           { headers: { 'Authorization': `Bearer ${token}` } }
         );
         const presignData = await presignReq.json();
@@ -120,7 +121,7 @@ export default function TeacherProfile() {
         }
       };
 
-      const res = await fetch('http://localhost:5000/api/teacher/me', {
+      const res = await fetch(`${API_BASE_URL}/teacher/me`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',

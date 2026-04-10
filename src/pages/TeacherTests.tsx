@@ -5,6 +5,7 @@ import { ArrowLeft, Search, Filter, FileText, Clock, Layers3, ArrowRight } from 
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { API_BASE_URL } from '@/services/publicApi';
 
 export default function TeacherTests() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export default function TeacherTests() {
           return;
         }
 
-        const response = await fetch('http://localhost:5000/api/tests/my', {
+        const response = await fetch(`${API_BASE_URL}/tests/my`, {
           headers: {
             Authorization: `Bearer ${token}`
           }

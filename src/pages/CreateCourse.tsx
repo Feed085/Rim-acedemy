@@ -12,6 +12,7 @@ import {
   Tag
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/services/publicApi';
 
 import { 
   Select,
@@ -40,7 +41,7 @@ export default function CreateCourse() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/categories');
+        const response = await fetch(`${API_BASE_URL}/categories`);
         const data = await response.json();
 
         if (data.success) {
@@ -82,8 +83,39 @@ export default function CreateCourse() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.category) {
+    const trimmedTitle = formData.title.trim();
+    const trimmedDescription = formData.description.trim();
+    const trimmedPrice = formData.price.trim();
+
+    if (!trimmedTitle) {
+      toast.error('Kurs başlığı məcburidir');
+      return;
+    }
+
+    if (!formData.category) {
       toast.error('Zəhmət olmasa əsas xanalara məlumat yazın');
+      return;
+    }
+
+    if (!trimmedDescription) {
+      toast.error('Haqqında bölməsi məcburidir');
+      return;
+    }
+
+    if (!trimmedPrice) {
+      toast.error('Qiymət məcburidir');
+      return;
+    }
+
+    const priceValue = Number(trimmedPrice);
+
+    if (!Number.isFinite(priceValue) || priceValue < 0) {
+      toast.error('Qiymət etibarlı rəqəm olmalıdır');
+      return;
+    }
+
+    if (!formData.image) {
+      toast.error('Kover şəkli məcburidir');
       return;
     }
 
@@ -103,7 +135,7 @@ export default function CreateCourse() {
         const uploadData = new FormData();
         uploadData.append('file', formData.image);
 
-        const uploadRes = await fetch('http://localhost:5000/api/upload', {
+        const uploadRes = await fetch(`${API_BASE_URL}/upload`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
           body: uploadData
@@ -118,15 +150,15 @@ export default function CreateCourse() {
 
       // Backend Kurs yaradılma mərhələsi
       const newCourse = {
-        title: formData.title,
+        title: trimmedTitle,
         category: formData.category,
-        price: Number(formData.price) || 0,
-        description: formData.description,
+        price: priceValue,
+        description: trimmedDescription,
         hasCertificate: formData.hasCertificate,
-        image: uploadedImageUrl || 'default-course.jpg', 
+        image: uploadedImageUrl,
       };
 
-      const courseRes = await fetch('http://localhost:5000/api/courses', {
+      const courseRes = await fetch(`${API_BASE_URL}/courses`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -228,6 +260,7 @@ export default function CreateCourse() {
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       placeholder="Kurs barədə ətraflı məlumat..."
+                      required
                       className="rounded-xl min-h-[150px] resize-none"
                     />
                   </div>
@@ -238,6 +271,7 @@ export default function CreateCourse() {
                       <Input
                         type="number"
                         min="0"
+                        required
                         value={formData.price}
                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                         placeholder="Məs: 50 (Ödənişsizsə 0 yazın)"
@@ -267,7 +301,7 @@ export default function CreateCourse() {
                   Kover Şəkli
                 </h3>
 
-                <div className="aspect-video w-full rounded-2xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 relative group cursor-pointer">
+                  <div className="aspect-video w-full rounded-2xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 relative group cursor-pointer">
                   {formData.imageUrl ? (
                     <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
                   ) : (
@@ -276,7 +310,7 @@ export default function CreateCourse() {
                       <span className="text-xs">Şəkil seçin</span>
                     </div>
                   )}
-                  <input type="file" accept="image/*" onChange={handleImageChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                  <input type="file" accept="image/*" onChange={handleImageChange} required className="absolute inset-0 opacity-0 cursor-pointer" />
                 </div>
                 <p className="text-[10px] text-gray-500 mt-2 text-center uppercase tracking-wider">
                   Tövsiyə olunan ölçü: 1280x720 (16:9)

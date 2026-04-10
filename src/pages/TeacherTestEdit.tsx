@@ -17,6 +17,7 @@ import {
   CheckCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/services/publicApi';
 
 interface Question {
   _id?: string;
@@ -41,7 +42,7 @@ export default function TeacherTestEdit() {
       if (!id) return;
       const token = localStorage.getItem('rim_auth_token');
       try {
-        const res = await fetch(`http://localhost:5000/api/tests/${id}`, {
+        const res = await fetch(`${API_BASE_URL}/tests/${id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -78,7 +79,7 @@ export default function TeacherTestEdit() {
         
         if (q.questionType === 'image' && q.imageFile) {
           const presignReq = await fetch(
-            `http://localhost:5000/api/upload/presign?filename=${encodeURIComponent(q.imageFile.name)}&contentType=${encodeURIComponent(q.imageFile.type)}`,
+            `${API_BASE_URL}/upload/presign?filename=${encodeURIComponent(q.imageFile.name)}&contentType=${encodeURIComponent(q.imageFile.type)}`,
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
           const presignData = await presignReq.json();
@@ -102,7 +103,7 @@ export default function TeacherTestEdit() {
       }
 
       // 2. Update Test
-      const res = await fetch(`http://localhost:5000/api/tests/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/tests/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

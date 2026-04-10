@@ -119,6 +119,7 @@ type CourseItem = {
   title: string;
   category: string;
   instructor: string;
+  courseTitle?: string;
   price: number;
   isActive: boolean;
   studentCount: number;
@@ -269,7 +270,7 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
-        {(loading ? Array.from({ length: 4 }) : cards).map((card: DashboardCard | undefined, index) => {
+        {(loading ? Array.from({ length: 4 }, () => undefined) : cards as Array<DashboardCard | undefined>).map((card, index) => {
           if (loading) {
             return (
               <div key={index} className="rounded-[32px] border border-gray-100 bg-white p-8 shadow-sm">
@@ -307,60 +308,36 @@ const Dashboard = () => {
         })}
       </div>
 
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
-        <div className="rounded-[32px] border border-gray-100 bg-white p-8 shadow-sm">
-          <div className="mb-8 flex items-center justify-between">
-            <h3 className="text-xl font-black text-gray-900">Ən aktiv kurslar</h3>
-            <span className="rounded-full bg-gray-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-gray-500">
-              Canlı
-            </span>
-          </div>
-          <div className="space-y-5">
-            {(dashboard?.topCourses || []).map((course) => (
-              <div key={course.id} className="flex items-center justify-between gap-4 rounded-2xl border border-gray-50 p-4 transition-colors hover:bg-gray-50/50">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 font-black text-[#00D084] transition-all group-hover:bg-[#00D084] group-hover:text-white">
-                    {course.title[0]}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-gray-900">{course.title}</h4>
-                    <p className="text-xs text-gray-500">{course.instructorName} · {course.category}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-bold text-gray-900">{formatNumber(course.studentCount)} tələbə</div>
-                  <div className="text-[10px] font-black uppercase text-[#00D084]">Aktiv</div>
-                </div>
-              </div>
-            ))}
-            {!loading && dashboard && dashboard.topCourses.length === 0 && (
-              <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-400">
-                Hələ aktiv kurs yoxdur.
-              </div>
-            )}
-          </div>
+      <div className="rounded-[32px] border border-gray-100 bg-white p-8 shadow-sm">
+        <div className="mb-8 flex items-center justify-between">
+          <h3 className="text-xl font-black text-gray-900">Ən aktiv kurslar</h3>
+          <span className="rounded-full bg-gray-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-gray-500">
+            Canlı
+          </span>
         </div>
-
-        <div className="rounded-[32px] bg-[#0A0A0A] p-8 text-white shadow-sm relative overflow-hidden">
-          <div className="relative z-10 flex h-full flex-col justify-between">
-            <div>
-              <h3 className="mb-2 text-2xl font-black opacity-90">Aylıq gəlir</h3>
-              <p className="max-w-[300px] text-sm leading-relaxed text-gray-400">
-                Kazanç sistemi hazır deyil. Bu blok, gelir altyapısı tamamlandığında otomatik dolacak.
-              </p>
-            </div>
-            <div className="mt-10 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-                <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">Status</div>
-                <div className="mt-2 text-lg font-black">Hazırlanır</div>
+        <div className="space-y-5">
+          {(dashboard?.topCourses || []).map((course) => (
+            <div key={course.id} className="flex items-center justify-between gap-4 rounded-2xl border border-gray-50 p-4 transition-colors hover:bg-gray-50/50">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 font-black text-[#00D084] transition-all group-hover:bg-[#00D084] group-hover:text-white">
+                  {course.title[0]}
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900">{course.title}</h4>
+                  <p className="text-xs text-gray-500">{course.instructorName} · {course.category}</p>
+                </div>
               </div>
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-                <div className="text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">Növbəti mərhələ</div>
-                <div className="mt-2 text-lg font-black">Gelir sistemi</div>
+              <div className="text-right">
+                <div className="font-bold text-gray-900">{formatNumber(course.studentCount)} tələbə</div>
+                <div className="text-[10px] font-black uppercase text-[#00D084]">Aktiv</div>
               </div>
             </div>
-          </div>
-          <div className="absolute right-0 top-0 h-64 w-64 translate-x-1/2 -translate-y-1/2 rounded-full bg-[#00D084]/10 blur-[80px] transition-all duration-700 group-hover:bg-[#00D084]/20" />
+          ))}
+          {!loading && dashboard && dashboard.topCourses.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-400">
+              Hələ aktiv kurs yoxdur.
+            </div>
+          )}
         </div>
       </div>
 
@@ -867,28 +844,29 @@ const Students = () => {
     }
   };
 
-  const activeResources = assignmentType === 'course' ? courses : tests;
   const filteredResources = useMemo(() => {
     const query = assignmentSearch.trim().toLowerCase();
 
+    const toSearchableText = (value: unknown) => String(value ?? '').toLowerCase();
+
     if (!query) {
-      return activeResources;
+      return assignmentType === 'course' ? courses : tests;
     }
 
     if (assignmentType === 'course') {
-      return activeResources.filter((course) => (
-        (course.title || '').toLowerCase().includes(query)
-        || (course.category || '').toLowerCase().includes(query)
-        || (course.instructor || '').toLowerCase().includes(query)
+      return courses.filter((course) => (
+        toSearchableText(course.title).includes(query)
+        || toSearchableText(course.category).includes(query)
+        || toSearchableText(course.instructor).includes(query)
       ));
     }
 
-    return activeResources.filter((test) => (
-      test.title.toLowerCase().includes(query)
-      || (test.courseTitle || '').toLowerCase().includes(query)
-      || (test.instructorName || '').toLowerCase().includes(query)
+    return tests.filter((test) => (
+      toSearchableText(test.title).includes(query)
+      || toSearchableText(test.courseTitle).includes(query)
+      || toSearchableText(test.instructorName).includes(query)
     ));
-  }, [activeResources, assignmentSearch, assignmentType]);
+  }, [courses, tests, assignmentSearch, assignmentType]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -1056,7 +1034,7 @@ const Students = () => {
                   ))
                   : <option value="" disabled>Axtarışa uyğun kurs tapılmadı</option>
                 : filteredResources.map((test) => (
-                  <option key={test.id} value={test.id}>{test.title} · {test.courseTitle}</option>
+                  <option key={test.id} value={test.id}>{test.title} · {test.courseTitle || ''}</option>
                 ))}
             </select>
           </div>

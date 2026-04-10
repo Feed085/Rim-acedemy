@@ -10,6 +10,7 @@ import {
   Play,
   Award
 } from 'lucide-react';
+import { API_BASE_URL } from '@/services/publicApi';
 
 export default function StudentDashboard() {
   const { t } = useTranslation();
@@ -28,7 +29,7 @@ export default function StudentDashboard() {
       const token = localStorage.getItem('rim_auth_token');
       if (!token) return;
       try {
-        const response = await fetch('http://localhost:5000/api/student/me', {
+        const response = await fetch(`${API_BASE_URL}/student/me`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

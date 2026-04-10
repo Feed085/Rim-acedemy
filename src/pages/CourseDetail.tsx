@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import CourseReviewForm from '@/components/common/CourseReviewForm';
 import CourseReviewsList from '@/components/common/CourseReviewsList';
+import { API_BASE_URL } from '@/services/publicApi';
 
 
 export default function CourseDetail() {
@@ -32,7 +33,7 @@ export default function CourseDetail() {
     window.scrollTo(0, 0);
     const fetchCourse = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/courses/${id}`);
+        const response = await fetch(`${API_BASE_URL}/courses/${id}`);
         const data = await response.json();
         
         if (data.success && data.data) {
@@ -41,7 +42,7 @@ export default function CourseDetail() {
           
           if (user && user.role === 'student') {
             // Hələlik enrollment yoxdur API kimi. Amma activeCourses yoxlanıla bilər
-            const studentCheck = await fetch(`http://localhost:5000/api/student/me`, {
+            const studentCheck = await fetch(`${API_BASE_URL}/student/me`, {
                headers: { 'Authorization': `Bearer ${localStorage.getItem('rim_auth_token')}` }
             });
             const stData = await studentCheck.json();

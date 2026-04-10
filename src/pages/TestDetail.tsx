@@ -15,6 +15,7 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/services/publicApi';
 
 export default function TestDetail() {
   const { t } = useTranslation();
@@ -37,7 +38,7 @@ export default function TestDetail() {
       if (!id) return;
       const token = localStorage.getItem('rim_auth_token');
       try {
-        const res = await fetch(`http://localhost:5000/api/tests/${id}`, {
+        const res = await fetch(`${API_BASE_URL}/tests/${id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -98,7 +99,7 @@ export default function TestDetail() {
     }));
 
     try {
-      const res = await fetch(`http://localhost:5000/api/tests/${id}/submit`, {
+      const res = await fetch(`${API_BASE_URL}/tests/${id}/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

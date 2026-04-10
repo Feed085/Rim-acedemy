@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/services/publicApi';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +28,7 @@ export default function TeacherStudents() {
         const token = localStorage.getItem('rim_auth_token');
         if (!token) return;
 
-        const res = await fetch('http://localhost:5000/api/teacher/students', {
+        const res = await fetch(`${API_BASE_URL}/teacher/students`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();

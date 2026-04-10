@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { API_BASE_URL } from '@/services/publicApi';
 
 const MAX_REVIEW_LENGTH = 500;
 
@@ -53,7 +54,7 @@ export default function CourseReviewForm({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`http://localhost:5000/api/courses/${courseId}/reviews`, {
+      const response = await fetch(`${API_BASE_URL}/courses/${courseId}/reviews`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

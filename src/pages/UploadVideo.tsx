@@ -13,6 +13,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/services/publicApi';
 
 export default function UploadVideo() {
   const { t } = useTranslation();
@@ -43,7 +44,7 @@ export default function UploadVideo() {
     const fetchCourses = async () => {
       try {
         const token = localStorage.getItem('rim_auth_token');
-        const res = await fetch('http://localhost:5000/api/courses/my-courses', {
+        const res = await fetch(`${API_BASE_URL}/courses/my-courses`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
@@ -131,7 +132,7 @@ export default function UploadVideo() {
 
       // 1. Get Presigned URL for Video
       const presignVideoReq = await fetch(
-        `http://localhost:5000/api/upload/presign?filename=${encodeURIComponent(videoFile.name)}&contentType=${encodeURIComponent(videoFile.type)}`,
+        `${API_BASE_URL}/upload/presign?filename=${encodeURIComponent(videoFile.name)}&contentType=${encodeURIComponent(videoFile.type)}`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
       const presignVideoData = await presignVideoReq.json();
@@ -168,7 +169,7 @@ export default function UploadVideo() {
       let thumbnailPublicUrl = '';
       if (thumbnail) {
         const presignThumbReq = await fetch(
-          `http://localhost:5000/api/upload/presign?filename=${encodeURIComponent(thumbnail.name)}&contentType=${encodeURIComponent(thumbnail.type)}`,
+          `${API_BASE_URL}/upload/presign?filename=${encodeURIComponent(thumbnail.name)}&contentType=${encodeURIComponent(thumbnail.type)}`,
           { headers: { 'Authorization': `Bearer ${token}` } }
         );
         const presignThumbData = await presignThumbReq.json();
@@ -185,7 +186,7 @@ export default function UploadVideo() {
 
       // 4. Update Course with new Video Module
       // Mövcud kursu çəkib, modullarını yeniləyəcəyik
-      const courseReq = await fetch(`http://localhost:5000/api/courses/${formData.courseId}`);
+      const courseReq = await fetch(`${API_BASE_URL}/courses/${formData.courseId}`);
       const courseData = await courseReq.json();
       if (!courseData.success) throw new Error('Kurs tapılmadı');
       
@@ -201,7 +202,7 @@ export default function UploadVideo() {
       const existingModules = course.modules && course.modules.length > 0 ? course.modules : [{ title: 'Dərslər', videos: [] }];
       existingModules[0].videos.push(newVideo);
 
-      const updateReq = await fetch(`http://localhost:5000/api/courses/${formData.courseId}`, {
+      const updateReq = await fetch(`${API_BASE_URL}/courses/${formData.courseId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

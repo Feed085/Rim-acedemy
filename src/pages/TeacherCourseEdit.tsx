@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import CourseReviewsList from '@/components/common/CourseReviewsList';
+import { API_BASE_URL } from '@/services/publicApi';
 import {
   Dialog,
   DialogContent,
@@ -61,8 +62,8 @@ export default function TeacherCourseEdit() {
       try {
         const token = localStorage.getItem('rim_auth_token');
         const [courseRes, testsRes] = await Promise.all([
-           fetch(`http://localhost:5000/api/courses/${id}`),
-           fetch(`http://localhost:5000/api/tests/course/${id}`, { headers: { 'Authorization': `Bearer ${token}` } })
+          fetch(`${API_BASE_URL}/courses/${id}`),
+          fetch(`${API_BASE_URL}/tests/course/${id}`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
         
         const courseData = await courseRes.json();
@@ -81,7 +82,7 @@ export default function TeacherCourseEdit() {
         }
 
         try {
-          const categoriesRes = await fetch('http://localhost:5000/api/categories');
+          const categoriesRes = await fetch(`${API_BASE_URL}/categories`);
           const categoriesData = await categoriesRes.json();
           if (categoriesData.success) {
             const normalizedCategories = (categoriesData.data || []).map((category: any) => ({
@@ -122,7 +123,7 @@ export default function TeacherCourseEdit() {
       const existingModules = course.modules && course.modules.length > 0 ? course.modules : [{ title: 'Dərslər', videos: [] }];
       existingModules[0].videos = newLessons;
 
-      await fetch(`http://localhost:5000/api/courses/${course._id}`, {
+      await fetch(`${API_BASE_URL}/courses/${course._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -142,6 +143,13 @@ export default function TeacherCourseEdit() {
   };
 
   const handleUpdateLesson = async () => {
+    const trimmedTitle = typeof editingLesson?.title === 'string' ? editingLesson.title.trim() : '';
+
+    if (!trimmedTitle) {
+      toast.error('Video başlığı məcburidir');
+      return;
+    }
+
     setIsLoading(true);
     let finalThumbnail = editingLesson.thumbnail;
 
@@ -151,7 +159,7 @@ export default function TeacherCourseEdit() {
       // Əgər yeni şəkil (kaver) seçilibsə əvvəlcə R2-yə yüklə
       if (editingLesson.thumbnailFile) {
         const presignReq = await fetch(
-          `http://localhost:5000/api/upload/presign?filename=${encodeURIComponent(editingLesson.thumbnailFile.name)}&contentType=${encodeURIComponent(editingLesson.thumbnailFile.type)}`,
+          `${API_BASE_URL}/upload/presign?filename=${encodeURIComponent(editingLesson.thumbnailFile.name)}&contentType=${encodeURIComponent(editingLesson.thumbnailFile.type)}`,
           { headers: { 'Authorization': `Bearer ${token}` } }
         );
         const presignData = await presignReq.json();
@@ -166,7 +174,7 @@ export default function TeacherCourseEdit() {
         }
       }
 
-      const updatedEditingLesson = { ...editingLesson, thumbnail: finalThumbnail };
+      const updatedEditingLesson = { ...editingLesson, title: trimmedTitle, thumbnail: finalThumbnail };
       delete updatedEditingLesson.thumbnailFile;
 
       const updatedLessons = lessons.map(l => 
@@ -179,7 +187,7 @@ export default function TeacherCourseEdit() {
       const existingModules = course.modules && course.modules.length > 0 ? course.modules : [{ title: 'Dərslər', videos: [] }];
       existingModules[0].videos = updatedLessons;
 
-      const res = await fetch(`http://localhost:5000/api/courses/${course._id}`, {
+      const res = await fetch(`${API_BASE_URL}/courses/${course._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -190,7 +198,7 @@ export default function TeacherCourseEdit() {
       
       const data = await res.json();
       if(data.success) {
-        toast.success('Video backend-də yeniləndi!');
+        toast.success('Video yeniləmələri qeyd olundu');
         setCourse({ ...course, modules: existingModules });
       }
     } catch(err) {
@@ -209,12 +217,34 @@ export default function TeacherCourseEdit() {
       const token = localStorage.getItem('rim_auth_token');
       setIsLoading(true);
 
-      let finalImageUrl = course.image;
+      const trimmedTitle = typeof course.title === 'string' ? course.title.trim() : '';
+      const trimmedDescription = typeof course.description === 'string' ? course.description.trim() : '';
+
+      if (!trimmedTitle) {
+        toast.error('Kurs başlığı məcburidir');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!trimmedDescription) {
+        toast.error('Haqqında bölməsi məcburidir');
+        setIsLoading(false);
+        return;
+      }
+
+      const currentImage = typeof course.image === 'string' ? course.image.trim() : '';
+      if (!currentImage && !course.imageFile) {
+        toast.error('Kover şəkli məcburidir');
+        setIsLoading(false);
+        return;
+      }
+
+      let finalImageUrl = currentImage;
 
       // Kurs kaveri üçün upload
       if (course.imageFile) {
         const presignReq = await fetch(
-          `http://localhost:5000/api/upload/presign?filename=${encodeURIComponent(course.imageFile.name)}&contentType=${encodeURIComponent(course.imageFile.type)}`,
+          `${API_BASE_URL}/upload/presign?filename=${encodeURIComponent(course.imageFile.name)}&contentType=${encodeURIComponent(course.imageFile.type)}`,
           { headers: { 'Authorization': `Bearer ${token}` } }
         );
         const presignData = await presignReq.json();
@@ -230,16 +260,16 @@ export default function TeacherCourseEdit() {
       }
 
       const payload = {
-        title: course.title,
+        title: trimmedTitle,
         category: course.category,
-        description: course.description,
+        description: trimmedDescription,
         image: finalImageUrl,
         learningPoints: course.learningPoints || [],
         includes: course.includes || [],
         modules: [{ title: 'Dərslər', videos: lessons }]
       };
 
-      const res = await fetch(`http://localhost:5000/api/courses/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/courses/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -285,7 +315,7 @@ export default function TeacherCourseEdit() {
 
       setIsDeleting(true);
 
-      const res = await fetch(`http://localhost:5000/api/courses/${course._id || id}`, {
+      const res = await fetch(`${API_BASE_URL}/courses/${course._id || id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -737,6 +767,7 @@ export default function TeacherCourseEdit() {
                 id="title"
                 value={editingLesson?.title || ''}
                 onChange={(e) => setEditingLesson({ ...editingLesson, title: e.target.value })}
+                required
                 className="rounded-xl h-11 border-gray-200 focus:border-[#00D084]"
               />
             </div>

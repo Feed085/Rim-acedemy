@@ -12,6 +12,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { API_BASE_URL } from '@/services/publicApi';
 import {
   Dialog,
   DialogContent,
@@ -35,7 +36,7 @@ export default function TeacherTestResults() {
     const token = localStorage.getItem('rim_auth_token');
     try {
       // 1. Fetch Test Details
-      const testRes = await fetch(`http://localhost:5000/api/tests/${id}`, {
+      const testRes = await fetch(`${API_BASE_URL}/tests/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const testData = await testRes.json();
@@ -44,7 +45,7 @@ export default function TeacherTestResults() {
       }
 
       // 2. Fetch Results
-      const resRes = await fetch(`http://localhost:5000/api/tests/${id}/results`, {
+      const resRes = await fetch(`${API_BASE_URL}/tests/${id}/results`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const resData = await resRes.json();
@@ -83,7 +84,7 @@ export default function TeacherTestResults() {
     const token = localStorage.getItem('rim_auth_token');
     try {
        const evaluations = [{ questionId, isCorrect }];
-       const res = await fetch(`http://localhost:5000/api/tests/results/${resultId}/evaluate`, {
+      const res = await fetch(`${API_BASE_URL}/tests/results/${resultId}/evaluate`, {
           method: 'PUT',
           headers: {
              'Content-Type': 'application/json',

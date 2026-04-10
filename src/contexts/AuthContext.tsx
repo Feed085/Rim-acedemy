@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import type { User } from '@/types';
+import { API_BASE_URL } from '@/services/publicApi';
 
 interface AuthContextType {
   user: User | null;
@@ -42,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     try {
       if (role === 'student') {
-        const response = await fetch('http://localhost:5000/api/student/auth/login', {
+        const response = await fetch(`${API_BASE_URL}/student/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -71,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return false;
         }
       } else if (role === 'teacher') {
-        const response = await fetch('http://localhost:5000/api/teacher/auth/login', {
+        const response = await fetch(`${API_BASE_URL}/teacher/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
@@ -115,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
     try {
       if (userData.role === 'student') {
-        const response = await fetch('http://localhost:5000/api/student/auth/register', {
+        const response = await fetch(`${API_BASE_URL}/student/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

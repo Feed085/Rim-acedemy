@@ -20,6 +20,7 @@ import {
   PlusCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/services/publicApi';
 
 interface Question {
   id: string;
@@ -43,7 +44,7 @@ export default function CreateTest() {
       const token = localStorage.getItem('rim_auth_token');
       if (!token) return;
       try {
-        const res = await fetch('http://localhost:5000/api/courses', {
+        const res = await fetch(`${API_BASE_URL}/courses`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const d = await res.json();
@@ -146,7 +147,7 @@ export default function CreateTest() {
         
         if (q.questionType === 'image' && q.imageFile) {
           const presignReq = await fetch(
-            `http://localhost:5000/api/upload/presign?filename=${encodeURIComponent(q.imageFile.name)}&contentType=${encodeURIComponent(q.imageFile.type)}`,
+            `${API_BASE_URL}/upload/presign?filename=${encodeURIComponent(q.imageFile.name)}&contentType=${encodeURIComponent(q.imageFile.type)}`,
             { headers: { 'Authorization': `Bearer ${token}` } }
           );
           const presignData = await presignReq.json();
@@ -170,7 +171,7 @@ export default function CreateTest() {
       }
 
       // 2. Testi Göndər
-      const res = await fetch('http://localhost:5000/api/tests', {
+      const res = await fetch(`${API_BASE_URL}/tests`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

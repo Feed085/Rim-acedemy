@@ -5,6 +5,7 @@ import { ArrowLeft, Search, Film, Video, PlayCircle, Layers3 } from 'lucide-reac
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { API_BASE_URL } from '@/services/publicApi';
 
 export default function TeacherVideos() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export default function TeacherVideos() {
           return;
         }
 
-        const response = await fetch('http://localhost:5000/api/courses/my-courses', {
+        const response = await fetch(`${API_BASE_URL}/courses/my-courses`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
