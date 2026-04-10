@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { getPublicStats } from '@/services/publicApi';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -44,6 +45,12 @@ export default function Stats() {
   const { t } = useTranslation();
   const sectionRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const [statsData, setStatsData] = useState({
+    experience: 15,
+    students: 5000,
+    teachers: 50,
+    courses: 100
+  });
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -68,11 +75,38 @@ export default function Stats() {
     return () => ctx.revert();
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadStats = async () => {
+      try {
+        const data = await getPublicStats();
+
+        if (isMounted && data) {
+          setStatsData({
+            experience: Number(data.experience || 15),
+            students: Number(data.students || 0),
+            teachers: Number(data.teachers || 0),
+            courses: Number(data.courses || 0)
+          });
+        }
+      } catch (error) {
+        console.error('Ana səhifə statistikası yüklənmədi', error);
+      }
+    };
+
+    loadStats();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const stats = [
-    { key: 'experience', value: 15, suffix: '' },
-    { key: 'students', value: 5000, suffix: '+' },
-    { key: 'teachers', value: 50, suffix: '+' },
-    { key: 'courses', value: 100, suffix: '+' },
+    { key: 'experience', value: statsData.experience, suffix: '' },
+    { key: 'students', value: statsData.students, suffix: '+' },
+    { key: 'teachers', value: statsData.teachers, suffix: '+' },
+    { key: 'courses', value: statsData.courses, suffix: '+' },
   ];
 
   return (

@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, MessageSquare } from 'lucide-react';
 import gsap from 'gsap';
+import { getPublicStats } from '@/services/publicApi';
 
 export default function Hero() {
   const { t } = useTranslation();
@@ -13,6 +14,11 @@ export default function Hero() {
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const descRef = useRef<HTMLParagraphElement>(null);
   const buttonsRef = useRef<HTMLDivElement>(null);
+  const [heroStats, setHeroStats] = useState({
+    experience: 15,
+    students: 5000,
+    teachers: 50
+  });
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -64,6 +70,32 @@ export default function Hero() {
     }, heroRef);
 
     return () => ctx.revert();
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadStats = async () => {
+      try {
+        const data = await getPublicStats();
+
+        if (isMounted && data) {
+          setHeroStats({
+            experience: Number(data.experience || 15),
+            students: Number(data.students || 0),
+            teachers: Number(data.teachers || 0)
+          });
+        }
+      } catch (error) {
+        console.error('Hero statistikaları yüklənmədi', error);
+      }
+    };
+
+    loadStats();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return (
@@ -154,9 +186,9 @@ export default function Hero() {
         {/* Stats Preview */}
         <div className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto">
           {[
-            { value: '15+', label: 'İllik Təcrübə' },
-            { value: '5000+', label: 'Tələbə' },
-            { value: '50+', label: 'Müəllim' },
+            { value: `${heroStats.experience}+`, label: 'İllik Təcrübə' },
+            { value: `${heroStats.students}+`, label: 'Tələbə' },
+            { value: `${heroStats.teachers}+`, label: 'Müəllim' },
           ].map((stat, index) => (
             <div key={index} className="text-center">
               <div className="text-2xl sm:text-3xl font-black text-gray-900">{stat.value}</div>

@@ -99,6 +99,13 @@ export type PublicTeacherDetailResponse = {
   message?: string;
 };
 
+export type PublicStats = {
+  students: number;
+  teachers: number;
+  courses: number;
+  experience: number;
+};
+
 const requestJson = async <T>(path: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(`${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`, init);
 
@@ -272,6 +279,11 @@ export const getPublicCategories = async () => {
 export const getPublicTeachers = async () => {
   const response = await requestJson<ApiResponse<any[]>>('/teacher/public');
   return (response.data || []).map(normalizeTeacher);
+};
+
+export const getPublicStats = async () => {
+  const response = await requestJson<ApiResponse<PublicStats>>('/public/stats');
+  return response.data;
 };
 
 export const getPublicTeacher = async (id: string) => {
