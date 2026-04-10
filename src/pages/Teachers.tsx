@@ -10,17 +10,26 @@ import {
   Star, 
   Users, 
   BookOpen, 
-  ArrowRight
+  ArrowRight,
+  Filter
 } from 'lucide-react';
-import { getPublicTeachers, normalizeCategoryKey } from '@/services/publicApi';
-import type { PublicTeacher } from '@/services/publicApi';
+import { getPublicCategories, getPublicTeachers, normalizeCategoryKey } from '@/services/publicApi';
+import type { PublicCategory, PublicTeacher } from '@/services/publicApi';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function Teachers() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSpecialty, setSelectedSpecialty] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [teachers, setTeachers] = useState<PublicTeacher[]>([]);
+  const [categories, setCategories] = useState<PublicCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -28,10 +37,14 @@ export default function Teachers() {
 
     const loadTeachers = async () => {
       try {
-        const teacherList = await getPublicTeachers();
+        const [teacherList, categoryList] = await Promise.all([
+          getPublicTeachers(),
+          getPublicCategories()
+        ]);
 
         if (isMounted) {
           setTeachers(teacherList);
+          setCategories(categoryList);
         }
       } catch (error) {
         console.error('Müəllimlər yüklənə bilmədi', error);
@@ -49,14 +62,35 @@ export default function Teachers() {
     };
   }, []);
 
-  const specialties = [
-    'all',
-    ...Array.from(new Set(teachers.flatMap((teacher) => teacher.specialties || []))).filter(Boolean)
+  const backendCategories = categories.length > 0
+    ? categories
+    : Array.from(new Set(teachers.flatMap((teacher) => teacher.categories || [])))
+        .filter(Boolean)
+        .map((value, index) => ({
+          id: value,
+          slug: value,
+          name: value,
+          description: '',
+          color: '#00D084',
+          icon: 'Tag',
+          order: index + 1,
+          isActive: true
+        }));
+
+  const availableCategories = [
+    { id: 'all', slug: 'all', name: 'Hamısı', description: '', color: '#00D084', icon: 'Tag', order: 0, isActive: true },
+    ...backendCategories
   ];
 
-  const availableSpecialties = specialties.length > 1
-    ? specialties
-    : ['all', 'İngilis dili', 'Rus dili', 'Ərab dili', 'Riyaziyyat', 'Proqramlaşdırma'];
+  const categoryMatches = (teacher: PublicTeacher, categoryValue: string) => {
+    const teacherCategories = teacher.categories || [];
+    const teacherSpecialties = teacher.specialties || [];
+
+    return [...teacherCategories, ...teacherSpecialties].some((value) => {
+      const normalizedValue = normalizeCategoryKey(value);
+      return normalizedValue === normalizeCategoryKey(categoryValue);
+    });
+  };
 
   const filteredTeachers = teachers.filter(teacher => {
     const matchesSearch = 
@@ -68,8 +102,8 @@ export default function Teachers() {
       (teacher.specialties || []).some((specialty) => specialty.toLowerCase().includes(searchQuery.toLowerCase()));
     
     const matchesSpecialty = 
-      selectedSpecialty === 'all' || 
-      (teacher.specialties || []).some((specialty) => normalizeCategoryKey(specialty) === normalizeCategoryKey(selectedSpecialty));
+      selectedCategory === 'all' || 
+      categoryMatches(teacher, selectedCategory);
     
     return matchesSearch && matchesSpecialty;
   });
@@ -102,20 +136,32 @@ export default function Teachers() {
               className="pl-12 h-12 rounded-xl bg-white border-0 shadow-sm"
             />
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0">
-            {availableSpecialties.map((specialty) => (
-              <button
-                key={specialty}
-                onClick={() => setSelectedSpecialty(specialty)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-                  selectedSpecialty === specialty
-                    ? 'bg-[#00D084] text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {specialty === 'all' ? 'Hamısı' : specialty}
-              </button>
-            ))}
+          <div className="w-full sm:w-[220px] shrink-0">
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-full !h-14 bg-white border-2 border-gray-100 rounded-2xl shadow-lg shadow-gray-200/50 focus:ring-0 focus:ring-offset-0 outline-none focus:border-[#00D084] text-gray-700 font-medium px-5">
+                <div className="flex items-center gap-2.5">
+                  <Filter className="w-4 h-4 text-[#00D084]" />
+                  <SelectValue placeholder="Kateqoriya" />
+                </div>
+              </SelectTrigger>
+              <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2 min-w-[220px]">
+                {isLoading && categories.length === 0 ? (
+                  <SelectItem value="loading" disabled className="py-3 px-4 rounded-xl text-sm font-medium text-gray-400">
+                    Kateqoriyalar yüklənir...
+                  </SelectItem>
+                ) : (
+                  availableCategories.map((category) => (
+                    <SelectItem
+                      key={category.id}
+                      value={category.id}
+                      className="py-3 px-4 rounded-xl text-sm font-medium text-gray-600 cursor-pointer focus:bg-[#00D084]/10 focus:text-[#00D084] data-[state=checked]:text-[#00D084] data-[state=checked]:bg-[#00D084]/5 transition-colors mb-1 last:mb-0"
+                    >
+                      {category.id === 'all' ? 'Hamısı' : category.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

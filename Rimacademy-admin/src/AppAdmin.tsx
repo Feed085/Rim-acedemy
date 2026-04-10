@@ -795,6 +795,7 @@ const Students = () => {
   const [selectedStudent, setSelectedStudent] = useState<StudentItem | null>(null);
   const [assignmentType, setAssignmentType] = useState<AssignmentMode>('course');
   const [selectedTargetId, setSelectedTargetId] = useState('');
+  const [assignmentSearch, setAssignmentSearch] = useState('');
 
   const loadData = async () => {
     setLoading(true);
@@ -836,6 +837,7 @@ const Students = () => {
     setSelectedStudent(student);
     setAssignmentType(mode);
     setSelectedTargetId('');
+    setAssignmentSearch('');
     setAssignmentModalOpen(true);
   };
 
@@ -855,6 +857,7 @@ const Students = () => {
         setAssignmentModalOpen(false);
         setSelectedStudent(null);
         setSelectedTargetId('');
+        setAssignmentSearch('');
         await loadData();
       } else {
         toast.error(response.message || 'Təyinat edilə bilmədi');
@@ -865,6 +868,27 @@ const Students = () => {
   };
 
   const activeResources = assignmentType === 'course' ? courses : tests;
+  const filteredResources = useMemo(() => {
+    const query = assignmentSearch.trim().toLowerCase();
+
+    if (!query) {
+      return activeResources;
+    }
+
+    if (assignmentType === 'course') {
+      return activeResources.filter((course) => (
+        (course.title || '').toLowerCase().includes(query)
+        || (course.category || '').toLowerCase().includes(query)
+        || (course.instructor || '').toLowerCase().includes(query)
+      ));
+    }
+
+    return activeResources.filter((test) => (
+      test.title.toLowerCase().includes(query)
+      || (test.courseTitle || '').toLowerCase().includes(query)
+      || (test.instructorName || '').toLowerCase().includes(query)
+    ));
+  }, [activeResources, assignmentSearch, assignmentType]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -996,6 +1020,7 @@ const Students = () => {
                 const nextType = event.target.value as AssignmentMode;
                 setAssignmentType(nextType);
                 setSelectedTargetId('');
+                setAssignmentSearch('');
               }}
               className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
             >
@@ -1007,6 +1032,16 @@ const Students = () => {
             <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">
               {assignmentType === 'course' ? 'Kurs seçin' : 'Test seçin'}
             </label>
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+              <input
+                value={assignmentSearch}
+                onChange={(event) => setAssignmentSearch(event.target.value)}
+                type="text"
+                placeholder={assignmentType === 'course' ? 'Kurs axtar...' : 'Test axtar...'}
+                className="mb-3 w-full rounded-2xl border border-gray-100 bg-gray-50 px-12 py-4 text-sm font-medium outline-none transition-all focus:border-[#00D084] focus:bg-white"
+              />
+            </div>
             <select
               required
               value={selectedTargetId}
@@ -1015,10 +1050,12 @@ const Students = () => {
             >
               <option value="">Seçim edin...</option>
               {assignmentType === 'course'
-                ? activeResources.map((course) => (
+                ? filteredResources.length > 0
+                  ? filteredResources.map((course) => (
                   <option key={course.id} value={course.id}>{course.title}</option>
-                ))
-                : activeResources.map((test) => (
+                  ))
+                  : <option value="" disabled>Axtarışa uyğun kurs tapılmadı</option>
+                : filteredResources.map((test) => (
                   <option key={test.id} value={test.id}>{test.title} · {test.courseTitle}</option>
                 ))}
             </select>
@@ -1040,6 +1077,7 @@ const Categories = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCategory, setNewCategory] = useState({ name: '' });
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadCategories = async () => {
     setLoading(true);
@@ -1059,6 +1097,20 @@ const Categories = () => {
   useEffect(() => {
     loadCategories();
   }, []);
+
+  const filteredCategories = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) {
+      return categories;
+    }
+
+    return categories.filter((category) => (
+      category.name.toLowerCase().includes(query)
+      || (category.description || '').toLowerCase().includes(query)
+      || category.id.toLowerCase().includes(query)
+    ));
+  }, [categories, searchQuery]);
 
   const handleAdd = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -1113,6 +1165,22 @@ const Categories = () => {
         </button>
       </div>
 
+      <div className="flex flex-col gap-4 rounded-[28px] border border-gray-100 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-xl">
+          <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            type="text"
+            placeholder="Kateqoriya axtar..."
+            className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-12 py-4 font-medium outline-none transition-all focus:border-[#00D084] focus:bg-white"
+          />
+        </div>
+        <div className="text-sm font-medium text-gray-500">
+          {filteredCategories.length} kateqoriya
+        </div>
+      </div>
+
       <div className="overflow-hidden rounded-[32px] border border-gray-100 bg-white shadow-sm">
         <table className="w-full text-left">
           <thead>
@@ -1129,7 +1197,7 @@ const Categories = () => {
                 <td colSpan={4} className="px-8 py-12 text-center text-gray-400">Kateqoriyalar yüklənir...</td>
               </tr>
             )}
-            {!loading && categories.map((category) => (
+            {!loading && filteredCategories.map((category) => (
               <tr key={category.id} className="transition-colors hover:bg-gray-50/30">
                 <td className="px-8 py-6">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: `${category.color || '#E5E7EB'}22` }}>
@@ -1154,10 +1222,10 @@ const Categories = () => {
                 </td>
               </tr>
             ))}
-            {!loading && categories.length === 0 && (
+            {!loading && filteredCategories.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-8 py-12 text-center italic text-gray-400">
-                  Hələ kateqoriya yoxdur.
+                  {searchQuery.trim() ? 'Axtarışa uyğun kateqoriya tapılmadı.' : 'Hələ kateqoriya yoxdur.'}
                 </td>
               </tr>
             )}
