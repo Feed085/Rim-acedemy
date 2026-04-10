@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
   Star, 
@@ -24,6 +24,7 @@ import CourseReviewsList from '@/components/common/CourseReviewsList';
 export default function TeacherDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   
@@ -59,6 +60,12 @@ export default function TeacherDetail() {
     };
     fetchTeacher();
   }, [id]);
+
+  useEffect(() => {
+    if (location.hash === '#reviews') {
+      setActiveTab('reviews');
+    }
+  }, [location.hash]);
 
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center">Yüklənir...</div>;

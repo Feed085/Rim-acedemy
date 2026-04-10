@@ -14,9 +14,9 @@ import {
   Plus,
   ArrowRight,
   UserPlus,
-  MessageSquare,
   Star,
-  MessageCircle
+  MessageCircle,
+  MessageSquare,
 } from 'lucide-react';
 
 export default function TeacherDashboard() {
@@ -46,8 +46,7 @@ export default function TeacherDashboard() {
         if (data.success) {
           setDashboardData({
             teacher: data.data,
-            stats: data.stats,
-            reviews: data.reviews || { courseReviews: [], teacherReviews: [] }
+            stats: data.stats
           });
         }
       } catch (error) {
@@ -64,22 +63,67 @@ export default function TeacherDashboard() {
     return <div className="min-h-screen pt-24 text-center">Yüklənir...</div>;
   }
 
-  const { teacher, stats, reviews } = dashboardData;
-  const courseReviews = reviews?.courseReviews || [];
-  const teacherReviews = reviews?.teacherReviews || [];
+  const { teacher, stats } = dashboardData;
   const myCourses = teacher.courses || [];
   const fallbackCourseRating = myCourses.length > 0
     ? Math.round((myCourses.reduce((sum: number, course: any) => sum + Number(course.rating || 0), 0) / myCourses.length) * 10) / 10
     : 0;
   const courseRating = Number(stats.courseRating || 0) || fallbackCourseRating;
 
+  const scrollToMyCourses = () => {
+    const section = document.getElementById('teacher-my-courses');
+    section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const statCards = [
-    { label: 'Ümumi Tələbə', value: stats.studentCount, icon: Users, color: '#00D084', trend: '---' },
-    { label: 'Aktiv Kurslar', value: stats.courseCount, icon: BookOpen, color: '#0082F3', trend: '---' },
-    { label: 'Testlər', value: stats.testCount, icon: FileText, color: '#F59E0B', trend: '---' },
-    { label: 'Video Dərslər', value: stats.videoCount, icon: Video, color: '#EC4899', trend: '---' },
-    { label: 'Kurs Rəyləri', value: stats.courseReviewCount || 0, icon: MessageCircle, color: '#10B981', trend: '---' },
-    { label: 'Müəllim Rəyləri', value: stats.teacherReviewCount || 0, icon: MessageSquare, color: '#8B5CF6', trend: '---' },
+    {
+      label: 'Ümumi Tələbə',
+      value: stats.studentCount,
+      icon: Users,
+      color: '#00D084',
+      trend: '---',
+      onClick: () => navigate('/teacher/students')
+    },
+    {
+      label: 'Aktiv Kurslar',
+      value: stats.courseCount,
+      icon: BookOpen,
+      color: '#0082F3',
+      trend: '---',
+      onClick: scrollToMyCourses
+    },
+    {
+      label: 'Testlər',
+      value: stats.testCount,
+      icon: FileText,
+      color: '#F59E0B',
+      trend: '---',
+      onClick: () => navigate('/teacher/tests')
+    },
+    {
+      label: 'Video Dərslər',
+      value: stats.videoCount,
+      icon: Video,
+      color: '#EC4899',
+      trend: '---',
+      onClick: () => navigate('/teacher/videos')
+    },
+    {
+      label: 'Kurs Rəyləri',
+      value: stats.courseReviewCount || 0,
+      icon: MessageCircle,
+      color: '#10B981',
+      trend: '---',
+      onClick: () => navigate('/teacher/course-reviews')
+    },
+    {
+      label: 'Müəllim Rəyləri',
+      value: stats.teacherReviewCount || 0,
+      icon: MessageSquare,
+      color: '#8B5CF6',
+      trend: '---',
+      onClick: () => navigate(`/teachers/${teacher._id || teacher.id}#reviews`)
+    },
   ];
 
   const recentStudents: any[] = [];
@@ -135,9 +179,11 @@ export default function TeacherDashboard() {
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
           {statCards.map((stat) => (
-            <div
+            <button
               key={stat.label}
-              className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow"
+              type="button"
+              onClick={stat.onClick}
+              className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#00D084]/30"
             >
               <div className="flex items-start justify-between mb-3">
                 <div
@@ -152,7 +198,7 @@ export default function TeacherDashboard() {
               </div>
               <div className="text-2xl font-black text-gray-900">{stat.value}</div>
               <div className="text-sm text-gray-500">{stat.label}</div>
-            </div>
+            </button>
           ))}
         </div>
 
@@ -160,7 +206,7 @@ export default function TeacherDashboard() {
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* My Courses */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm">
+            <div className="bg-white rounded-3xl p-6 shadow-sm" id="teacher-my-courses">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-900">
                   {t('teacher.dashboard.my_courses')}
@@ -279,99 +325,6 @@ export default function TeacherDashboard() {
                   </div>
                   <div className="text-2xl font-black text-gray-900">{Number(stats.teacherRating || 0).toFixed(1)}/5</div>
                   <div className="text-sm text-gray-500">{stats.teacherReviewCount || 0} rəy</div>
-                </div>
-
-                <div className="p-4 bg-gradient-to-br from-[#0082F3]/10 to-[#38BDF8]/10 rounded-2xl">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Users className="w-5 h-5 text-[#0082F3]" />
-                    <span className="font-medium text-gray-700">Orta Tələbə / Kurs</span>
-                  </div>
-                  <div className="text-2xl font-black text-gray-900">{Number(stats.avgStudentsPerCourse || 0).toFixed(1)}</div>
-                  <div className="text-sm text-gray-500">{stats.studentCount || 0} tələbə, {stats.courseCount || 0} kurs</div>
-                </div>
-
-                <div className="p-4 bg-gradient-to-br from-[#F59E0B]/10 to-[#F97316]/10 rounded-2xl">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Video className="w-5 h-5 text-[#F59E0B]" />
-                    <span className="font-medium text-gray-700">Orta Video / Kurs</span>
-                  </div>
-                  <div className="text-2xl font-black text-gray-900">{Number(stats.avgVideosPerCourse || 0).toFixed(1)}</div>
-                  <div className="text-sm text-gray-500">{stats.videoCount || 0} video toplam</div>
-                </div>
-
-                <div className="p-4 bg-gradient-to-br from-[#111827]/10 to-[#4B5563]/10 rounded-2xl sm:col-span-2">
-                  <div className="flex items-center gap-3 mb-2">
-                    <MessageSquare className="w-5 h-5 text-gray-700" />
-                    <span className="font-medium text-gray-700">Toplam Rəy</span>
-                  </div>
-                  <div className="text-2xl font-black text-gray-900">{Number(stats.totalReviewCount || 0)}</div>
-                  <div className="text-sm text-gray-500">Kurs ve müəllim rəyləri birlikdə</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-3xl p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-xl font-bold text-gray-900">Rəylər</h2>
-              </div>
-
-              <div className="grid grid-cols-1 gap-6">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-gray-900">Kurs rəyləri</h3>
-                    <span className="text-sm text-gray-500">{courseReviews.length} son rəy</span>
-                  </div>
-                  <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                    {courseReviews.length === 0 ? (
-                      <div className="text-sm text-gray-500 bg-gray-50 rounded-2xl p-4">Hələ kurs rəyi yoxdur.</div>
-                    ) : courseReviews.map((review: any, index: number) => {
-                      const reviewer = review.user && typeof review.user === 'object'
-                        ? `${review.user.name || ''} ${review.user.surname || ''}`.trim()
-                        : review.name || 'Tələbə';
-
-                      return (
-                        <div key={review._id || `${review.courseId || 'course'}-${index}`} className="bg-gray-50 rounded-2xl p-4">
-                          <div className="flex items-center justify-between gap-4 mb-2">
-                            <div>
-                              <p className="font-semibold text-gray-900">{reviewer}</p>
-                              <p className="text-xs text-gray-500">{review.courseTitle || 'Kurs'}</p>
-                            </div>
-                            <span className="text-sm font-bold text-[#00D084]">{Number(review.rating || 0).toFixed(1)}</span>
-                          </div>
-                          <p className="text-sm text-gray-600 whitespace-pre-wrap break-words line-clamp-3">{review.comment}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-gray-900">Müəllim rəyləri</h3>
-                    <span className="text-sm text-gray-500">{teacherReviews.length} son rəy</span>
-                  </div>
-                  <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-                    {teacherReviews.length === 0 ? (
-                      <div className="text-sm text-gray-500 bg-gray-50 rounded-2xl p-4">Hələ müəllim rəyi yoxdur.</div>
-                    ) : teacherReviews.map((review: any, index: number) => {
-                      const reviewer = review.user && typeof review.user === 'object'
-                        ? `${review.user.name || ''} ${review.user.surname || ''}`.trim()
-                        : review.name || 'Tələbə';
-
-                      return (
-                        <div key={review._id || `teacher-${index}`} className="bg-gray-50 rounded-2xl p-4">
-                          <div className="flex items-center justify-between gap-4 mb-2">
-                            <div>
-                              <p className="font-semibold text-gray-900">{reviewer}</p>
-                              <p className="text-xs text-gray-500">Müəllim haqqında rəy</p>
-                            </div>
-                            <span className="text-sm font-bold text-[#8B5CF6]">{Number(review.rating || 0).toFixed(1)}</span>
-                          </div>
-                          <p className="text-sm text-gray-600 whitespace-pre-wrap break-words line-clamp-3">{review.comment}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
                 </div>
               </div>
             </div>

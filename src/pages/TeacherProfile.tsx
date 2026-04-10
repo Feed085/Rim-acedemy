@@ -543,6 +543,7 @@ export default function TeacherProfile() {
                   </div>
                 )}
             </div>
+
           </div>
         </div>
       </div>

@@ -31,6 +31,9 @@ import Contact from '@/components/student/Contact';
 import TeacherCourseEdit from '@/pages/TeacherCourseEdit';
 import TeacherTestEdit from '@/pages/TeacherTestEdit';
 import TeacherTestResults from '@/pages/TeacherTestResults';
+import TeacherTests from '@/pages/TeacherTests';
+import TeacherVideos from '@/pages/TeacherVideos';
+import TeacherCourseReviews from '@/pages/TeacherCourseReviews';
 
 import './i18n';
 
@@ -243,6 +246,36 @@ function AppRoutes() {
           <ProtectedRoute allowedRoles={['teacher']}>
             <MainLayout>
               <TeacherStudents />
+            </MainLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher/tests" 
+        element={
+          <ProtectedRoute allowedRoles={['teacher']}>
+            <MainLayout>
+              <TeacherTests />
+            </MainLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher/videos" 
+        element={
+          <ProtectedRoute allowedRoles={['teacher']}>
+            <MainLayout>
+              <TeacherVideos />
+            </MainLayout>
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/teacher/course-reviews" 
+        element={
+          <ProtectedRoute allowedRoles={['teacher']}>
+            <MainLayout>
+              <TeacherCourseReviews />
             </MainLayout>
           </ProtectedRoute>
         } 
