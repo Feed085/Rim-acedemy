@@ -29,6 +29,8 @@ export type PublicCourse = {
   image: string;
   price: number;
   rating: number;
+  learningPoints: string[];
+  includes: string[];
   isActive: boolean;
   createdAt?: string;
   instructor: {
@@ -168,6 +170,8 @@ const normalizeCourse = (course: any): PublicCourse => {
     image: course.image || '',
     price: Number(course.price || 0),
     rating: Number(course.rating || 0),
+    learningPoints: Array.isArray(course.learningPoints) ? course.learningPoints.filter(Boolean) : [],
+    includes: Array.isArray(course.includes) ? course.includes.filter(Boolean) : [],
     isActive: Boolean(course.isActive),
     createdAt: course.createdAt,
     instructor: instructor

@@ -96,6 +96,12 @@ export default function CourseDetail() {
   }
 
   const courseReviews = Array.isArray(course.reviews) ? course.reviews : [];
+  const learningPoints = Array.isArray(course.learningPoints)
+    ? course.learningPoints.filter((point: string) => Boolean(point && point.trim()))
+    : [];
+  const courseIncludes = Array.isArray(course.includes)
+    ? course.includes.filter((item: string) => Boolean(item && item.trim()))
+    : [];
   const studentCount = Number(course.studentCount || 0);
   const teacherExperience = Number(teacher?.experience || 0);
   const teacherExperienceLabel = teacherExperience > 0
@@ -192,14 +198,41 @@ export default function CourseDetail() {
                 <CheckCircle2 className="w-6 h-6 text-[#00D084]" />
                 Bu kursda nə öyrənəcəksiniz?
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {(course.learningPoints || []).map((point: string, index: number) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-[#00D084] shrink-0 mt-0.5" />
-                    <span className="text-gray-600 text-sm leading-relaxed">{point}</span>
-                  </div>
-                ))}
-              </div>
+              {learningPoints.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {learningPoints.map((point: string, index: number) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-[#00D084] shrink-0 mt-0.5" />
+                      <span className="text-gray-600 text-sm leading-relaxed">{point}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  Bu kurs üçün öyrənmə hədəfləri hələ əlavə edilməyib.
+                </p>
+              )}
+            </section>
+
+            <section className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
+                <ShieldCheck className="w-6 h-6 text-[#00D084]" />
+                Kurs daxildir
+              </h2>
+              {courseIncludes.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {courseIncludes.map((item: string, index: number) => (
+                    <div key={index} className="flex items-start gap-3 rounded-2xl bg-gray-50 border border-gray-100 p-4">
+                      <ShieldCheck className="w-5 h-5 text-[#00D084] shrink-0 mt-0.5" />
+                      <span className="text-gray-600 text-sm leading-relaxed">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  Bu kurs üçün daxil olan üstünlüklər hələ əlavə edilməyib.
+                </p>
+              )}
             </section>
 
 

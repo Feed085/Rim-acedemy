@@ -62,6 +62,8 @@ export interface Course {
   price: number;
   rating: number;
   reviews?: Review[];
+  learningPoints?: string[];
+  includes?: string[];
   isActive: boolean;
   createdAt: Date;
 }
