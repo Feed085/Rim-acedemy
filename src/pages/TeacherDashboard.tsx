@@ -1,7 +1,7 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -23,7 +23,7 @@ export default function TeacherDashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -38,15 +38,15 @@ export default function TeacherDashboard() {
 
         const response = await fetch('http://localhost:5000/api/teacher/me', {
           headers: {
-            'Authorization': `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         const data = await response.json();
         if (data.success) {
           setDashboardData({
             teacher: data.data,
-            stats: data.stats
+            stats: data.stats,
           });
         }
       } catch (error) {
@@ -64,7 +64,7 @@ export default function TeacherDashboard() {
   }
 
   const { teacher, stats } = dashboardData;
-  const myCourses = teacher.courses || [];
+  const myCourses = Array.isArray(teacher?.courses) ? teacher.courses : [];
   const fallbackCourseRating = myCourses.length > 0
     ? Math.round((myCourses.reduce((sum: number, course: any) => sum + Number(course.rating || 0), 0) / myCourses.length) * 10) / 10
     : 0;
@@ -82,7 +82,7 @@ export default function TeacherDashboard() {
       icon: Users,
       color: '#00D084',
       trend: '---',
-      onClick: () => navigate('/teacher/students')
+      onClick: () => navigate('/teacher/students'),
     },
     {
       label: 'Aktiv Kurslar',
@@ -90,7 +90,7 @@ export default function TeacherDashboard() {
       icon: BookOpen,
       color: '#0082F3',
       trend: '---',
-      onClick: scrollToMyCourses
+      onClick: scrollToMyCourses,
     },
     {
       label: 'Testlər',
@@ -98,7 +98,7 @@ export default function TeacherDashboard() {
       icon: FileText,
       color: '#F59E0B',
       trend: '---',
-      onClick: () => navigate('/teacher/tests')
+      onClick: () => navigate('/teacher/tests'),
     },
     {
       label: 'Video Dərslər',
@@ -106,7 +106,7 @@ export default function TeacherDashboard() {
       icon: Video,
       color: '#EC4899',
       trend: '---',
-      onClick: () => navigate('/teacher/videos')
+      onClick: () => navigate('/teacher/videos'),
     },
     {
       label: 'Kurs Rəyləri',
@@ -114,7 +114,7 @@ export default function TeacherDashboard() {
       icon: MessageCircle,
       color: '#10B981',
       trend: '---',
-      onClick: () => navigate('/teacher/course-reviews')
+      onClick: () => navigate('/teacher/course-reviews'),
     },
     {
       label: 'Müəllim Rəyləri',
@@ -122,7 +122,7 @@ export default function TeacherDashboard() {
       icon: MessageSquare,
       color: '#8B5CF6',
       trend: '---',
-      onClick: () => navigate(`/teachers/${teacher._id || teacher.id}#reviews`)
+      onClick: () => navigate(`/teachers/${teacher._id || teacher.id}#reviews`),
     },
   ];
 
@@ -131,7 +131,6 @@ export default function TeacherDashboard() {
   return (
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl lg:text-3xl font-black text-gray-900">
@@ -176,7 +175,6 @@ export default function TeacherDashboard() {
           </div>
         </div>
 
-        {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 mb-8">
           {statCards.map((stat) => (
             <button
@@ -203,15 +201,12 @@ export default function TeacherDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* My Courses */}
             <div className="bg-white rounded-3xl p-6 shadow-sm" id="teacher-my-courses">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-900">
                   {t('teacher.dashboard.my_courses')}
                 </h2>
-
               </div>
 
               <div className="space-y-4">
@@ -253,10 +248,17 @@ export default function TeacherDashboard() {
                     </div>
                   </div>
                 ))}
+
+                {myCourses.length === 0 && (
+                  <div className="rounded-3xl border border-dashed border-gray-200 bg-gray-50/70 px-6 py-14 text-center">
+                    <BookOpen className="mx-auto mb-4 h-12 w-12 text-gray-300" />
+                    <h3 className="text-lg font-bold text-gray-900">Uyğun kurs tapılmadı</h3>
+                    <p className="mt-2 text-sm text-gray-500">Hələ heç bir kurs əlavə edilməyib.</p>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Recent Students */}
             <div className="bg-white rounded-3xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold text-gray-900">
@@ -277,10 +279,7 @@ export default function TeacherDashboard() {
 
               <div className="space-y-3">
                 {recentStudents.map((student, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl"
-                  >
+                  <div key={index} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
                     <div className="w-10 h-10 bg-gradient-to-br from-[#00D084] to-[#0082F3] rounded-full flex items-center justify-center text-white font-bold">
                       {student.name.charAt(0)}
                     </div>
@@ -298,12 +297,7 @@ export default function TeacherDashboard() {
             </div>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Quick Actions */}
-
-
-            {/* Analytics */}
             <div className="bg-white rounded-3xl p-6 shadow-sm">
               <h2 className="text-xl font-bold text-gray-900 mb-4">
                 {t('teacher.dashboard.statistics')}
@@ -323,12 +317,13 @@ export default function TeacherDashboard() {
                     <Star className="w-5 h-5 text-[#8B5CF6]" />
                     <span className="font-medium text-gray-700">Müəllim Reytinqi</span>
                   </div>
-                  <div className="text-2xl font-black text-gray-900">{Number(stats.teacherRating || 0).toFixed(1)}/5</div>
+                  <div className="text-2xl font-black text-gray-900">
+                    {Number(stats.teacherRating || 0).toFixed(1)}/5
+                  </div>
                   <div className="text-sm text-gray-500">{stats.teacherReviewCount || 0} rəy</div>
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </div>

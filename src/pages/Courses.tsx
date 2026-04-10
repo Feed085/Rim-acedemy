@@ -128,6 +128,13 @@ export default function CoursesPage() {
                 </div>
               </SelectTrigger>
               <SelectContent className="bg-white border-none shadow-2xl rounded-2xl p-2 min-w-[220px]">
+                <SelectItem
+                  value="all"
+                  className="py-3 px-4 rounded-xl text-sm font-medium text-gray-600 cursor-pointer focus:bg-[#00D084]/10 focus:text-[#00D084] data-[state=checked]:text-[#00D084] data-[state=checked]:bg-[#00D084]/5 transition-colors mb-1 last:mb-0"
+                >
+                  Hamısı
+                </SelectItem>
+
                 {isLoading && visibleCategories.length === 0 ? (
                   <SelectItem value="loading" disabled className="py-3 px-4 rounded-xl text-sm font-medium text-gray-400">
                     Kateqoriyalar yüklənir...
