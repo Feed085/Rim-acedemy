@@ -170,35 +170,6 @@ export default function Login() {
               )}
             </Button>
 
-            {/* Quick Login Buttons for Demo */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={async () => {
-                  setRole('student');
-                  await login('student@rimacademy.az', 'password123', 'student');
-                  toast.success('Tələbə kimi sürətli giriş edildi!');
-                  navigate('/dashboard');
-                }}
-                className="rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 text-xs h-10"
-              >
-                Tələbə (Demo)
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={async () => {
-                   setRole('teacher');
-                   await login('teacher@rimacademy.az', 'password123', 'teacher');
-                   toast.success('Müəllim kimi sürətli giriş edildi!');
-                   navigate('/teacher/dashboard');
-                }}
-                className="rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 text-xs h-10"
-              >
-                Müəllim (Demo)
-              </Button>
-            </div>
           </form>
 
           {/* Divider */}
