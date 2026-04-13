@@ -8,7 +8,6 @@ import {
   Upload, 
   Video, 
   FileVideo,
-  Image as ImageIcon,
   CheckCircle,
   ArrowLeft
 } from 'lucide-react';
@@ -50,7 +49,6 @@ export default function UploadVideo() {
   const [isUploading, setIsUploading] = useState(false);
   const [isUploaded, setIsUploaded] = useState(false);
   const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -121,17 +119,6 @@ export default function UploadVideo() {
     }
   };
 
-  const handleThumbnailSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.type.startsWith('image/')) {
-        setThumbnail(file);
-      } else {
-        toast.error('Zəhmət olmasa şəkil faylı seçin');
-      }
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -185,26 +172,7 @@ export default function UploadVideo() {
         xhr.send(videoFile);
       });
 
-      // 3. Optional: Thumbnail Upload
-      let thumbnailPublicUrl = '';
-      if (thumbnail) {
-        const presignThumbReq = await fetch(
-          `${API_BASE_URL}/upload/presign?filename=${encodeURIComponent(thumbnail.name)}&contentType=${encodeURIComponent(thumbnail.type)}`,
-          { headers: { 'Authorization': `Bearer ${token}` } }
-        );
-        const presignThumbData = await presignThumbReq.json();
-        if (presignThumbData.success) {
-          const thumbSignedUrl = presignThumbData.data.signedUrl;
-          thumbnailPublicUrl = presignThumbData.data.publicUrl;
-          await fetch(thumbSignedUrl, {
-            method: 'PUT',
-            headers: { 'Content-Type': thumbnail.type },
-            body: thumbnail
-          });
-        }
-      }
-
-      // 4. Update Course with new Video Module
+      // 3. Update Course with new Video Module
       // Mövcud kursu çəkib, modullarını yeniləyəcəyik
       const courseReq = await fetch(`${API_BASE_URL}/courses/${formData.courseId}`);
       const courseData = await courseReq.json();
@@ -222,7 +190,6 @@ export default function UploadVideo() {
          title: formData.title,
          description: formData.description,
          duration: durationLabel,
-         thumbnail: thumbnailPublicUrl || 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80',
          videoUrl: videoPublicUrl
       };
 
@@ -274,7 +241,6 @@ export default function UploadVideo() {
               onClick={() => {
                 setIsUploaded(false);
                 setVideoFile(null);
-                setThumbnail(null);
                 setFormData({ title: '', description: '', courseId: '' });
               }}
               className="flex-1 bg-[#00D084] hover:bg-[#00B873] rounded-xl"
@@ -420,43 +386,6 @@ export default function UploadVideo() {
                 rows={4}
                 className="rounded-xl resize-none"
               />
-            </div>
-
-            {/* Thumbnail Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {t('teacher.upload.thumbnail')}
-              </label>
-              <div className="flex items-center gap-4">
-                <div className="relative w-32 h-20 bg-gray-100 rounded-xl overflow-hidden">
-                  {thumbnail ? (
-                    <img
-                      src={URL.createObjectURL(thumbnail)}
-                      alt="Thumbnail"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ImageIcon className="w-6 h-6 text-gray-400" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <label className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl cursor-pointer transition-colors">
-                    <Upload className="w-4 h-4" />
-                    <span className="text-sm font-medium">Şəkil seç</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleThumbnailSelect}
-                      className="hidden"
-                    />
-                  </label>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Tövsiyə olunan ölçü: 1280x720
-                  </p>
-                </div>
-              </div>
             </div>
           </div>
 

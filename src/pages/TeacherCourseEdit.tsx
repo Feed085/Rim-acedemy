@@ -187,30 +187,16 @@ export default function TeacherCourseEdit() {
     }
 
     setIsLoading(true);
-    let finalThumbnail = editingLesson.thumbnail;
 
     try {
       const token = localStorage.getItem('rim_auth_token');
 
-      // Əgər yeni şəkil (kaver) seçilibsə əvvəlcə R2-yə yüklə
-      if (editingLesson.thumbnailFile) {
-        const presignReq = await fetch(
-          `${API_BASE_URL}/upload/presign?filename=${encodeURIComponent(editingLesson.thumbnailFile.name)}&contentType=${encodeURIComponent(editingLesson.thumbnailFile.type)}`,
-          { headers: { 'Authorization': `Bearer ${token}` } }
-        );
-        const presignData = await presignReq.json();
-        if (presignData.success) {
-          const { signedUrl, publicUrl } = presignData.data;
-          await fetch(signedUrl, {
-            method: 'PUT',
-            headers: { 'Content-Type': editingLesson.thumbnailFile.type },
-            body: editingLesson.thumbnailFile
-          });
-          finalThumbnail = publicUrl;
-        }
-      }
+      const updatedEditingLesson = {
+        ...editingLesson,
+        title: trimmedTitle
+      };
 
-      const updatedEditingLesson = { ...editingLesson, title: trimmedTitle, thumbnail: finalThumbnail };
+      delete updatedEditingLesson.thumbnail;
       delete updatedEditingLesson.thumbnailFile;
 
       const updatedLessons = lessons.map(l => 
@@ -768,35 +754,6 @@ export default function TeacherCourseEdit() {
             <DialogTitle className="text-xl font-bold italic">Video Dərsi Redaktə Et</DialogTitle>
           </DialogHeader>
           <div className="grid gap-6 py-4">
-            {/* Thumbnail Preview/Upload */}
-            <div className="space-y-2">
-              <Label className="text-sm font-bold text-gray-700">Video Qapağı (Kaver)</Label>
-              <div className="relative aspect-video max-w-[280px] mx-auto rounded-2xl overflow-hidden bg-gray-100 group cursor-pointer border-2 border-dashed border-gray-200 hover:border-[#00D084]/50 transition-colors">
-                <img 
-                  src={editingLesson?.thumbnail || 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80'} 
-                  alt="Video Thumbnail"
-                  className="w-full h-full object-cover group-hover:opacity-40 transition-opacity"
-                />
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <div className="bg-white/90 p-3 rounded-full shadow-lg">
-                    <ImageIcon className="w-6 h-6 text-[#00D084]" />
-                  </div>
-                </div>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const fakeUrl = URL.createObjectURL(file);
-                      setEditingLesson({ ...editingLesson, thumbnail: fakeUrl, thumbnailFile: file });
-                    }
-                  }}
-                />
-              </div>
-            </div>
-
             <div className="grid gap-2">
               <Label htmlFor="title" className="text-sm font-bold text-gray-700">Video Başlığı</Label>
               <Input
