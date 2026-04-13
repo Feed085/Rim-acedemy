@@ -40,6 +40,20 @@ import {
 } from '@/components/ui/select';
 import { Tag } from 'lucide-react';
 
+const loadVideoDuration = (videoUrl: string) => new Promise<number>((resolve) => {
+  const video = document.createElement('video');
+  video.preload = 'metadata';
+  video.src = videoUrl;
+
+  video.onloadedmetadata = () => {
+    resolve(Number.isFinite(video.duration) ? video.duration : 0);
+  };
+
+  video.onerror = () => {
+    resolve(0);
+  };
+});
+
 export default function TeacherCourseEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -72,7 +86,28 @@ export default function TeacherCourseEdit() {
         if (courseData.success) {
           setCourse(courseData.data);
           const flatLessons = (courseData.data.modules || []).flatMap((m: any) => m.videos) || [];
-          setLessons(flatLessons);
+
+          const lessonsWithDuration = await Promise.all(flatLessons.map(async (lesson: any) => {
+            const existingDuration = formatVideoDuration(lesson.duration);
+
+            if (existingDuration !== '0:00') {
+              return {
+                ...lesson,
+                duration: existingDuration
+              };
+            }
+
+            const resolvedDuration = lesson.videoUrl
+              ? formatVideoDuration(await loadVideoDuration(lesson.videoUrl))
+              : '0:00';
+
+            return {
+              ...lesson,
+              duration: resolvedDuration
+            };
+          }));
+
+          setLessons(lessonsWithDuration);
         } else {
           toast.error('Kurs tapılmadı', { id: 'course-not-found' });
         }
