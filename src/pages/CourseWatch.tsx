@@ -2,8 +2,17 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ChevronLeft, PlayCircle, Clock, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, PlayCircle, Clock, CheckCircle2, FileText } from 'lucide-react';
 import { API_BASE_URL } from '@/services/publicApi';
+import { formatVideoDuration } from '@/lib/utils';
+
+const loadVideoDuration = (videoUrl: string) => new Promise<number>((resolve) => {
+  const video = document.createElement('video');
+  video.preload = 'metadata';
+  video.src = videoUrl;
+  video.onloadedmetadata = () => resolve(Number.isFinite(video.duration) ? video.duration : 0);
+  video.onerror = () => resolve(0);
+});
 
 export default function CourseWatch() {
   const { id } = useParams();
@@ -54,7 +63,23 @@ export default function CourseWatch() {
             }, []);
           }
 
-          setFlatLessons(lessons);
+          const lessonsWithDuration = await Promise.all(lessons.map(async (lesson) => {
+            const currentDuration = formatVideoDuration(lesson.duration);
+            if (currentDuration !== '0:00') {
+              return {
+                ...lesson,
+                duration: currentDuration
+              };
+            }
+
+            const resolvedDuration = lesson.videoUrl ? formatVideoDuration(await loadVideoDuration(lesson.videoUrl)) : '0:00';
+            return {
+              ...lesson,
+              duration: resolvedDuration
+            };
+          }));
+
+          setFlatLessons(lessonsWithDuration);
 
           const matchedCourse = progressData.success
             ? (progressData.data?.activeCourses || []).find((courseItem: any) => String(courseItem._id || courseItem.id) === String(id))
@@ -62,7 +87,7 @@ export default function CourseWatch() {
 
           const completedLessons = matchedCourse?.completedLessons || 0;
           const progress = matchedCourse?.progress || 0;
-          const totalLessons = matchedCourse?.totalLessons || lessons.length;
+          const totalLessons = matchedCourse?.totalLessons || lessonsWithDuration.length;
 
           setCourseProgress({
             progress,
@@ -71,7 +96,7 @@ export default function CourseWatch() {
             lastAccessed: matchedCourse?.lastAccessed || null
           });
 
-          setActiveLessonIndex(lessons.length > 0 ? Math.min(completedLessons, lessons.length - 1) : 0);
+          setActiveLessonIndex(lessonsWithDuration.length > 0 ? Math.min(completedLessons, lessonsWithDuration.length - 1) : 0);
         }
         
         if (testsData.success) {
@@ -89,6 +114,9 @@ export default function CourseWatch() {
   }, [id]);
 
   const activeLesson = flatLessons[activeLessonIndex];
+  const activeLessonDescription = typeof activeLesson?.description === 'string'
+    ? activeLesson.description.trim()
+    : '';
 
   const handleLessonCompleted = async () => {
     if (!course || !activeLesson || isMarkingComplete) {
@@ -185,6 +213,16 @@ export default function CourseWatch() {
                 {course.title} — Məruzəçi: <span className="text-gray-900">{course.instructor?.name} {course.instructor?.surname}</span>
               </p>
 
+              <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText className="w-4 h-4 text-[#00D084]" />
+                  <span className="text-sm font-bold text-gray-900">Video haqqında</span>
+                </div>
+                <p className="text-sm leading-7 text-gray-700 whitespace-pre-line">
+                  {activeLessonDescription || 'Bu video üçün əlavə açıqlama əlavə edilməyib.'}
+                </p>
+              </div>
+
               <div className="rounded-2xl border border-[#00D084]/15 bg-[#00D084]/5 p-4 mb-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold text-gray-700">Kurs irəliləyişi</span>
@@ -258,7 +296,7 @@ export default function CourseWatch() {
                         </div>
                         <div className="flex items-center gap-1.5 mt-1.5 text-xs text-gray-500 font-medium">
                           <Clock className="w-3.5 h-3.5" />
-                          <span>{lesson.duration || '0:00'}</span>
+                          <span>{formatVideoDuration(lesson.duration)}</span>
                         </div>
                       </div>
                     </button>

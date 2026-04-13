@@ -76,7 +76,7 @@ export interface Video {
   courseName?: string;
   videoUrl: string;
   thumbnail?: string;
-  duration: number;
+  duration: string | number;
   order: number;
   isPublic: boolean;
   createdAt: Date;

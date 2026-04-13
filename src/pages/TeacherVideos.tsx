@@ -5,6 +5,7 @@ import { ArrowLeft, Search, Film, Video, PlayCircle, Layers3 } from 'lucide-reac
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { formatVideoDuration } from '@/lib/utils';
 import { API_BASE_URL } from '@/services/publicApi';
 
 export default function TeacherVideos() {
@@ -165,7 +166,7 @@ export default function TeacherVideos() {
                 </span>
                 <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-50 border border-gray-100">
                   <Video className="w-3 h-3" />
-                  Dəq: {video.duration || '0'}
+                  Müddət: {formatVideoDuration(video.duration)}
                 </span>
               </div>
 

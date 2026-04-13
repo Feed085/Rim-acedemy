@@ -14,6 +14,26 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/services/publicApi';
+import { formatVideoDuration } from '@/lib/utils';
+
+const getVideoDuration = (file: File) => new Promise<number>((resolve, reject) => {
+  const objectUrl = URL.createObjectURL(file);
+  const video = document.createElement('video');
+
+  video.preload = 'metadata';
+  video.src = objectUrl;
+
+  video.onloadedmetadata = () => {
+    const duration = Number.isFinite(video.duration) ? video.duration : 0;
+    URL.revokeObjectURL(objectUrl);
+    resolve(duration);
+  };
+
+  video.onerror = () => {
+    URL.revokeObjectURL(objectUrl);
+    reject(new Error('Video müddəti oxuna bilmədi'));
+  };
+});
 
 export default function UploadVideo() {
   const { t } = useTranslation();
@@ -189,12 +209,19 @@ export default function UploadVideo() {
       const courseReq = await fetch(`${API_BASE_URL}/courses/${formData.courseId}`);
       const courseData = await courseReq.json();
       if (!courseData.success) throw new Error('Kurs tapılmadı');
+
+      let durationLabel = '0:00';
+      try {
+        durationLabel = formatVideoDuration(await getVideoDuration(videoFile));
+      } catch (durationError) {
+        console.warn('Video müddəti alınmadı', durationError);
+      }
       
       const course = courseData.data;
       const newVideo = {
          title: formData.title,
          description: formData.description,
-         duration: '0', // TODO: video duration can be extracted locally
+         duration: durationLabel,
          thumbnail: thumbnailPublicUrl || 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&q=80',
          videoUrl: videoPublicUrl
       };

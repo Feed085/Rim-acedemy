@@ -22,6 +22,7 @@ import {
 import { toast } from 'sonner';
 import CourseReviewsList from '@/components/common/CourseReviewsList';
 import { API_BASE_URL } from '@/services/publicApi';
+import { formatVideoDuration } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -470,7 +471,7 @@ export default function TeacherCourseEdit() {
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-gray-900">{lesson.title}</h4>
-                        <p className="text-xs text-gray-500">{lesson.duration} dəq</p>
+                        <p className="text-xs text-gray-500">Müddət: {formatVideoDuration(lesson.duration)}</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
