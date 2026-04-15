@@ -182,7 +182,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className="fixed z-50 flex h-full w-72 flex-col border-r border-gray-100 bg-white">
+    <aside className="fixed inset-y-0 left-0 z-50 flex h-screen w-56 flex-col overflow-y-auto border-r border-gray-100 bg-white">
       <div className="flex h-24 items-center px-8">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#00D084] shadow-lg shadow-[#00D084]/20">
@@ -255,7 +255,7 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-black text-gray-900">Admin panel</h1>
           <p className="mt-1 text-gray-500">Kurs, tələbə və müəllim axınına canlı baxış.</p>
@@ -308,8 +308,8 @@ const Dashboard = () => {
         })}
       </div>
 
-      <div className="rounded-[32px] border border-gray-100 bg-white p-8 shadow-sm">
-        <div className="mb-8 flex items-center justify-between">
+      <div className="rounded-[32px] border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-xl font-black text-gray-900">Ən aktiv kurslar</h3>
           <span className="rounded-full bg-gray-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-gray-500">
             Canlı
@@ -317,7 +317,7 @@ const Dashboard = () => {
         </div>
         <div className="space-y-5">
           {(dashboard?.topCourses || []).map((course) => (
-            <div key={course.id} className="flex items-center justify-between gap-4 rounded-2xl border border-gray-50 p-4 transition-colors hover:bg-gray-50/50">
+            <div key={course.id} className="flex flex-col gap-4 rounded-2xl border border-gray-50 p-4 transition-colors hover:bg-gray-50/50 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-50 font-black text-[#00D084] transition-all group-hover:bg-[#00D084] group-hover:text-white">
                   {course.title[0]}
@@ -342,8 +342,8 @@ const Dashboard = () => {
       </div>
 
       <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
-        <div className="rounded-[32px] border border-gray-100 bg-white p-8 shadow-sm">
-          <div className="mb-6 flex items-center justify-between">
+        <div className="rounded-[32px] border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#00D084]/10">
                 <Users className="h-6 w-6 text-[#00D084]" />
@@ -357,12 +357,12 @@ const Dashboard = () => {
           <div className="space-y-4">
             {(dashboard?.latestTeachers || []).map((teacher) => (
               <div key={teacher.id} className="rounded-2xl border border-gray-50 p-4">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                   <div>
                     <div className="font-bold text-gray-900">{teacher.name} {teacher.surname}</div>
                     <div className="text-sm text-gray-500">{teacher.email}</div>
                   </div>
-                  <div className="text-right text-sm font-bold text-gray-900">
+                  <div className="text-left text-sm font-bold text-gray-900 sm:text-right">
                     {teacher.courseCount} kurs · {teacher.testCount} test
                   </div>
                 </div>
@@ -376,8 +376,8 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="rounded-[32px] border border-gray-100 bg-white p-8 shadow-sm">
-          <div className="mb-6 flex items-center justify-between">
+        <div className="rounded-[32px] border border-gray-100 bg-white p-6 shadow-sm sm:p-8">
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50">
                 <GraduationCap className="h-6 w-6 text-blue-500" />
@@ -391,12 +391,12 @@ const Dashboard = () => {
           <div className="space-y-4">
             {(dashboard?.latestStudents || []).map((student) => (
               <div key={student.id} className="rounded-2xl border border-gray-50 p-4">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                   <div>
                     <div className="font-bold text-gray-900">{student.name}</div>
                     <div className="text-sm text-gray-500">{student.email}</div>
                   </div>
-                  <div className="text-right text-sm font-bold text-gray-900">
+                  <div className="text-left text-sm font-bold text-gray-900 sm:text-right">
                     {student.activeCoursesCount} kurs · {student.assignedTestsCount} test
                   </div>
                 </div>
@@ -551,7 +551,7 @@ const Teachers = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-black text-gray-900">Müəllimlər</h1>
           <p className="mt-1 text-gray-500">Yalnız müəllim hesabları burada göstərilir.</p>
@@ -611,65 +611,57 @@ const Teachers = () => {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-[32px] border border-gray-100 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
-            <thead>
-              <tr className="bg-gray-50/50">
-                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Müəllim</th>
-                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Email</th>
-                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Kateqoriya</th>
-                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Kurslar</th>
-                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Testlər</th>
-                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400 text-right">Əməliyyat</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {loading && (
-                <tr>
-                  <td colSpan={6} className="px-8 py-12 text-center text-gray-400">Müəllimlər yüklənir...</td>
-                </tr>
-              )}
-              {!loading && filteredTeachers.map((teacher) => (
-                <tr key={teacher.id} className="group transition-colors hover:bg-gray-50/50">
-                  <td className="px-8 py-6 font-bold text-gray-900">{teacher.name} {teacher.surname}</td>
-                  <td className="px-8 py-6 font-medium text-gray-500">{teacher.email}</td>
-                  <td className="px-8 py-6">
-                    <span className="rounded bg-blue-50 px-2 py-1 text-[10px] font-black uppercase text-blue-600">
-                      {resolveCategoryName(teacher.categories?.[0] || '', categories)}
-                    </span>
-                  </td>
-                  <td className="px-8 py-6 font-bold text-gray-900">{teacher.courseCount} kurs</td>
-                  <td className="px-8 py-6 font-bold text-gray-900">{teacher.testCount} test</td>
-                  <td className="px-8 py-6 text-right">
-                    <div className="inline-flex items-center gap-2">
-                      <button
-                        onClick={() => openEditModal(teacher)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-gray-100 px-4 py-2 text-xs font-black uppercase tracking-widest text-gray-600 transition-colors hover:border-[#00D084] hover:text-[#00D084]"
-                      >
-                        <Edit3 className="h-3.5 w-3.5" />
-                        Düzəlt
-                      </button>
-                      <button
-                        onClick={() => handleDeleteTeacher(teacher)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-gray-100 px-4 py-2 text-xs font-black uppercase tracking-widest text-red-500 transition-colors hover:border-red-200 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Sil
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {!loading && filteredTeachers.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-8 py-12 text-center italic text-gray-400">
-                    Hələ ki, heç bir müəllim hesabı yaradılmayıb.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      <div className="rounded-[32px] border border-gray-100 bg-white shadow-sm">
+        <div className="space-y-3 p-3 sm:p-4">
+          {loading && (
+            <div className="rounded-2xl border border-gray-100 p-6 text-center text-gray-400">Müəllimlər yüklənir...</div>
+          )}
+          {!loading && filteredTeachers.map((teacher) => (
+            <div key={teacher.id} className="rounded-2xl border border-gray-100 p-4 transition-colors hover:bg-gray-50/50 sm:p-5">
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1.2fr)_minmax(0,0.9fr)_auto] xl:items-center">
+                <div className="min-w-0">
+                  <div className="truncate font-bold text-gray-900">{teacher.name} {teacher.surname}</div>
+                  <div className="truncate text-sm text-gray-500">Müəllim hesabı</div>
+                </div>
+                <div className="min-w-0 text-sm text-gray-500">
+                  <div className="truncate font-medium text-gray-700">{teacher.email}</div>
+                  <div className="truncate text-xs text-gray-400">Əlaqə emaili</div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black uppercase text-blue-600">
+                    {resolveCategoryName(teacher.categories?.[0] || '', categories)}
+                  </span>
+                  <span className="rounded-full bg-gray-100 px-3 py-1 text-[10px] font-black uppercase text-gray-600">
+                    {teacher.courseCount} kurs
+                  </span>
+                  <span className="rounded-full bg-gray-100 px-3 py-1 text-[10px] font-black uppercase text-gray-600">
+                    {teacher.testCount} test
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2 xl:justify-end">
+                  <button
+                    onClick={() => openEditModal(teacher)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-gray-100 px-4 py-2 text-xs font-black uppercase tracking-widest text-gray-600 transition-colors hover:border-[#00D084] hover:text-[#00D084]"
+                  >
+                    <Edit3 className="h-3.5 w-3.5" />
+                    Düzəlt
+                  </button>
+                  <button
+                    onClick={() => handleDeleteTeacher(teacher)}
+                    className="inline-flex items-center gap-2 rounded-xl border border-gray-100 px-4 py-2 text-xs font-black uppercase tracking-widest text-red-500 transition-colors hover:border-red-200 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Sil
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {!loading && filteredTeachers.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center italic text-gray-400">
+              Hələ ki, heç bir müəllim hesabı yaradılmayıb.
+            </div>
+          )}
         </div>
       </div>
 
@@ -679,7 +671,7 @@ const Teachers = () => {
         title={editingTeacherId ? 'Müəllim Redaktə Et' : 'Yeni Müəllim Hesabı'}
       >
         <form onSubmit={handleCreate} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Ad</label>
               <input
@@ -870,21 +862,21 @@ const Students = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between gap-4">
-        <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-3xl font-black text-gray-900">Tələbələr</h1>
           <p className="mt-1 text-gray-500">Tələbələr görünür və onlara kurs və ya test təyin edilir.</p>
         </div>
         <button
           onClick={() => loadData()}
-          className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 shadow-sm transition-all hover:border-[#00D084] hover:text-[#00D084]"
+          className="inline-flex items-center gap-2 self-start rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-bold text-gray-700 shadow-sm transition-all hover:border-[#00D084] hover:text-[#00D084]"
         >
           <RefreshCw className="h-4 w-4" />
           Yenilə
         </button>
       </div>
 
-      <div className="rounded-[32px] border border-gray-100 bg-white p-6 shadow-sm">
+      <div className="rounded-[24px] border border-gray-100 bg-white p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="relative max-w-md flex-1">
             <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
@@ -902,85 +894,69 @@ const Students = () => {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-[32px] border border-gray-100 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-left">
-            <thead>
-              <tr className="bg-gray-50/50">
-                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Tələbə</th>
-                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Əlaqə</th>
-                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Kurslar</th>
-                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Testlər</th>
-                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Son qeydiyyat</th>
-                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400 text-right">Əməliyyat</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {loading && (
-                <tr>
-                  <td colSpan={6} className="px-8 py-12 text-center text-gray-400">Tələbələr yüklənir...</td>
-                </tr>
-              )}
-              {!loading && filteredStudents.map((student) => (
-                <tr key={student.id} className="transition-colors hover:bg-gray-50/50">
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50">
-                        <GraduationCap className="h-5 w-5 text-blue-500" />
-                      </div>
-                      <div>
-                        <div className="font-bold text-gray-900">{student.name}</div>
-                        <div className="text-xs text-gray-400">{student.educationLevel || 'Təyin edilməyib'}</div>
-                      </div>
+      <div className="rounded-[32px] border border-gray-100 bg-white shadow-sm">
+        <div className="space-y-3 p-3 sm:p-4">
+          {loading && (
+            <div className="rounded-2xl border border-gray-100 p-6 text-center text-gray-400">Tələbələr yüklənir...</div>
+          )}
+          {!loading && filteredStudents.map((student) => (
+            <div key={student.id} className="rounded-2xl border border-gray-100 p-4 transition-colors hover:bg-gray-50/50 sm:p-5">
+              <div className="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1.2fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_auto] xl:items-center">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50">
+                      <GraduationCap className="h-4 w-4 text-blue-500" />
                     </div>
-                  </td>
-                  <td className="px-8 py-6 text-sm text-gray-500">
-                    <div className="font-medium text-gray-700">{student.email}</div>
-                    <div>{student.phoneNumber || '-'}</div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex flex-wrap gap-2">
-                      {student.activeCourses.map((course) => (
-                        <span key={course._id} className="rounded-lg bg-gray-100 px-3 py-1 text-xs font-bold text-gray-600">
-                          {course.title}
-                        </span>
-                      ))}
-                      {student.activeCourses.length === 0 && <span className="text-sm text-gray-400">Yoxdur</span>}
+                    <div className="min-w-0">
+                      <div className="truncate font-bold text-sm text-gray-900">{student.name}</div>
+                      <div className="truncate text-[11px] text-gray-400">{student.educationLevel || 'Təyin edilməyib'}</div>
                     </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex flex-wrap gap-2">
-                      {student.assignedTests.map((test) => (
-                        <span key={test._id} className="rounded-lg bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
-                          {test.title}
-                        </span>
-                      ))}
-                      {student.assignedTests.length === 0 && <span className="text-sm text-gray-400">Yoxdur</span>}
-                    </div>
-                  </td>
-                  <td className="px-8 py-6 text-sm text-gray-500">
-                    {formatDate(student.createdAt)}
-                  </td>
-                  <td className="px-8 py-6 text-right">
-                    <button
-                      onClick={() => openAssignment(student)}
-                      className="inline-flex items-center gap-2 rounded-xl bg-[#00D084] px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-[#00D084]/20 transition-all hover:bg-[#00B873] active:scale-95"
-                    >
-                      <UserPlus className="h-3.5 w-3.5" />
-                      Kurs/Test ver
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {!loading && filteredStudents.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-8 py-12 text-center italic text-gray-400">
-                    Hələ ki, heç bir tələbə yoxdur.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+                <div className="min-w-0 text-xs text-gray-500">
+                  <div className="truncate font-medium text-gray-700">{student.email}</div>
+                  <div className="truncate">{student.phoneNumber || '-'}</div>
+                </div>
+                <div className="min-w-0">
+                  <div className="mb-1 text-[10px] font-black uppercase tracking-[0.14em] text-gray-400 xl:hidden">Kurslar</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {student.activeCourses.map((course) => (
+                      <span key={course._id} className="max-w-full rounded-md bg-gray-100 px-2 py-1 text-[10px] font-bold leading-tight text-gray-600 break-words">
+                        {course.title}
+                      </span>
+                    ))}
+                    {student.activeCourses.length === 0 && <span className="text-xs text-gray-400">Yoxdur</span>}
+                  </div>
+                </div>
+                <div className="min-w-0">
+                  <div className="mb-1 text-[10px] font-black uppercase tracking-[0.14em] text-gray-400 xl:hidden">Testlər</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {student.assignedTests.map((test) => (
+                      <span key={test._id} className="max-w-full rounded-md bg-blue-50 px-2 py-1 text-[10px] font-bold leading-tight text-blue-600 break-words">
+                        {test.title}
+                      </span>
+                    ))}
+                    {student.assignedTests.length === 0 && <span className="text-xs text-gray-400">Yoxdur</span>}
+                  </div>
+                </div>
+                <div className="flex flex-col items-start gap-2 xl:items-end">
+                  <div className="text-xs text-gray-500">{formatDate(student.createdAt)}</div>
+                  <button
+                    onClick={() => openAssignment(student)}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-[#00D084] px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-[#00D084]/20 transition-all hover:bg-[#00B873] active:scale-95"
+                  >
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Kurs/Test ver
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+          {!loading && filteredStudents.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center italic text-gray-400">
+              Hələ ki, heç bir tələbə yoxdur.
+            </div>
+          )}
         </div>
       </div>
 
@@ -1124,8 +1100,8 @@ const Categories = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#00D084]/10">
             <Grid className="h-6 w-6 text-[#00D084]" />
           </div>
@@ -1160,55 +1136,57 @@ const Categories = () => {
       </div>
 
       <div className="overflow-hidden rounded-[32px] border border-gray-100 bg-white shadow-sm">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-gray-50/50">
-              <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Rəng</th>
-              <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Kateqoriya</th>
-              <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Sistem ID</th>
-              <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400 text-right">Əməliyyat</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
-            {loading && (
-              <tr>
-                <td colSpan={4} className="px-8 py-12 text-center text-gray-400">Kateqoriyalar yüklənir...</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-gray-50/50">
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Rəng</th>
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Kateqoriya</th>
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400">Sistem ID</th>
+                <th className="px-8 py-5 text-[11px] font-black italic uppercase tracking-widest text-gray-400 text-right">Əməliyyat</th>
               </tr>
-            )}
-            {!loading && filteredCategories.map((category) => (
-              <tr key={category.id} className="transition-colors hover:bg-gray-50/30">
-                <td className="px-8 py-6">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: `${category.color || '#E5E7EB'}22` }}>
-                    <TagIcon className="h-5 w-5" style={{ color: category.color || '#9CA3AF' }} />
-                  </div>
-                </td>
-                <td className="px-8 py-6">
-                  <div className="font-bold text-lg text-gray-900">{category.name}</div>
-                  <div className="text-sm text-gray-500">{category.description || 'Açıklama yoxdur'}</div>
-                </td>
-                <td className="px-8 py-6">
-                  <code className="rounded-md bg-blue-50 px-2 py-1 text-xs font-black text-blue-500">{category.id}</code>
-                </td>
-                <td className="px-8 py-6 text-right">
-                  <button
-                    onClick={() => handleDelete(category.id)}
-                    className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-gray-500 transition-colors hover:bg-red-50 hover:text-red-500"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Sil
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {!loading && filteredCategories.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-8 py-12 text-center italic text-gray-400">
-                  {searchQuery.trim() ? 'Axtarışa uyğun kateqoriya tapılmadı.' : 'Hələ kateqoriya yoxdur.'}
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {loading && (
+                <tr>
+                  <td colSpan={4} className="px-8 py-12 text-center text-gray-400">Kateqoriyalar yüklənir...</td>
+                </tr>
+              )}
+              {!loading && filteredCategories.map((category) => (
+                <tr key={category.id} className="transition-colors hover:bg-gray-50/30">
+                  <td className="px-8 py-6">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: `${category.color || '#E5E7EB'}22` }}>
+                      <TagIcon className="h-5 w-5" style={{ color: category.color || '#9CA3AF' }} />
+                    </div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <div className="font-bold text-lg text-gray-900">{category.name}</div>
+                    <div className="text-sm text-gray-500">{category.description || 'Açıklama yoxdur'}</div>
+                  </td>
+                  <td className="px-8 py-6">
+                    <code className="rounded-md bg-blue-50 px-2 py-1 text-xs font-black text-blue-500">{category.id}</code>
+                  </td>
+                  <td className="px-8 py-6 text-right">
+                    <button
+                      onClick={() => handleDelete(category.id)}
+                      className="inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold text-gray-500 transition-colors hover:bg-red-50 hover:text-red-500"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Sil
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {!loading && filteredCategories.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-8 py-12 text-center italic text-gray-400">
+                    {searchQuery.trim() ? 'Axtarışa uyğun kateqoriya tapılmadı.' : 'Hələ kateqoriya yoxdur.'}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Yeni Kateqoriya">
@@ -1240,9 +1218,9 @@ export default function AppAdmin() {
   return (
     <BrowserRouter>
       <Toaster position="top-right" richColors closeButton />
-      <div className="flex min-h-screen bg-[#F8FAFC]">
+      <div className="flex min-h-screen overflow-x-hidden bg-[#F8FAFC]">
         <Sidebar />
-        <main className="ml-72 flex-1 p-12 transition-all">
+        <main className="ml-56 min-w-0 flex-1 p-4 transition-all sm:p-6 lg:p-12">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/teachers" element={<Teachers />} />
