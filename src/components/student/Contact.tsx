@@ -24,6 +24,15 @@ export default function Contact() {
   });
 
   useEffect(() => {
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+
+    if (!isDesktop) {
+      gsap.set(titleRef.current, { opacity: 1, y: 0 });
+      gsap.set('.contact-reveal', { opacity: 1, y: 0 });
+      gsap.set('.contact-info-card', { opacity: 1, y: 0 });
+      return;
+    }
+
     const ctx = gsap.context(() => {
       const timeline = gsap.timeline({
         scrollTrigger: {
@@ -119,7 +128,7 @@ export default function Contact() {
     <section
       id="contact"
       ref={sectionRef}
-      className="relative py-20 lg:py-32 bg-[#0A0A0A] overflow-hidden"
+      className="relative py-16 lg:py-32 bg-[#0A0A0A] overflow-hidden"
     >
       {/* Background effects */}
       <div className="absolute inset-0">
@@ -129,7 +138,7 @@ export default function Contact() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Title */}
-        <div ref={titleRef} className="text-center mb-12">
+        <div ref={titleRef} className="text-center mb-8 lg:mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full mb-6">
             <span className="w-2 h-2 bg-[#00D084] rounded-full" />
             <span className="text-sm font-medium text-gray-300">Əlaqə</span>
@@ -143,14 +152,14 @@ export default function Contact() {
         </div>
 
         {/* Content */}
-        <div ref={contentRef} className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+        <div ref={contentRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12">
           {/* Contact Form */}
-          <div className="contact-reveal bg-white/5 backdrop-blur-sm rounded-3xl p-6 sm:p-8 lg:p-10 border border-white/10">
+          <div className="contact-reveal bg-white/5 backdrop-blur-sm rounded-3xl p-5 sm:p-8 lg:p-10 border border-white/10">
             <h3 className="text-xl font-bold text-white mb-6">
               Bizə yazın
             </h3>
             
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   {t('contact.form.name')}
@@ -165,7 +174,7 @@ export default function Contact() {
                 />
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     {t('contact.form.email')}
@@ -233,7 +242,7 @@ export default function Contact() {
           {/* Map & Info */}
           <div className="space-y-6">
             {/* Map */}
-            <div className="contact-reveal relative h-64 lg:h-80 rounded-3xl overflow-hidden">
+            <div className="contact-reveal relative h-56 lg:h-80 rounded-3xl overflow-hidden">
               <iframe
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3039.428490145627!2d49.867092!3d40.409264!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDDCsDI0JzMzLjQiTiA0OcKwNTInMDEuNSJF!5e0!3m2!1sen!2s!4v1234567890"
                 width="100%"
@@ -242,12 +251,12 @@ export default function Contact() {
                 allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
-                className="grayscale hover:grayscale-0 transition-all duration-500"
+                className="lg:grayscale lg:hover:grayscale-0 transition-all duration-500"
               />
             </div>
 
             {/* Contact Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {contactInfo.map((item) => (
                 <div
                   key={item.label}

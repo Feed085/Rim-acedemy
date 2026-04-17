@@ -1,12 +1,35 @@
-const API_BASE_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+const API_BASE_URL = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+
+export const ADMIN_SESSION_TOKEN_KEY = 'rim_admin_token';
+export const ADMIN_SESSION_USER_KEY = 'rim_admin_user';
+
+const getAdminToken = () => {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  return localStorage.getItem(ADMIN_SESSION_TOKEN_KEY) || '';
+};
+
+const clearAdminSession = () => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  localStorage.removeItem(ADMIN_SESSION_TOKEN_KEY);
+  localStorage.removeItem(ADMIN_SESSION_USER_KEY);
+  window.dispatchEvent(new Event('rim-admin-auth-expired'));
+};
 
 const buildUrl = (path: string) => `${API_BASE_URL}${path}`;
 
 async function requestJson(path: string, init: RequestInit = {}) {
+  const adminToken = getAdminToken();
   const response = await fetch(buildUrl(path), {
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      ...(adminToken ? { 'Authorization': `Bearer ${adminToken}` } : {}),
       ...(init.headers || {})
     }
   });
@@ -17,6 +40,10 @@ async function requestJson(path: string, init: RequestInit = {}) {
     : await response.text();
 
   if (!response.ok) {
+    if (response.status === 401) {
+      clearAdminSession();
+    }
+
     const message = typeof body === 'object' && body && 'message' in body
       ? String((body as { message?: string }).message || 'İstek başarısız')
       : 'İstek başarısız';
@@ -28,6 +55,10 @@ async function requestJson(path: string, init: RequestInit = {}) {
 }
 
 export const adminApi = {
+  googleLogin: (credential: string) => requestJson('/admin/auth/google', {
+    method: 'POST',
+    body: JSON.stringify({ credential })
+  }),
   getDashboard: () => requestJson('/admin/dashboard'),
   getTeachers: () => requestJson('/admin/teachers'),
   createTeacher: (payload: Record<string, unknown>) => requestJson('/teacher/auth/register', {

@@ -23,6 +23,14 @@ export default function Testimonials() {
   };
 
   useEffect(() => {
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+
+    if (!isDesktop) {
+      gsap.set(titleRef.current, { opacity: 1, y: 0 });
+      gsap.set(sliderRef.current, { opacity: 1, y: 0 });
+      return;
+    }
+
     const ctx = gsap.context(() => {
       const timeline = gsap.timeline({
         scrollTrigger: {
@@ -88,10 +96,10 @@ export default function Testimonials() {
         {/* Testimonial Slider */}
         <div ref={sliderRef} className="relative max-w-4xl mx-auto">
           {/* Main Card */}
-          <div className="relative bg-white rounded-[40px] p-8 sm:p-12 lg:p-16 shadow-xl shadow-gray-200/50">
+          <div className="relative bg-white rounded-[40px] p-6 sm:p-12 lg:p-16 shadow-xl shadow-gray-200/50">
             {/* Quote Icon */}
-            <div className="absolute -top-6 left-8 sm:left-12 w-12 h-12 bg-[#00D084] rounded-2xl flex items-center justify-center">
-              <Quote className="w-6 h-6 text-white" />
+            <div className="absolute -top-5 left-6 sm:-top-6 sm:left-12 w-10 h-10 sm:w-12 sm:h-12 bg-[#00D084] rounded-2xl flex items-center justify-center">
+              <Quote className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
 
             {/* Content */}
@@ -116,16 +124,16 @@ export default function Testimonials() {
                   </div>
 
                   {/* Quote */}
-                  <p className="text-xl sm:text-2xl lg:text-3xl text-gray-800 font-medium leading-relaxed mb-8">
+                  <p className="text-lg sm:text-2xl lg:text-3xl text-gray-800 font-medium leading-relaxed mb-6 sm:mb-8">
                     "{testimonial.quote}"
                   </p>
 
                   {/* Author */}
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3 sm:gap-4">
                     <img
                       src={testimonial.avatar}
                       alt={testimonial.name}
-                      className="w-14 h-14 rounded-full object-cover"
+                      className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover"
                     />
                     <div>
                       <h4 className="font-bold text-gray-900">
@@ -139,26 +147,26 @@ export default function Testimonials() {
             </div>
 
             {/* Navigation */}
-            <div className="absolute bottom-8 right-8 sm:bottom-12 sm:right-12 flex gap-2">
+            <div className="absolute bottom-4 right-4 sm:bottom-12 sm:right-12 flex gap-2">
               <button
                 onClick={prevSlide}
-                className="w-12 h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
                 aria-label="Previous"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
               <button
                 onClick={nextSlide}
-                className="w-12 h-12 rounded-full bg-[#00D084] hover:bg-[#00B873] text-white flex items-center justify-center transition-colors"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#00D084] hover:bg-[#00B873] text-white flex items-center justify-center transition-colors"
                 aria-label="Next"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
           </div>
 
           {/* Dots */}
-          <div className="flex justify-center gap-2 mt-8">
+          <div className="flex justify-center gap-2 mt-6 sm:mt-8">
             {testimonials.map((_, index) => (
               <button
                 key={index}

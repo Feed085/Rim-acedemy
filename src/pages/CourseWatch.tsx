@@ -196,9 +196,12 @@ export default function CourseWatch() {
               <video
                 key={activeLesson?.id}
                 controls
+                controlsList="nodownload noremoteplayback"
+                disablePictureInPicture
                 autoPlay
                 className="w-full h-full object-cover"
                 src={activeLesson?.videoUrl}
+                onContextMenu={(event) => event.preventDefault()}
                 onEnded={handleLessonCompleted}
               >
                 Brauzeriniz video formatını dəstəkləmir.

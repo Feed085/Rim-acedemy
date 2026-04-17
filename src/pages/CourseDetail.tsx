@@ -19,6 +19,8 @@ import CourseReviewForm from '@/components/common/CourseReviewForm';
 import CourseReviewsList from '@/components/common/CourseReviewsList';
 import { API_BASE_URL } from '@/services/publicApi';
 
+const WHATSAPP_PHONE = '994516278711';
+
 
 export default function CourseDetail() {
   const { id } = useParams();
@@ -59,7 +61,7 @@ export default function CourseDetail() {
     fetchCourse();
   }, [id, user]);
 
-  const handleRequest = async () => {
+  const handleRequest = () => {
     if (!isAuthenticated) {
       toast.error('Müraciət etmək üçün daxil olun');
       navigate('/login');
@@ -67,20 +69,25 @@ export default function CourseDetail() {
     }
     
     setIsRequesting(true);
-    
-    // Gələcəkdə qeydiyyat logikası bura yazılacaq.
-    setTimeout(() => {
-      setEnrollmentStatus('pending');
-      toast.success('Müraciətiniz qəbul olundu! Admin ilə WhatsApp-da əlaqə saxlayın.');
-      setIsRequesting(false);
-    }, 1000);
+    openWhatsApp();
+    setIsRequesting(false);
   };
 
   const openWhatsApp = () => {
-    const phone = "+994501234567"; // Placeholder phone number
-    const message = `Salam! Mən ${course.title} kursuna qoşulmaq üçün müraciət etmişəm. (${user?.email})`;
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+    const email = user?.email?.trim();
+
+    if (!email) {
+      toast.error('WhatsApp mesajı üçün email tapılmadı');
+      return;
+    }
+
+    const message = `Salam, Men ${course.title} ile maraqlanıram. Nece ödeniş edeceyim haqqında melumat ala bilerem? ${email}`;
+    const url = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+    const popup = window.open(url, '_blank', 'noopener,noreferrer');
+
+    if (!popup) {
+      window.location.href = url;
+    }
   };
 
   if (!course) {

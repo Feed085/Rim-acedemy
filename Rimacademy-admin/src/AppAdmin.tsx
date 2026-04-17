@@ -23,7 +23,8 @@ import {
   Clock
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
-import { adminApi } from './services/api';
+import AdminLoginScreen from './components/AdminLoginScreen';
+import { adminApi, ADMIN_SESSION_TOKEN_KEY, ADMIN_SESSION_USER_KEY } from './services/api';
 
 type ModalProps = {
   isOpen: boolean;
@@ -136,6 +137,41 @@ type TestItem = {
 
 type AssignmentMode = 'course' | 'test';
 
+type AdminUser = {
+  email: string;
+  name: string;
+  picture?: string;
+};
+
+type AdminSession = {
+  token: string;
+  user: AdminUser;
+};
+
+const loadAdminSession = (): AdminSession | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const token = localStorage.getItem(ADMIN_SESSION_TOKEN_KEY);
+  const userData = localStorage.getItem(ADMIN_SESSION_USER_KEY);
+
+  if (!token || !userData) {
+    return null;
+  }
+
+  try {
+    const user = JSON.parse(userData) as AdminUser;
+    if (!user?.email) {
+      return null;
+    }
+
+    return { token, user };
+  } catch {
+    return null;
+  }
+};
+
 const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
   if (!isOpen) return null;
 
@@ -172,7 +208,7 @@ const resolveCategoryName = (categoryId: string, categories: CategoryItem[]) => 
   return categories.find((category) => category.id === categoryId)?.name || categoryId || '---';
 };
 
-const Sidebar = () => {
+const Sidebar = ({ onLogout, adminUser }: { onLogout: () => void; adminUser: AdminUser }) => {
   const location = useLocation();
   const menuItems = [
     { icon: LayoutDashboard, label: 'Panel', path: '/' },
@@ -216,8 +252,12 @@ const Sidebar = () => {
         })}
       </nav>
 
-      <div className="border-t border-gray-50 p-4">
-        <button className="flex w-full items-center gap-4 rounded-2xl px-6 py-4 font-bold text-red-500 transition-all hover:bg-red-50">
+      <div className="border-t border-gray-50 p-4 space-y-3">
+        <div className="rounded-2xl bg-gray-50 px-4 py-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Daxil olan hesab</p>
+          <p className="mt-1 truncate text-sm font-bold text-gray-900">{adminUser.email}</p>
+        </div>
+        <button onClick={onLogout} className="flex w-full items-center gap-4 rounded-2xl px-6 py-4 font-bold text-red-500 transition-all hover:bg-red-50">
           <LogOut className="h-5 w-5" />
           <span className="text-sm">Çıxış</span>
         </button>
@@ -1215,11 +1255,46 @@ const Categories = () => {
 };
 
 export default function AppAdmin() {
+  const [adminSession, setAdminSession] = useState<AdminSession | null>(() => loadAdminSession());
+
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      setAdminSession(null);
+    };
+
+    window.addEventListener('rim-admin-auth-expired', handleAuthExpired);
+
+    return () => {
+      window.removeEventListener('rim-admin-auth-expired', handleAuthExpired);
+    };
+  }, []);
+
+  const handleAuthenticated = (session: AdminSession) => {
+    localStorage.setItem(ADMIN_SESSION_TOKEN_KEY, session.token);
+    localStorage.setItem(ADMIN_SESSION_USER_KEY, JSON.stringify(session.user));
+    setAdminSession(session);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(ADMIN_SESSION_TOKEN_KEY);
+    localStorage.removeItem(ADMIN_SESSION_USER_KEY);
+    setAdminSession(null);
+  };
+
+  if (!adminSession) {
+    return (
+      <>
+        <Toaster position="top-right" richColors closeButton />
+        <AdminLoginScreen onAuthenticated={handleAuthenticated} />
+      </>
+    );
+  }
+
   return (
     <BrowserRouter>
       <Toaster position="top-right" richColors closeButton />
       <div className="flex min-h-screen overflow-x-hidden bg-[#F8FAFC]">
-        <Sidebar />
+        <Sidebar onLogout={handleLogout} adminUser={adminSession.user} />
         <main className="ml-56 min-w-0 flex-1 p-4 transition-all sm:p-6 lg:p-12">
           <Routes>
             <Route path="/" element={<Dashboard />} />
