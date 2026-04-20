@@ -35,7 +35,8 @@ export default function Testimonials() {
       const timeline = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
-          start: 'top 88%',
+          start: 'top 95%',
+          invalidateOnRefresh: true,
           toggleActions: 'play none none reverse',
         },
       });
@@ -64,7 +65,14 @@ export default function Testimonials() {
       );
     }, sectionRef);
 
-    return () => ctx.revert();
+    const refreshId = window.requestAnimationFrame(() => {
+      ScrollTrigger.refresh();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(refreshId);
+      ctx.revert();
+    };
   }, []);
 
   // Auto-play
