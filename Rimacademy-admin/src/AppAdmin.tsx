@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-dom';
+import * as Dialog from '@radix-ui/react-dialog';
 import {
   ArrowUpRight,
   BookOpen,
@@ -10,6 +11,7 @@ import {
   Grid,
   LayoutDashboard,
   LogOut,
+  Menu,
   MoreVertical,
   Plus,
   RefreshCw,
@@ -148,6 +150,22 @@ type AdminSession = {
   user: AdminUser;
 };
 
+const ADMIN_LOGO_SRC = '/rim-academy-logo.jpeg';
+
+const adminMenuItems = [
+  { icon: LayoutDashboard, label: 'Panel', path: '/' },
+  { icon: Users, label: 'Müəllimlər', path: '/teachers' },
+  { icon: GraduationCap, label: 'Tələbələr', path: '/students' },
+  { icon: Grid, label: 'Kateqoriyalar', path: '/categories' }
+];
+
+const adminRouteTitles: Record<string, string> = {
+  '/': 'Panel',
+  '/teachers': 'Müəllimlər',
+  '/students': 'Tələbələr',
+  '/categories': 'Kateqoriyalar'
+};
+
 const loadAdminSession = (): AdminSession | null => {
   if (typeof window === 'undefined') {
     return null;
@@ -208,49 +226,60 @@ const resolveCategoryName = (categoryId: string, categories: CategoryItem[]) => 
   return categories.find((category) => category.id === categoryId)?.name || categoryId || '---';
 };
 
-const Sidebar = ({ onLogout, adminUser }: { onLogout: () => void; adminUser: AdminUser }) => {
+const AdminBrand = ({ compact = false, onNavigate }: { compact?: boolean; onNavigate?: () => void }) => (
+  <Link to="/" onClick={onNavigate} className="flex items-center gap-3">
+    <img
+      src={ADMIN_LOGO_SRC}
+      alt="Rim Academy"
+      className="h-10 w-10 rounded-2xl object-cover ring-1 ring-black/5"
+    />
+    <div className="flex flex-col leading-none">
+      <span className={`font-black uppercase italic tracking-tight text-gray-900 ${compact ? 'text-lg' : 'text-xl'}`}>
+        Rim
+      </span>
+      <span className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] leading-none text-[#00D084]">
+        Academy
+      </span>
+    </div>
+  </Link>
+);
+
+const AdminNavigation = ({ onNavigate }: { onNavigate?: () => void }) => {
   const location = useLocation();
-  const menuItems = [
-    { icon: LayoutDashboard, label: 'Panel', path: '/' },
-    { icon: Users, label: 'Müəllimlər', path: '/teachers' },
-    { icon: GraduationCap, label: 'Tələbələr', path: '/students' },
-    { icon: Grid, label: 'Kateqoriyalar', path: '/categories' }
-  ];
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-50 flex h-screen w-56 flex-col overflow-y-auto border-r border-gray-100 bg-white">
+    <nav className="flex-1 space-y-2 px-4 py-4">
+      {adminMenuItems.map((item) => {
+        const isActive = location.pathname === item.path;
+
+        return (
+          <Link
+            key={item.path}
+            to={item.path}
+            onClick={onNavigate}
+            className={`flex items-center gap-4 rounded-2xl px-6 py-4 transition-all ${
+              isActive
+                ? 'bg-[#00D084] font-bold text-white shadow-lg shadow-[#00D084]/20'
+                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+            }`}
+          >
+            <item.icon className="h-5 w-5" />
+            <span className="text-sm">{item.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+};
+
+const Sidebar = ({ onLogout, adminUser }: { onLogout: () => void; adminUser: AdminUser }) => {
+  return (
+    <aside className="fixed inset-y-0 left-0 z-50 hidden h-screen w-56 flex-col overflow-y-auto border-r border-gray-100 bg-white lg:flex">
       <div className="flex h-24 items-center px-8">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#00D084] shadow-lg shadow-[#00D084]/20">
-            <span className="text-xl font-black italic text-white">R</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-xl font-black uppercase italic tracking-tight text-gray-900">Rim</span>
-            <span className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] leading-none text-[#00D084]">Academy</span>
-          </div>
-        </div>
+        <AdminBrand />
       </div>
 
-      <nav className="flex-1 space-y-2 px-4 py-4">
-        {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
-
-          return (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`flex items-center gap-4 rounded-2xl px-6 py-4 transition-all ${
-                isActive
-                  ? 'bg-[#00D084] font-bold text-white shadow-lg shadow-[#00D084]/20'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-              }`}
-            >
-              <item.icon className="h-5 w-5" />
-              <span className="text-sm">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
+      <AdminNavigation />
 
       <div className="border-t border-gray-50 p-4 space-y-3">
         <div className="rounded-2xl bg-gray-50 px-4 py-3">
@@ -263,6 +292,154 @@ const Sidebar = ({ onLogout, adminUser }: { onLogout: () => void; adminUser: Adm
         </button>
       </div>
     </aside>
+  );
+};
+
+const MobileMenu = ({
+  open,
+  onOpenChange,
+  onLogout,
+  adminUser,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onLogout: () => void;
+  adminUser: AdminUser;
+}) => {
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[70] bg-black/45 backdrop-blur-sm lg:hidden" />
+        <Dialog.Content className="fixed inset-y-0 left-0 z-[80] flex w-[88vw] max-w-sm flex-col bg-white shadow-2xl outline-none lg:hidden">
+          <Dialog.Title className="sr-only">Admin menyu</Dialog.Title>
+
+          <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+            <AdminBrand onNavigate={() => onOpenChange(false)} />
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                className="rounded-full border border-gray-100 p-2 text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-900"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </Dialog.Close>
+          </div>
+
+          <div className="flex-1 overflow-y-auto py-4">
+            <AdminNavigation onNavigate={() => onOpenChange(false)} />
+          </div>
+
+          <div className="border-t border-gray-100 p-4 space-y-3">
+            <div className="rounded-2xl bg-gray-50 px-4 py-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Daxil olan hesab</p>
+              <p className="mt-1 truncate text-sm font-bold text-gray-900">{adminUser.email}</p>
+            </div>
+            <button
+              onClick={() => {
+                onOpenChange(false);
+                onLogout();
+              }}
+              className="flex w-full items-center gap-4 rounded-2xl px-6 py-4 font-bold text-red-500 transition-all hover:bg-red-50"
+            >
+              <LogOut className="h-5 w-5" />
+              <span className="text-sm">Çıxış</span>
+            </button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+};
+
+const MobileTopBar = ({
+  title,
+  onOpenMenu,
+  onLogout,
+}: {
+  title: string;
+  onOpenMenu: () => void;
+  onLogout: () => void;
+}) => {
+  return (
+    <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 backdrop-blur lg:hidden">
+      <div className="flex items-center gap-3 px-4 py-3">
+        <button
+          type="button"
+          onClick={onOpenMenu}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-100 bg-white text-gray-700 shadow-sm transition-colors hover:border-[#00D084] hover:text-[#00D084]"
+          aria-label="Menyunu aç"
+        >
+          <Menu className="h-5 w-5" />
+        </button>
+
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <img
+            src={ADMIN_LOGO_SRC}
+            alt="Rim Academy"
+            className="h-10 w-10 rounded-2xl object-cover ring-1 ring-black/5"
+          />
+          <div className="min-w-0">
+            <p className="truncate text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+              Rim Academy
+            </p>
+            <h1 className="truncate text-sm font-black text-gray-900">{title}</h1>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onLogout}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-gray-50 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-500"
+          aria-label="Çıxış"
+        >
+          <LogOut className="h-5 w-5" />
+        </button>
+      </div>
+    </header>
+  );
+};
+
+const AdminShell = ({
+  onLogout,
+  adminUser,
+  children,
+}: {
+  onLogout: () => void;
+  adminUser: AdminUser;
+  children: React.ReactNode;
+}) => {
+  const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const pageTitle = adminRouteTitles[location.pathname] || 'Admin panel';
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    document.title = `${pageTitle} — RIM Academy Admin`;
+  }, [pageTitle]);
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] lg:pl-56">
+      <Sidebar onLogout={onLogout} adminUser={adminUser} />
+      <MobileMenu
+        open={mobileMenuOpen}
+        onOpenChange={setMobileMenuOpen}
+        onLogout={onLogout}
+        adminUser={adminUser}
+      />
+
+      <div className="flex min-h-screen flex-col">
+        <MobileTopBar
+          title={pageTitle}
+          onOpenMenu={() => setMobileMenuOpen(true)}
+          onLogout={onLogout}
+        />
+        <main className="min-w-0 flex-1 p-4 pb-8 sm:p-6 lg:p-12">{children}</main>
+      </div>
+    </div>
   );
 };
 
@@ -1176,7 +1353,52 @@ const Categories = () => {
       </div>
 
       <div className="overflow-hidden rounded-[32px] border border-gray-100 bg-white shadow-sm">
-        <div className="overflow-x-auto">
+        <div className="space-y-3 p-3 sm:p-4 md:hidden">
+          {loading && (
+            <div className="rounded-2xl border border-gray-100 p-6 text-center text-gray-400">
+              Kateqoriyalar yüklənir...
+            </div>
+          )}
+          {!loading && filteredCategories.map((category) => (
+            <div key={category.id} className="rounded-2xl border border-gray-100 p-4">
+              <div className="flex items-start gap-4">
+                <div
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                  style={{ backgroundColor: `${category.color || '#E5E7EB'}22` }}
+                >
+                  <TagIcon className="h-5 w-5" style={{ color: category.color || '#9CA3AF' }} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate font-bold text-gray-900">{category.name}</div>
+                      <div className="mt-1 break-words text-sm leading-6 text-gray-500">
+                        {category.description || 'Açıklama yoxdur'}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(category.id)}
+                      className="inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-gray-500 transition-colors hover:bg-red-50 hover:text-red-500"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Sil
+                    </button>
+                  </div>
+                  <code className="mt-3 inline-flex rounded-md bg-blue-50 px-2 py-1 text-xs font-black text-blue-500">
+                    {category.id}
+                  </code>
+                </div>
+              </div>
+            </div>
+          ))}
+          {!loading && filteredCategories.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center italic text-gray-400">
+              {searchQuery.trim() ? 'Axtarışa uyğun kateqoriya tapılmadı.' : 'Hələ kateqoriya yoxdur.'}
+            </div>
+          )}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-gray-50/50">
@@ -1293,17 +1515,14 @@ export default function AppAdmin() {
   return (
     <BrowserRouter>
       <Toaster position="top-right" richColors closeButton />
-      <div className="flex min-h-screen overflow-x-hidden bg-[#F8FAFC]">
-        <Sidebar onLogout={handleLogout} adminUser={adminSession.user} />
-        <main className="ml-56 min-w-0 flex-1 p-4 transition-all sm:p-6 lg:p-12">
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/teachers" element={<Teachers />} />
-            <Route path="/students" element={<Students />} />
-            <Route path="/categories" element={<Categories />} />
-          </Routes>
-        </main>
-      </div>
+      <AdminShell onLogout={handleLogout} adminUser={adminSession.user}>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/teachers" element={<Teachers />} />
+          <Route path="/students" element={<Students />} />
+          <Route path="/categories" element={<Categories />} />
+        </Routes>
+      </AdminShell>
     </BrowserRouter>
   );
 }
