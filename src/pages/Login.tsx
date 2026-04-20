@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -64,6 +64,56 @@ export default function Login() {
   });
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const initGoogle = async () => {
+      if (!clientId) {
+        return;
+      }
+
+      try {
+        await loadGoogleScript();
+
+        if (!isMounted || !window.google?.accounts?.id) {
+          return;
+        }
+
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (response) => {
+            const credential = response.credential;
+
+            if (!credential) {
+              toast.error('Google məlumatı alınmadı');
+              return;
+            }
+
+            const success = await loginWithGoogle(credential, role);
+
+            if (success) {
+              toast.success('Uğurla daxil oldunuz!');
+              navigate(role === 'student' ? '/dashboard' : '/teacher/dashboard');
+              return;
+            }
+
+            toast.error('Giriş məlumatları yanlışdır və ya hesab tapılmadı');
+          },
+        });
+      } catch (error) {
+        if (isMounted) {
+          toast.error(error instanceof Error ? error.message : 'Google girişi yüklənmədi');
+        }
+      }
+    };
+
+    initGoogle();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [clientId, loginWithGoogle, navigate, role]);
+
   const handleGoogleLogin = async () => {
     if (!clientId) {
       toast.error('VITE_GOOGLE_CLIENT_ID təyin edilməyib.');
@@ -71,33 +121,14 @@ export default function Login() {
     }
 
     try {
-      await loadGoogleScript();
+      if (!window.google?.accounts?.id) {
+        await loadGoogleScript();
+      }
 
       if (!window.google?.accounts?.id) {
         toast.error('Google girişi yüklənmədi');
         return;
       }
-
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: async (response) => {
-          const credential = response.credential;
-
-          if (!credential) {
-            toast.error('Google məlumatı alınmadı');
-            return;
-          }
-
-          const success = await loginWithGoogle(credential, role);
-
-          if (success) {
-            toast.success('Uğurla daxil oldunuz!');
-            navigate(role === 'student' ? '/dashboard' : '/teacher/dashboard');
-          } else {
-            toast.error('Giriş məlumatları yanlışdır və ya hesab tapılmadı');
-          }
-        },
-      });
 
       window.google.accounts.id.prompt();
     } catch (error) {
