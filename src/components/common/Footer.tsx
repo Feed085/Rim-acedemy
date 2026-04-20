@@ -1,6 +1,15 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import logo from '@/photos/RimAcademyLogo.jpeg';
 
 
@@ -36,6 +45,34 @@ export default function Footer() {
     { label: t('footer.links.courses'), href: '/courses' },
     { label: t('footer.links.teachers'), href: '/teachers' },
     { label: t('footer.links.contact'), href: '/contact' },
+  ];
+
+  const termsSections = [
+    {
+      number: 1,
+      title: t('footer.termsDialog.sections.general.title'),
+      body: t('footer.termsDialog.sections.general.body'),
+    },
+    {
+      number: 2,
+      title: t('footer.termsDialog.sections.userResponsibility.title'),
+      body: t('footer.termsDialog.sections.userResponsibility.body'),
+    },
+    {
+      number: 3,
+      title: t('footer.termsDialog.sections.privacy.title'),
+      body: t('footer.termsDialog.sections.privacy.body'),
+    },
+    {
+      number: 4,
+      title: t('footer.termsDialog.sections.teacherResponsibility.title'),
+      body: t('footer.termsDialog.sections.teacherResponsibility.body'),
+    },
+    {
+      number: 5,
+      title: t('footer.termsDialog.sections.studentResponsibility.title'),
+      body: t('footer.termsDialog.sections.studentResponsibility.body'),
+    },
   ];
 
   return (
@@ -131,13 +168,47 @@ export default function Footer() {
             <p className="text-gray-500 text-sm text-center md:text-left">
               {t('footer.copyright')}
             </p>
-            <div className="flex gap-6">
+            <div className="flex flex-wrap items-center justify-center gap-6">
               <Link to="/privacy" className="text-gray-500 hover:text-white text-sm transition-colors">
-                Məxfilik Siyasəti
+                {t('footer.links.privacy')}
               </Link>
-              <Link to="/terms" className="text-gray-500 hover:text-white text-sm transition-colors">
-                İstifadə Şərtləri
-              </Link>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button
+                    type="button"
+                    className="appearance-none border-0 bg-transparent p-0 text-gray-500 transition-colors hover:text-white text-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D084]/40 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0A0A] rounded-sm"
+                  >
+                    {t('footer.links.terms')}
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+                  <DialogHeader className="text-left">
+                    <DialogTitle>{t('footer.termsDialog.title')}</DialogTitle>
+                  </DialogHeader>
+                  <ol className="space-y-3">
+                    {termsSections.map((section) => (
+                      <li
+                        key={section.number}
+                        className="rounded-lg border border-slate-200 bg-slate-50/80 p-4"
+                      >
+                        <h4 className="font-semibold text-slate-900">
+                          {section.number}. {section.title}
+                        </h4>
+                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                          {section.body}
+                        </p>
+                      </li>
+                    ))}
+                  </ol>
+                  <div className="flex justify-end pt-2">
+                    <DialogClose asChild>
+                      <Button variant="outline" size="sm">
+                        {t('footer.termsDialog.close')}
+                      </Button>
+                    </DialogClose>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>

@@ -3,6 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowLeft } from 'lucide-react';
@@ -17,6 +26,7 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [step, setStep] = useState(1);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     surname: '',
@@ -25,6 +35,34 @@ export default function Register() {
     password: '',
     confirmPassword: '',
   });
+
+  const termsSections = [
+    {
+      number: 1,
+      title: t('footer.termsDialog.sections.general.title'),
+      body: t('footer.termsDialog.sections.general.body'),
+    },
+    {
+      number: 2,
+      title: t('footer.termsDialog.sections.userResponsibility.title'),
+      body: t('footer.termsDialog.sections.userResponsibility.body'),
+    },
+    {
+      number: 3,
+      title: t('footer.termsDialog.sections.privacy.title'),
+      body: t('footer.termsDialog.sections.privacy.body'),
+    },
+    {
+      number: 4,
+      title: t('footer.termsDialog.sections.teacherResponsibility.title'),
+      body: t('footer.termsDialog.sections.teacherResponsibility.body'),
+    },
+    {
+      number: 5,
+      title: t('footer.termsDialog.sections.studentResponsibility.title'),
+      body: t('footer.termsDialog.sections.studentResponsibility.body'),
+    },
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +91,11 @@ export default function Register() {
 
     if (formData.password.length < 6) {
       toast.error('Şifrə ən azı 6 simvoldan ibarət olmalıdır');
+      return;
+    }
+
+    if (!acceptedTerms) {
+      toast.error(t('auth.register.accept_terms_error'));
       return;
     }
 
@@ -211,6 +254,60 @@ export default function Register() {
                 </button>
               </div>
             </div>
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="acceptTerms"
+                checked={acceptedTerms}
+                onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                className="w-5 h-5 rounded border-2 border-gray-400 data-[state=checked]:border-[#00D084] data-[state=checked]:bg-[#00D084]"
+              />
+              <div className="text-gray-500 font-medium select-none">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button
+                      type="button"
+                      className="text-[#00D084] hover:text-[#00B873] font-bold appearance-none bg-transparent p-0 m-0 cursor-pointer outline-none mb-0 leading-none align-baseline"
+                      style={{ fontSize: 'inherit' }}
+                    >
+                      İstifadə şərtləri
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto w-[90vw]">
+                    <DialogHeader className="text-left">
+                      <DialogTitle>{t('footer.termsDialog.title')}</DialogTitle>
+                    </DialogHeader>
+                    <ol className="space-y-3">
+                      {termsSections.map((section) => (
+                        <li
+                          key={section.number}
+                          className="rounded-lg border border-slate-200 bg-slate-50/80 p-4"
+                        >
+                          <h4 className="font-semibold text-slate-900">
+                            {section.number}. {section.title}
+                          </h4>
+                          <p className="mt-2 text-sm leading-6 text-slate-600">
+                            {section.body}
+                          </p>
+                        </li>
+                      ))}
+                    </ol>
+                    <div className="flex justify-end pt-2">
+                      <DialogClose asChild>
+                        <Button variant="outline" size="sm">
+                          {t('footer.termsDialog.close')}
+                        </Button>
+                      </DialogClose>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Label
+                  htmlFor="acceptTerms"
+                  className="cursor-pointer text-gray-500 font-medium pl-1 text-[inherit]"
+                >
+                   ilə razıyam
+                </Label>
+              </div>
+            </div>
           </div>
         );
       default:
@@ -271,7 +368,7 @@ export default function Register() {
               )}
               <Button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || (step === 3 && !acceptedTerms)}
                 className="flex-1 bg-[#00D084] hover:bg-[#00B873] text-white font-semibold rounded-xl h-12 transition-all"
               >
                 {isLoading ? (
