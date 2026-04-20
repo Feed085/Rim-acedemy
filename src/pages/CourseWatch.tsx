@@ -149,7 +149,7 @@ export default function CourseWatch() {
         });
 
         if (data.data.updated) {
-          setActiveLessonIndex((previousIndex) => Math.min(data.data.completedLessons, flatLessons.length - 1));
+          setActiveLessonIndex(() => Math.min(data.data.completedLessons, flatLessons.length - 1));
         }
       }
     } catch (error) {

@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Input } from '@/components/ui/input';
 import { 
   Clock, 
   ChevronLeft, 
@@ -11,14 +9,12 @@ import {
   Flag,
   CheckCircle,
   XCircle,
-  Trophy,
-  RotateCcw
+  Trophy
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/services/publicApi';
 
 export default function TestDetail() {
-  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   

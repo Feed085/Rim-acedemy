@@ -489,7 +489,3 @@ export default function TeacherTestEdit() {
     </div>
   );
 }
-
-function cn(...classes: any[]) {
-    return classes.filter(Boolean).join(' ');
-}

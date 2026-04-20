@@ -3,8 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { mockDb } from '@/services/mockDb';
-import { teachers } from '@/data/mockData';
 import { 
   Plus, 
   Trash2, 
@@ -251,10 +249,11 @@ export default function CreateTest() {
                 setTestData({ title: '', courseId: '', duration: 30 });
                 setQuestions([{
                   id: '1',
-                  type: 'text',
-                  question: '',
+                  questionType: 'text',
+                  content: '',
                   options: ['', '', '', ''],
                   correctAnswer: 0,
+                  answerType: 'multiple_choice',
                 }]);
               }}
               className="flex-1 bg-[#00D084] hover:bg-[#00B873] rounded-xl"
