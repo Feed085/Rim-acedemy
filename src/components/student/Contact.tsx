@@ -6,6 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { MapPin, Phone, Mail, Clock, Send, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
+const WHATSAPP_PHONE = import.meta.env.VITE_WHATSAPP_PHONE || '994516278711';
+
 export default function Contact() {
   const { t } = useTranslation();
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -21,13 +23,22 @@ export default function Contact() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate form submission
+
+    const message = [
+      'Salam, RIM Academy ilə əlaqə saxlamaq istəyirəm.',
+      '',
+      `Ad: ${formData.name || '-'}`,
+      `Mail: ${formData.email || '-'}`,
+      `Telefon: ${formData.phone || '-'}`,
+      `Mesaj: ${formData.message || '-'}`,
+    ].join('\n');
+
+    const whatsappUrl = `https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`;
+
     setIsSubmitted(true);
-    toast.success(t('contact.form.success'));
-    setTimeout(() => {
-      setIsSubmitted(false);
-      setFormData({ name: '', email: '', phone: '', message: '' });
-    }, 3000);
+    toast.success('WhatsApp-a yönləndirilirsiniz');
+    setFormData({ name: '', email: '', phone: '', message: '' });
+    window.location.href = whatsappUrl;
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
