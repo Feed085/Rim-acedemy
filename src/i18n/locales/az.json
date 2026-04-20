@@ -136,7 +136,35 @@
       "about": "Haqqımızda",
       "courses": "Kurslar",
       "teachers": "Müəllimlər",
-      "contact": "Əlaqə"
+      "contact": "Əlaqə",
+      "privacy": "Məxfilik Siyasəti",
+      "terms": "İstifadə Şərtləri"
+    },
+    "termsDialog": {
+      "title": "İstifadə Şərtləri",
+      "close": "Bağla",
+      "sections": {
+        "general": {
+          "title": "Ümumi Müddəalar",
+          "body": "Bu online təhsil platformasına qoşularaq aşağıdakı şərtləri qəbul etmiş olursunuz."
+        },
+        "userResponsibility": {
+          "title": "İstifadəçi Məsuliyyəti",
+          "body": "İstifadəçilər platformanı yalnız təhsil məqsədləri üçün istifadə etməlidirlər. Hər hansı qanunsuz fəaliyyət qadağandır."
+        },
+        "privacy": {
+          "title": "Məxfilik",
+          "body": "Şəxsi məlumatlarınız qorunur və üçüncü şəxslərlə paylaşılmır."
+        },
+        "teacherResponsibility": {
+          "title": "Müəllim Məsuliyyəti",
+          "body": "Müəllimlər keyfiyyətli təhsil materialları təqdim etməlidirlər."
+        },
+        "studentResponsibility": {
+          "title": "Tələbə Məsuliyyəti",
+          "body": "Tələbələr dərslərdə fəal iştirak etməli və platforma qaydalarına riayət etməlidirlər."
+        }
+      }
     }
   },
   "auth": {
@@ -159,6 +187,8 @@
       "phone": "Telefon",
       "password": "Şifrə",
       "confirm_password": "Şifrəni təsdiqlə",
+      "accept_terms": "İstifadə şərtləri ilə razıyam",
+      "accept_terms_error": "İstifadə şərtlərini qəbul etməlisiniz",
       "submit": "Qeydiyyatdan keç",
       "have_account": "Artıq hesabınız var?",
       "login": "Daxil ol"
