@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +18,10 @@ declare global {
             client_id: string;
             callback: (response: { credential?: string }) => void;
           }) => void;
+          renderButton: (
+            element: HTMLElement,
+            options: Record<string, unknown>
+          ) => void;
           prompt: () => void;
         };
       };
@@ -56,6 +60,7 @@ export default function Login() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { login, loginWithGoogle, isLoading } = useAuth();
+  const googleButtonHostRef = useRef<HTMLDivElement>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<'student' | 'teacher'>('student');
   const [formData, setFormData] = useState({
@@ -100,6 +105,17 @@ export default function Login() {
             toast.error('Giriş məlumatları yanlışdır və ya hesab tapılmadı');
           },
         });
+
+        if (googleButtonHostRef.current) {
+          googleButtonHostRef.current.innerHTML = '';
+          window.google.accounts.id.renderButton(googleButtonHostRef.current, {
+            theme: 'outline',
+            size: 'large',
+            text: 'signin_with',
+            shape: 'pill',
+            width: '280',
+          });
+        }
       } catch (error) {
         if (isMounted) {
           toast.error(error instanceof Error ? error.message : 'Google girişi yüklənmədi');
@@ -113,28 +129,6 @@ export default function Login() {
       isMounted = false;
     };
   }, [clientId, loginWithGoogle, navigate, role]);
-
-  const handleGoogleLogin = async () => {
-    if (!clientId) {
-      toast.error('VITE_GOOGLE_CLIENT_ID təyin edilməyib.');
-      return;
-    }
-
-    try {
-      if (!window.google?.accounts?.id) {
-        await loadGoogleScript();
-      }
-
-      if (!window.google?.accounts?.id) {
-        toast.error('Google girişi yüklənmədi');
-        return;
-      }
-
-      window.google.accounts.id.prompt();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Google girişi uğursuz oldu');
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -299,10 +293,9 @@ export default function Login() {
           </div>
 
           {/* Social Login */}
-          <div className="flex justify-center">
+          <div className="relative flex justify-center">
             <button
               type="button"
-              onClick={handleGoogleLogin}
               className="flex items-center justify-center py-3 px-6 w-full max-w-[280px] bg-white text-gray-700 border border-gray-300 shadow-sm rounded-xl hover:bg-[#4285F4]/10 hover:border-[#4285F4]/50 transition-all duration-1000 ease-in-out group"
             >
               <div className="p-0.5 rounded-sm">
@@ -329,6 +322,11 @@ export default function Login() {
                 Google
               </span>
             </button>
+            <div
+              ref={googleButtonHostRef}
+              className="absolute inset-0 z-10 opacity-0"
+              aria-hidden="true"
+            />
           </div>
         </div>
 
