@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -23,7 +23,7 @@ export default function Contact() {
     message: '',
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
 
     if (!isDesktop) {

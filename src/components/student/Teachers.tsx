@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -47,7 +47,7 @@ export default function Teachers() {
     };
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
 
     if (!isDesktop) {

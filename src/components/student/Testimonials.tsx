@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -22,7 +22,7 @@ export default function Testimonials() {
     setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
 
     if (!isDesktop) {

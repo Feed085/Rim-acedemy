@@ -95,20 +95,10 @@ export default function Navbar() {
       setIsScrolled(window.scrollY > 50);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
-    
-    // Toggle body class for responsive menu with delay to allow animation to complete
-    let timeoutId: any;
-    if (isOpen) {
-      timeoutId = setTimeout(() => {
-        document.body.classList.add('mobile-menu-open');
-      }, 300); // 300ms matches standard sheet animation
-    } else {
-      document.body.classList.remove('mobile-menu-open');
-    }
+    document.body.classList.toggle('mobile-menu-open', isOpen);
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      if (timeoutId) clearTimeout(timeoutId);
       document.body.classList.remove('mobile-menu-open');
     };
   }, [isOpen]);

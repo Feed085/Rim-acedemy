@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
@@ -69,7 +69,7 @@ export default function Courses() {
     ? courses
     : courses.filter((course) => normalizeCategoryKey(course.category) === normalizeCategoryKey(activeCategory));
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const ctx = gsap.context(() => {
       // Title animation
       gsap.fromTo(

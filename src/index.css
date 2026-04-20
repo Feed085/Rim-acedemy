@@ -113,9 +113,5 @@
   body.mobile-menu-open {
     overflow: hidden;
   }
-  
-  body.mobile-menu-open #root {
-    display: none !important;
-  }
 }
-
+
