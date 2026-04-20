@@ -9,16 +9,101 @@ import { Eye, EyeOff, Mail, Lock, GraduationCap, UserCircle } from 'lucide-react
 import { toast } from 'sonner';
 import logo from '@/photos/RimAcademyLogo.jpeg';
 
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (options: {
+            client_id: string;
+            callback: (response: { credential?: string }) => void;
+          }) => void;
+          prompt: () => void;
+        };
+      };
+    };
+  }
+}
+
+const GOOGLE_SCRIPT_ID = 'google-identity-services-script';
+
+const loadGoogleScript = () => {
+  if (window.google?.accounts?.id) {
+    return Promise.resolve();
+  }
+
+  const existingScript = document.getElementById(GOOGLE_SCRIPT_ID);
+  if (existingScript) {
+    return new Promise<void>((resolve, reject) => {
+      existingScript.addEventListener('load', () => resolve(), { once: true });
+      existingScript.addEventListener('error', () => reject(new Error('Google girişi yüklənmədi')), { once: true });
+    });
+  }
+
+  return new Promise<void>((resolve, reject) => {
+    const script = document.createElement('script');
+    script.id = GOOGLE_SCRIPT_ID;
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Google girişi yüklənmədi'));
+    document.head.appendChild(script);
+  });
+};
+
 export default function Login() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { login, isLoading } = useAuth();
+  const { login, loginWithGoogle, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<'student' | 'teacher'>('student');
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+
+  const handleGoogleLogin = async () => {
+    if (!clientId) {
+      toast.error('VITE_GOOGLE_CLIENT_ID təyin edilməyib.');
+      return;
+    }
+
+    try {
+      await loadGoogleScript();
+
+      if (!window.google?.accounts?.id) {
+        toast.error('Google girişi yüklənmədi');
+        return;
+      }
+
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response) => {
+          const credential = response.credential;
+
+          if (!credential) {
+            toast.error('Google məlumatı alınmadı');
+            return;
+          }
+
+          const success = await loginWithGoogle(credential, role);
+
+          if (success) {
+            toast.success('Uğurla daxil oldunuz!');
+            navigate(role === 'student' ? '/dashboard' : '/teacher/dashboard');
+          } else {
+            toast.error('Giriş məlumatları yanlışdır və ya hesab tapılmadı');
+          }
+        },
+      });
+
+      window.google.accounts.id.prompt();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Google girişi uğursuz oldu');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,6 +271,7 @@ export default function Login() {
           <div className="flex justify-center">
             <button
               type="button"
+              onClick={handleGoogleLogin}
               className="flex items-center justify-center py-3 px-6 w-full max-w-[280px] bg-white text-gray-700 border border-gray-300 shadow-sm rounded-xl hover:bg-[#4285F4]/10 hover:border-[#4285F4]/50 transition-all duration-1000 ease-in-out group"
             >
               <div className="p-0.5 rounded-sm">

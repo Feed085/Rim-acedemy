@@ -7,6 +7,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string, role: 'student' | 'teacher') => Promise<boolean>;
+  loginWithGoogle: (credential: string, role: 'student' | 'teacher') => Promise<boolean>;
   register: (userData: RegisterData) => Promise<boolean>;
   logout: () => void;
 }
@@ -21,6 +22,37 @@ interface RegisterData {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+type AuthProfilePayload = {
+  id: string;
+  name: string;
+  surname: string;
+  email: string;
+  phoneNumber?: string;
+  avatar?: string;
+};
+
+const mapStudentUser = (student: AuthProfilePayload): User => ({
+  id: student.id,
+  name: student.name,
+  surname: student.surname,
+  email: student.email,
+  phone: student.phoneNumber,
+  avatar: student.avatar,
+  role: 'student',
+  createdAt: new Date(),
+});
+
+const mapTeacherUser = (teacher: AuthProfilePayload): User => ({
+  id: teacher.id,
+  name: teacher.name,
+  surname: teacher.surname,
+  email: teacher.email,
+  phone: teacher.phoneNumber || '',
+  avatar: teacher.avatar,
+  role: 'teacher',
+  createdAt: new Date(),
+});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
@@ -38,6 +70,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   const [isLoading, setIsLoading] = useState(false);
 
+  const persistSession = useCallback((mappedUser: User, token: string) => {
+    setUser(mappedUser);
+    localStorage.setItem('rim_auth_token', token);
+    localStorage.setItem('rim_user', JSON.stringify(mappedUser));
+  }, []);
+
   const login = useCallback(async (email: string, password: string, role: 'student' | 'teacher'): Promise<boolean> => {
     setIsLoading(true);
     
@@ -52,23 +90,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await response.json();
         
         if (data.success && data.token) {
-          const mappedUser: User = {
-            id: data.student.id,
-            name: data.student.name,
-            surname: data.student.surname,
-            email: data.student.email,
-            phone: data.student.phoneNumber,
-            role: 'student',
-            createdAt: new Date(), // Şimdilik yeni tarih, ileride backend'den alınabilir
-          };
-          setUser(mappedUser);
-          localStorage.setItem('rim_auth_token', data.token);
-          localStorage.setItem('rim_user', JSON.stringify(mappedUser));
-          setIsLoading(false);
+          persistSession(mapStudentUser(data.student), data.token);
           return true;
         } else {
           console.error(data.message);
-          setIsLoading(false);
           return false;
         }
       } else if (role === 'teacher') {
@@ -81,35 +106,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await response.json();
         
         if (data.success && data.token) {
-          const mappedUser: User = {
-            id: data.teacher.id,
-            name: data.teacher.name,
-            surname: data.teacher.surname,
-            email: data.teacher.email,
-            phone: data.teacher.phoneNumber || '',
-            role: 'teacher',
-            createdAt: new Date(),
-          };
-          setUser(mappedUser);
-          localStorage.setItem('rim_auth_token', data.token);
-          localStorage.setItem('rim_user', JSON.stringify(mappedUser));
-          setIsLoading(false);
+          persistSession(mapTeacherUser(data.teacher), data.token);
           return true;
         } else {
           console.error(data.message);
-          setIsLoading(false);
           return false;
         }
       }
     } catch (err) {
       console.error('Giriş hatası:', err);
-      setIsLoading(false);
       return false;
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
+
     return false;
-  }, []);
+  }, [persistSession]);
+
+  const loginWithGoogle = useCallback(async (credential: string, role: 'student' | 'teacher'): Promise<boolean> => {
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/${role}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential })
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.token) {
+        const mappedUser = role === 'student' ? mapStudentUser(data.student) : mapTeacherUser(data.teacher);
+        persistSession(mappedUser, data.token);
+        return true;
+      }
+
+      console.error(data.message);
+      return false;
+    } catch (err) {
+      console.error('Google giriş hatası:', err);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [persistSession]);
 
   const register = useCallback(async (userData: RegisterData): Promise<boolean> => {
     setIsLoading(true);
@@ -131,23 +171,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await response.json();
         
         if (data.success && data.token) {
-          const mappedUser: User = {
-            id: data.student.id,
-            name: data.student.name,
-            surname: data.student.surname,
-            email: data.student.email,
-            phone: data.student.phoneNumber,
-            role: 'student',
-            createdAt: new Date(),
-          };
-          setUser(mappedUser);
-          localStorage.setItem('rim_auth_token', data.token);
-          localStorage.setItem('rim_user', JSON.stringify(mappedUser));
-          setIsLoading(false);
+          persistSession(mapStudentUser(data.student), data.token);
           return true;
         } else {
           console.error(data.message);
-          setIsLoading(false);
           return false;
         }
       } else {
@@ -163,17 +190,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           createdAt: new Date(),
         };
         setUser(newUser);
-        setIsLoading(false);
         return true;
       }
     } catch (err) {
       console.error('Kayıt hatası:', err);
-      setIsLoading(false);
       return false;
+    } finally {
+      setIsLoading(false);
     }
-    
-    return false;
-  }, []);
+  }, [persistSession]);
 
   const logout = useCallback(() => {
     setUser(null);
@@ -186,6 +211,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: !!user,
     isLoading,
     login,
+    loginWithGoogle,
     register,
     logout,
   };
