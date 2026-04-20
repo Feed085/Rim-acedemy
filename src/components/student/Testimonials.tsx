@@ -1,11 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { testimonials } from '@/data/mockData';
 import { Quote, ChevronLeft, ChevronRight, Star } from 'lucide-react';
-
-gsap.registerPlugin(ScrollTrigger);
 
 export default function Testimonials() {
   const { t } = useTranslation();
@@ -21,59 +17,6 @@ export default function Testimonials() {
   const prevSlide = () => {
     setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
-
-  useLayoutEffect(() => {
-    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
-
-    if (!isDesktop) {
-      gsap.set(titleRef.current, { opacity: 1, y: 0 });
-      gsap.set(sliderRef.current, { opacity: 1, y: 0 });
-      return;
-    }
-
-    const ctx = gsap.context(() => {
-      const timeline = gsap.timeline({
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: 'top 95%',
-          invalidateOnRefresh: true,
-          toggleActions: 'play none none reverse',
-        },
-      });
-
-      timeline.fromTo(
-        titleRef.current,
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.7,
-          ease: 'power3.out',
-        }
-      );
-
-      timeline.fromTo(
-        sliderRef.current,
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          ease: 'power3.out',
-        },
-        '-=0.35'
-      );
-    }, sectionRef);
-
-    const refreshId = window.requestAnimationFrame(() => {
-      ScrollTrigger.refresh();
-    });
-
-    return () => {
-      window.cancelAnimationFrame(refreshId);
-      ctx.revert();
-    };
-  }, []);
 
   // Auto-play
   useEffect(() => {
