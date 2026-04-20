@@ -34,6 +34,7 @@ import TeacherTestResults from '@/pages/TeacherTestResults';
 import TeacherTests from '@/pages/TeacherTests';
 import TeacherVideos from '@/pages/TeacherVideos';
 import TeacherCourseReviews from '@/pages/TeacherCourseReviews';
+import PrivacyPolicy from '@/pages/PrivacyPolicy';
 
 import './i18n';
 
@@ -145,6 +146,14 @@ function AppRoutes() {
         element={
           <MainLayout>
             <Contact />
+          </MainLayout>
+        } 
+      />
+      <Route 
+        path="/privacy" 
+        element={
+          <MainLayout>
+            <PrivacyPolicy />
           </MainLayout>
         } 
       />

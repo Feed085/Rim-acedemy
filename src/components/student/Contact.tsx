@@ -62,7 +62,7 @@ export default function Contact() {
     {
       icon: Mail,
       label: t('contact.info.email'),
-      value: 'info@rimacademy.az',
+      value: 'asiman.ismayilov0099@gmail.com',
     },
     {
       icon: Clock,
@@ -212,9 +212,9 @@ export default function Contact() {
                   <div className="w-10 h-10 bg-[#00D084]/20 rounded-xl flex items-center justify-center flex-shrink-0">
                     <item.icon className="w-5 h-5 text-[#00D084]" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs text-gray-400 mb-1">{item.label}</p>
-                    <p className="text-sm text-white font-medium">{item.value}</p>
+                    <p className="text-sm text-white font-medium break-words leading-6">{item.value}</p>
                   </div>
                 </div>
               ))}
