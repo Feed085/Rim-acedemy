@@ -194,15 +194,15 @@ const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/40 px-3 py-4 backdrop-blur-sm sm:items-center sm:p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-md overflow-hidden rounded-[24px] bg-white shadow-2xl animate-in zoom-in-95 duration-200 sm:rounded-[32px]">
-        <div className="flex items-center justify-between border-b border-gray-50 bg-gray-50/30 p-4 sm:p-6 lg:p-8">
-          <h3 className="text-lg font-black text-gray-900 sm:text-xl">{title}</h3>
-          <button onClick={onClose} className="rounded-xl p-2 transition-colors hover:bg-white">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-2 py-2 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="flex max-h-[calc(100vh-1rem)] w-full max-w-md flex-col overflow-hidden rounded-[20px] bg-white shadow-2xl animate-in zoom-in-95 duration-200 sm:max-h-[calc(100vh-2rem)] sm:rounded-[28px]">
+        <div className="flex items-center justify-between border-b border-gray-50 bg-gray-50/30 p-3 sm:p-4 lg:p-6">
+          <h3 className="text-base font-black text-gray-900 sm:text-lg lg:text-xl">{title}</h3>
+          <button onClick={onClose} className="rounded-lg p-1.5 transition-colors hover:bg-white">
             <X className="h-5 w-5 text-gray-400" />
           </button>
         </div>
-        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+        <div className="p-3 sm:p-4 lg:p-6">{children}</div>
       </div>
     </div>
   );
@@ -887,71 +887,57 @@ const Teachers = () => {
         onClose={() => { setIsModalOpen(false); setEditingTeacherId(null); }}
         title={editingTeacherId ? 'Müəllim Redaktə Et' : 'Yeni Müəllim Hesabı'}
       >
-        <form onSubmit={handleCreate} className="space-y-6">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Ad</label>
-              <input
-                required
-                value={newTeacher.name}
-                onChange={(event) => setNewTeacher({ ...newTeacher, name: event.target.value })}
-                type="text"
-                className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
-                placeholder="Məryəm"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Soyad</label>
-              <input
-                required
-                value={newTeacher.surname}
-                onChange={(event) => setNewTeacher({ ...newTeacher, surname: event.target.value })}
-                type="text"
-                className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
-                placeholder="Ələkbərli"
-              />
-            </div>
+        <form onSubmit={handleCreate} className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="col-span-1 space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500 italic sm:text-xs">Ad</label>
+            <input
+              required
+              value={newTeacher.name}
+              onChange={(event) => setNewTeacher({ ...newTeacher, name: event.target.value })}
+              type="text"
+              className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white sm:rounded-2xl sm:px-4 sm:py-3"
+              placeholder="Məryəm"
+            />
           </div>
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Email</label>
+          <div className="col-span-1 space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500 italic sm:text-xs">Soyad</label>
+            <input
+              required
+              value={newTeacher.surname}
+              onChange={(event) => setNewTeacher({ ...newTeacher, surname: event.target.value })}
+              type="text"
+              className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white sm:rounded-2xl sm:px-4 sm:py-3"
+              placeholder="Ələkbərli"
+            />
+          </div>
+          <div className="col-span-2 space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500 italic sm:text-xs">Email</label>
             <input
               required
               value={newTeacher.email}
               onChange={(event) => setNewTeacher({ ...newTeacher, email: event.target.value })}
               type="email"
-              className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
+              className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white sm:rounded-2xl sm:px-4 sm:py-3"
               placeholder="name@rimacademy.az"
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Telefon</label>
+          <div className="col-span-1 space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500 italic sm:text-xs">Telefon</label>
             <input
               value={newTeacher.phoneNumber}
               onChange={(event) => setNewTeacher({ ...newTeacher, phoneNumber: event.target.value })}
               type="text"
-              className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
+              className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white sm:rounded-2xl sm:px-4 sm:py-3"
               placeholder="+994 50 000 00 00"
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Müvəqqəti Şifrə</label>
-            <input
-              required={!editingTeacherId}
-              value={newTeacher.password}
-              onChange={(event) => setNewTeacher({ ...newTeacher, password: event.target.value })}
-              type="text"
-              className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-mono font-bold tracking-widest outline-none transition-all focus:border-[#00D084] focus:bg-white"
-              placeholder={editingTeacherId ? 'Boş buraxın' : 'RIM2026!#'}
-              disabled={Boolean(editingTeacherId)}
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Kateqoriya</label>
+          <div className="col-span-1 space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500 italic sm:text-xs">Kateqoriya</label>
             <select
               required
               value={newTeacher.category}
               onChange={(event) => setNewTeacher({ ...newTeacher, category: event.target.value })}
-              className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
+              className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white sm:rounded-2xl sm:px-4 sm:py-3"
             >
               <option value="">Kateqoriya seçin...</option>
               {categories.map((category) => (
@@ -959,9 +945,21 @@ const Teachers = () => {
               ))}
             </select>
           </div>
+          <div className="col-span-2 space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500 italic sm:text-xs">Müvəqqəti Şifrə</label>
+            <input
+              required={!editingTeacherId}
+              value={newTeacher.password}
+              onChange={(event) => setNewTeacher({ ...newTeacher, password: event.target.value })}
+              type="text"
+              className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-mono font-bold tracking-widest outline-none transition-all focus:border-[#00D084] focus:bg-white sm:rounded-2xl sm:px-4 sm:py-3"
+              placeholder={editingTeacherId ? 'Boş buraxın' : 'RIM2026!#'}
+              disabled={Boolean(editingTeacherId)}
+            />
+          </div>
           <button
             type="submit"
-            className="mt-4 w-full rounded-2xl bg-[#00D084] py-5 text-lg font-black text-white shadow-xl shadow-[#00D084]/20 transition-all active:scale-95 hover:bg-[#00B873]"
+            className="col-span-2 mt-1 w-full rounded-xl bg-[#00D084] py-3.5 text-sm font-black text-white shadow-xl shadow-[#00D084]/20 transition-all active:scale-95 hover:bg-[#00B873] sm:rounded-2xl sm:py-4 sm:text-base"
           >
             {editingTeacherId ? 'Düzəlişi Saxla' : 'Hesabı Yarat'}
           </button>
@@ -1182,9 +1180,9 @@ const Students = () => {
         onClose={() => setAssignmentModalOpen(false)}
         title={selectedStudent ? `${selectedStudent.name} üçün təyinat` : 'Təyinat'}
       >
-        <form onSubmit={handleAssign} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Tip</label>
+        <form onSubmit={handleAssign} className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="col-span-2 space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500 italic sm:text-xs">Tip</label>
             <select
               value={assignmentType}
               onChange={(event) => {
@@ -1193,47 +1191,47 @@ const Students = () => {
                 setSelectedTargetId('');
                 setAssignmentSearch('');
               }}
-              className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
+              className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white sm:rounded-2xl sm:px-4 sm:py-3"
             >
               <option value="course">Kurs ver</option>
               <option value="test">Test ver</option>
             </select>
           </div>
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">
+          <div className="col-span-2 space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500 italic sm:text-xs">
               {assignmentType === 'course' ? 'Kurs seçin' : 'Test seçin'}
             </label>
             <div className="relative">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 sm:left-4 sm:h-5 sm:w-5" />
               <input
                 value={assignmentSearch}
                 onChange={(event) => setAssignmentSearch(event.target.value)}
                 type="text"
                 placeholder={assignmentType === 'course' ? 'Kurs axtar...' : 'Test axtar...'}
-                className="mb-3 w-full rounded-2xl border border-gray-100 bg-gray-50 px-12 py-4 text-sm font-medium outline-none transition-all focus:border-[#00D084] focus:bg-white"
+                className="mb-2 w-full rounded-xl border border-gray-100 bg-gray-50 px-10 py-2.5 text-sm font-medium outline-none transition-all focus:border-[#00D084] focus:bg-white sm:mb-3 sm:rounded-2xl sm:px-12 sm:py-3.5"
               />
             </div>
             <select
               required
               value={selectedTargetId}
               onChange={(event) => setSelectedTargetId(event.target.value)}
-              className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
+              className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white sm:rounded-2xl sm:px-4 sm:py-3"
             >
               <option value="">Seçim edin...</option>
               {assignmentType === 'course'
                 ? filteredResources.length > 0
                   ? filteredResources.map((course) => (
-                  <option key={course.id} value={course.id}>{course.title}</option>
+                    <option key={course.id} value={course.id}>{course.title}</option>
                   ))
                   : <option value="" disabled>Axtarışa uyğun kurs tapılmadı</option>
                 : filteredResources.map((test) => (
-                  <option key={test.id} value={test.id}>{test.title} · {test.courseTitle || ''}</option>
+                    <option key={test.id} value={test.id}>{test.title} · {test.courseTitle || ''}</option>
                 ))}
             </select>
           </div>
           <button
             type="submit"
-            className="w-full rounded-2xl bg-[#00D084] py-5 text-lg font-black text-white shadow-xl shadow-[#00D084]/20 transition-all hover:bg-[#00B873] active:scale-95"
+            className="col-span-2 w-full rounded-xl bg-[#00D084] py-3.5 text-sm font-black text-white shadow-xl shadow-[#00D084]/20 transition-all hover:bg-[#00B873] active:scale-95 sm:rounded-2xl sm:py-4 sm:text-base"
           >
             Təyin et
           </button>
