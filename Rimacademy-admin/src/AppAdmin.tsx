@@ -20,6 +20,7 @@ import {
   Shield,
   Tag as TagIcon,
   Trash2,
+  Undo2,
   UserPlus,
   Users,
   X,
@@ -139,6 +140,7 @@ type TestItem = {
 };
 
 type AssignmentMode = 'course' | 'test';
+type AssignmentAction = 'assign' | 'remove';
 
 type AdminUser = {
   email: string;
@@ -979,6 +981,7 @@ const Students = () => {
   const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentItem | null>(null);
   const [assignmentType, setAssignmentType] = useState<AssignmentMode>('course');
+  const [assignmentAction, setAssignmentAction] = useState<AssignmentAction>('assign');
   const [selectedTargetId, setSelectedTargetId] = useState('');
   const [assignmentSearch, setAssignmentSearch] = useState('');
 
@@ -1018,9 +1021,10 @@ const Students = () => {
     );
   }, [students, search]);
 
-  const openAssignment = (student: StudentItem, mode: AssignmentMode = 'course') => {
+  const openAssignment = (student: StudentItem, mode: AssignmentMode = 'course', action: AssignmentAction = 'assign') => {
     setSelectedStudent(student);
     setAssignmentType(mode);
+    setAssignmentAction(action);
     setSelectedTargetId('');
     setAssignmentSearch('');
     setAssignmentModalOpen(true);
@@ -1034,11 +1038,14 @@ const Students = () => {
     try {
       const response = await adminApi.assignStudentItem(selectedStudent.id, {
         type: assignmentType,
-        targetId: selectedTargetId
+        targetId: selectedTargetId,
+        action: assignmentAction
       });
 
       if (response.success) {
-        toast.success(assignmentType === 'course' ? 'Kurs tələbəyə verildi' : 'Test tələbəyə verildi');
+        toast.success(assignmentAction === 'assign'
+          ? (assignmentType === 'course' ? 'Kurs tələbəyə verildi' : 'Test tələbəyə verildi')
+          : (assignmentType === 'course' ? 'Kurs tələbədən geri alındı' : 'Test tələbədən geri alındı'));
         setAssignmentModalOpen(false);
         setSelectedStudent(null);
         setSelectedTargetId('');
@@ -1056,25 +1063,26 @@ const Students = () => {
     const query = assignmentSearch.trim().toLowerCase();
 
     const toSearchableText = (value: unknown) => String(value ?? '').toLowerCase();
+    const sourceResources = assignmentAction === 'assign'
+      ? (assignmentType === 'course' ? courses : tests)
+      : (selectedStudent ? (assignmentType === 'course' ? selectedStudent.activeCourses : selectedStudent.assignedTests) : []);
 
-    if (!query) {
-      return assignmentType === 'course' ? courses : tests;
-    }
+    if (!query) return sourceResources;
 
     if (assignmentType === 'course') {
-      return courses.filter((course) => (
+      return sourceResources.filter((course) => (
         toSearchableText(course.title).includes(query)
         || toSearchableText(course.category).includes(query)
         || toSearchableText(course.instructor).includes(query)
       ));
     }
 
-    return tests.filter((test) => (
+    return sourceResources.filter((test) => (
       toSearchableText(test.title).includes(query)
       || toSearchableText(test.courseTitle).includes(query)
       || toSearchableText(test.instructorName).includes(query)
     ));
-  }, [courses, tests, assignmentSearch, assignmentType]);
+  }, [courses, tests, assignmentSearch, assignmentType, assignmentAction, selectedStudent]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -1173,6 +1181,23 @@ const Students = () => {
                       Test ver
                     </button>
                   </div>
+                  <div className="flex flex-col gap-2 sm:flex-row xl:flex-col xl:items-end">
+                    <button
+                      onClick={() => openAssignment(student, 'course', 'assign')}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#00D084] px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-[#00D084]/20 transition-all hover:bg-[#00B873] active:scale-95"
+                    >
+                      <UserPlus className="h-3.5 w-3.5" />
+                      Kurs/Test ver
+                    </button>
+                    <button
+                      onClick={() => openAssignment(student, student.activeCourses.length > 0 ? 'course' : 'test', 'remove')}
+                      disabled={student.activeCourses.length === 0 && student.assignedTests.length === 0}
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-500 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-red-500/20 transition-all hover:bg-red-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Undo2 className="h-3.5 w-3.5" />
+                      Geri al
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1188,15 +1213,30 @@ const Students = () => {
       <Modal
         isOpen={assignmentModalOpen}
         onClose={() => setAssignmentModalOpen(false)}
-        title={selectedStudent ? `${selectedStudent.name} üçün ${assignmentType === 'course' ? 'kurs' : 'test'} təyinatı` : 'Təyinat'}
+        title={selectedStudent ? `${selectedStudent.name} üçün təyinat` : 'Təyinat'}
       >
         <form onSubmit={handleAssign} className="grid grid-cols-2 gap-3 sm:gap-4">
-          <div className="col-span-2 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-700">
-            {assignmentType === 'course' ? 'Kurs ver' : 'Test ver'} bölməsindəsiniz.
+          <div className="col-span-2 space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500 italic sm:text-xs">Tip</label>
+            <select
+              value={assignmentType}
+              onChange={(event) => {
+                const nextType = event.target.value as AssignmentMode;
+                setAssignmentType(nextType);
+                setSelectedTargetId('');
+                setAssignmentSearch('');
+              }}
+              className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white sm:rounded-2xl sm:px-4 sm:py-3"
+            >
+              <option value="course">Kurs ver</option>
+              <option value="test">Test ver</option>
+            </select>
           </div>
           <div className="col-span-2 space-y-1.5">
             <label className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500 italic sm:text-xs">
-              {assignmentType === 'course' ? 'Kurs seçin' : 'Test seçin'}
+              {assignmentAction === 'assign'
+                ? (assignmentType === 'course' ? 'Kurs seçin' : 'Test seçin')
+                : (assignmentType === 'course' ? 'Geri alınacaq kurs seçin' : 'Geri alınacaq test seçin')}
             </label>
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 sm:left-4 sm:h-5 sm:w-5" />
@@ -1204,15 +1244,17 @@ const Students = () => {
                 value={assignmentSearch}
                 onChange={(event) => setAssignmentSearch(event.target.value)}
                 type="text"
-                placeholder={assignmentType === 'course' ? 'Kurs axtar...' : 'Test axtar...'}
-                className="mb-2 w-full rounded-xl border border-gray-100 bg-gray-50 px-10 py-2.5 text-sm font-medium outline-none transition-all focus:border-[#00D084] focus:bg-white sm:mb-3 sm:rounded-2xl sm:px-12 sm:py-3.5"
+                placeholder={assignmentAction === 'assign'
+                  ? (assignmentType === 'course' ? 'Kurs axtar...' : 'Test axtar...')
+                  : (assignmentType === 'course' ? 'Geri alınacaq kurs axtar...' : 'Geri alınacaq test axtar...')}
+                className={`mb-2 w-full rounded-xl border border-gray-100 bg-gray-50 px-10 py-2.5 text-sm font-medium outline-none transition-all focus:bg-white sm:mb-3 sm:rounded-2xl sm:px-12 sm:py-3.5 ${assignmentAction === 'assign' ? 'focus:border-[#00D084]' : 'focus:border-red-500'}`}
               />
             </div>
             <select
               required
               value={selectedTargetId}
               onChange={(event) => setSelectedTargetId(event.target.value)}
-              className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white sm:rounded-2xl sm:px-4 sm:py-3"
+              className={`w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-bold outline-none transition-all focus:bg-white sm:rounded-2xl sm:px-4 sm:py-3 ${assignmentAction === 'assign' ? 'focus:border-[#00D084]' : 'focus:border-red-500'}`}
             >
               <option value="">Seçim edin...</option>
               {assignmentType === 'course'
@@ -1220,17 +1262,17 @@ const Students = () => {
                   ? filteredResources.map((course) => (
                     <option key={course.id} value={course.id}>{course.title}</option>
                   ))
-                  : <option value="" disabled>Axtarışa uyğun kurs tapılmadı</option>
+                  : <option value="" disabled>{assignmentAction === 'assign' ? 'Axtarışa uyğun kurs tapılmadı' : 'Geri alınacaq kurs tapılmadı'}</option>
                 : filteredResources.map((test) => (
-                    <option key={test.id} value={test.id}>{test.title} · {test.courseTitle || ''}</option>
+                    <option key={test.id} value={test.id}>{test.title}{assignmentAction === 'assign' && test.courseTitle ? ` · ${test.courseTitle}` : ''}</option>
                 ))}
             </select>
           </div>
           <button
             type="submit"
-            className="col-span-2 w-full rounded-xl bg-[#00D084] py-3.5 text-sm font-black text-white shadow-xl shadow-[#00D084]/20 transition-all hover:bg-[#00B873] active:scale-95 sm:rounded-2xl sm:py-4 sm:text-base"
+            className={`col-span-2 w-full rounded-xl py-3.5 text-sm font-black text-white shadow-xl transition-all active:scale-95 sm:rounded-2xl sm:py-4 sm:text-base ${assignmentAction === 'assign' ? 'bg-[#00D084] shadow-[#00D084]/20 hover:bg-[#00B873]' : 'bg-red-500 shadow-red-500/20 hover:bg-red-600'}`}
           >
-            Təyin et
+            {assignmentAction === 'assign' ? 'Təyin et' : 'Geri al'}
           </button>
         </form>
       </Modal>
