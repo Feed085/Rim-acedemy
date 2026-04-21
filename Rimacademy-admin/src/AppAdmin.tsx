@@ -194,15 +194,15 @@ const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-lg overflow-hidden rounded-[32px] bg-white shadow-2xl animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between border-b border-gray-50 bg-gray-50/30 p-8">
-          <h3 className="text-xl font-black text-gray-900">{title}</h3>
+    <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/40 px-3 py-4 backdrop-blur-sm sm:items-center sm:p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-md overflow-hidden rounded-[24px] bg-white shadow-2xl animate-in zoom-in-95 duration-200 sm:rounded-[32px]">
+        <div className="flex items-center justify-between border-b border-gray-50 bg-gray-50/30 p-4 sm:p-6 lg:p-8">
+          <h3 className="text-lg font-black text-gray-900 sm:text-xl">{title}</h3>
           <button onClick={onClose} className="rounded-xl p-2 transition-colors hover:bg-white">
             <X className="h-5 w-5 text-gray-400" />
           </button>
         </div>
-        <div className="p-8">{children}</div>
+        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
       </div>
     </div>
   );
