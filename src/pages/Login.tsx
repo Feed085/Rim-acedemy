@@ -324,7 +324,7 @@ export default function Login() {
             </button>
             <div
               ref={googleButtonHostRef}
-              className="absolute inset-0 z-10 opacity-0"
+              className="absolute inset-0 z-10 flex justify-center opacity-0"
               aria-hidden="true"
             />
           </div>

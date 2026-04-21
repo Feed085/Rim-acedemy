@@ -104,6 +104,19 @@ export default function TeacherTestResults() {
     }
   };
 
+  const isNumericOpenEndedQuestion = (question: any) => {
+    if (!question || question.answerType !== 'open_ended') {
+      return false;
+    }
+
+    if (question.openEndedAnswerType === 'number') {
+      return true;
+    }
+
+    const normalizedCorrectAnswer = Number(String(question.correctAnswer ?? '').replace(',', '.').trim());
+    return Number.isFinite(normalizedCorrectAnswer);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F3F3F3] pt-24 flex items-center justify-center">
@@ -295,7 +308,12 @@ export default function TeacherTestResults() {
                                     {studentAnsObj.answer}
                                  </div>
                                  <div className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-                                    {isPending ? (
+                                {isNumericOpenEndedQuestion(q) ? (
+                                  <span className={isCorrect ? "text-sm font-bold text-green-600 flex items-center gap-1" : "text-sm font-bold text-red-600 flex items-center gap-1"}>
+                                    {isCorrect ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                                    {isCorrect ? 'Avtomatik doğru' : 'Avtomatik yanlış'}
+                                  </span>
+                                ) : isPending ? (
                                        <span className="text-sm font-bold text-yellow-600 flex items-center gap-1">
                                           <Clock className="w-4 h-4"/> Yoxlama Gözləyir
                                        </span>
@@ -305,26 +323,28 @@ export default function TeacherTestResults() {
                                           {isCorrect ? 'Doğru Qiymətləndirildi' : 'Yanlış Qiymətləndirildi'}
                                        </span>
                                     )}
-                                    <div className="flex gap-2">
-                                       <Button 
-                                          title="Doğru Qəbul Et"
-                                          size="sm" 
-                                          variant="outline" 
-                                          className="text-green-600 hover:bg-green-50 border-green-200" 
-                                          onClick={() => handleEvaluateOpenEnded(selectedResult._id, q._id, true)}
-                                       >
-                                          <CheckCircle className="w-4 h-4" />
-                                       </Button>
-                                       <Button 
-                                          title="Yanlış Qəbul Et"
-                                          size="sm" 
-                                          variant="outline" 
-                                          className="text-red-600 hover:bg-red-50 border-red-200" 
-                                          onClick={() => handleEvaluateOpenEnded(selectedResult._id, q._id, false)}
-                                       >
-                                          <XCircle className="w-4 h-4" />
-                                       </Button>
-                                    </div>
+                                    {!isNumericOpenEndedQuestion(q) && (
+                                  <div className="flex gap-2">
+                                    <Button 
+                                      title="Doğru Qəbul Et"
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="text-green-600 hover:bg-green-50 border-green-200" 
+                                      onClick={() => handleEvaluateOpenEnded(selectedResult._id, q._id, true)}
+                                    >
+                                      <CheckCircle className="w-4 h-4" />
+                                    </Button>
+                                    <Button 
+                                      title="Yanlış Qəbul Et"
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="text-red-600 hover:bg-red-50 border-red-200" 
+                                      onClick={() => handleEvaluateOpenEnded(selectedResult._id, q._id, false)}
+                                    >
+                                      <XCircle className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                )}
                                  </div>
                               </div>
                            ) : (
