@@ -139,6 +139,22 @@ type TestItem = {
   questionCount: number;
 };
 
+type AssignmentCourseResource = {
+  _id?: string;
+  id?: string;
+  title: string;
+  category?: string;
+  instructor?: string;
+};
+
+type AssignmentTestResource = {
+  _id?: string;
+  id?: string;
+  title: string;
+  courseTitle?: string;
+  instructorName?: string;
+};
+
 type AssignmentMode = 'course' | 'test';
 type AssignmentAction = 'assign' | 'remove';
 
@@ -1063,21 +1079,34 @@ const Students = () => {
     const query = assignmentSearch.trim().toLowerCase();
 
     const toSearchableText = (value: unknown) => String(value ?? '').toLowerCase();
-    const sourceResources = assignmentAction === 'assign'
-      ? (assignmentType === 'course' ? courses : tests)
-      : (selectedStudent ? (assignmentType === 'course' ? selectedStudent.activeCourses : selectedStudent.assignedTests) : []);
 
-    if (!query) return sourceResources;
+    const courseResources = assignmentAction === 'assign'
+      ? courses
+      : (selectedStudent && assignmentType === 'course' ? selectedStudent.activeCourses : []);
+
+    const testResources = assignmentAction === 'assign'
+      ? tests
+      : (selectedStudent && assignmentType === 'test' ? selectedStudent.assignedTests : []);
+
+    if (!query) {
+      return assignmentType === 'course'
+        ? (courseResources as AssignmentCourseResource[])
+        : (testResources as AssignmentTestResource[]);
+    }
 
     if (assignmentType === 'course') {
-      return sourceResources.filter((course) => (
+      const typedCourseResources = courseResources as AssignmentCourseResource[];
+
+      return typedCourseResources.filter((course) => (
         toSearchableText(course.title).includes(query)
         || toSearchableText(course.category).includes(query)
         || toSearchableText(course.instructor).includes(query)
       ));
     }
 
-    return sourceResources.filter((test) => (
+    const typedTestResources = testResources as AssignmentTestResource[];
+
+    return typedTestResources.filter((test) => (
       toSearchableText(test.title).includes(query)
       || toSearchableText(test.courseTitle).includes(query)
       || toSearchableText(test.instructorName).includes(query)
@@ -1269,15 +1298,17 @@ const Students = () => {
               className={`w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-bold outline-none transition-all focus:bg-white sm:rounded-2xl sm:px-4 sm:py-3 ${assignmentAction === 'assign' ? 'focus:border-[#00D084]' : 'focus:border-red-500'}`}
             >
               <option value="">Seçim edin...</option>
-              {assignmentType === 'course'
-                ? filteredResources.length > 0
-                  ? filteredResources.map((course) => (
+              {assignmentType === 'course' ? (
+                (filteredResources as AssignmentCourseResource[]).length > 0
+                  ? (filteredResources as AssignmentCourseResource[]).map((course) => (
                     <option key={getResourceId(course)} value={getResourceId(course)}>{course.title}</option>
                   ))
                   : <option value="" disabled>{assignmentAction === 'assign' ? 'Axtarışa uyğun kurs tapılmadı' : 'Geri alınacaq kurs tapılmadı'}</option>
-                : filteredResources.map((test) => (
-                    <option key={getResourceId(test)} value={getResourceId(test)}>{test.title}{assignmentAction === 'assign' && test.courseTitle ? ` · ${test.courseTitle}` : ''}</option>
-                ))}
+              ) : (
+                (filteredResources as AssignmentTestResource[]).map((test) => (
+                  <option key={getResourceId(test)} value={getResourceId(test)}>{test.title}{assignmentAction === 'assign' && test.courseTitle ? ` · ${test.courseTitle}` : ''}</option>
+                ))
+              )}
             </select>
           </div>
           <button
