@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   ArrowLeft, 
   Save, 
@@ -26,6 +27,8 @@ interface Question {
   content: string;
   imageFile?: File;
   answerType: 'multiple_choice' | 'open_ended';
+  openEndedAnswerType?: 'text' | 'number';
+  openEndedNumericAnswer?: string;
   options: string[];
   correctAnswer: string;
 }
@@ -51,6 +54,8 @@ export default function TeacherTestEdit() {
           const normalizedQuestions = data.data.questions.map((q: any) => ({
             ...q,
             id: q._id, // use MongoDB ID as UI ID
+            openEndedAnswerType: q.openEndedAnswerType || (q.answerType === 'open_ended' && q.correctAnswer ? 'number' : 'text'),
+            openEndedNumericAnswer: q.answerType === 'open_ended' ? (q.correctAnswer || '') : '',
           }));
           setTest({ ...data.data, questions: normalizedQuestions });
         } else {
@@ -76,6 +81,12 @@ export default function TeacherTestEdit() {
       const formattedQuestions = [];
       for (const q of test.questions) {
         let finalContent = q.content;
+
+        if (q.answerType === 'open_ended' && q.openEndedAnswerType === 'number' && !q.openEndedNumericAnswer?.trim()) {
+          toast.error('Rəqəm cavabı üçün dəyər daxil edin');
+          setIsSaving(false);
+          return;
+        }
         
         if (q.questionType === 'image' && q.imageFile) {
           const presignReq = await fetch(
@@ -97,8 +108,11 @@ export default function TeacherTestEdit() {
           questionType: q.questionType,
           content: finalContent,
           answerType: q.answerType,
+          openEndedAnswerType: q.answerType === 'open_ended' ? (q.openEndedAnswerType || 'text') : 'text',
           options: q.answerType === 'multiple_choice' ? q.options : [],
-          correctAnswer: q.correctAnswer
+          correctAnswer: q.answerType === 'open_ended' && q.openEndedAnswerType === 'number'
+            ? q.openEndedNumericAnswer.trim()
+            : q.correctAnswer
         });
       }
 
@@ -130,12 +144,45 @@ export default function TeacherTestEdit() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!id || !test) return;
+
+    const isConfirmed = window.confirm('Bu testi silmək istədiyinizə əminsiniz? Bu əməliyyat geri alına bilməz.');
+    if (!isConfirmed) return;
+
+    setIsSaving(true);
+    const token = localStorage.getItem('rim_auth_token');
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/tests/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Test silindi');
+        navigate(-1);
+      } else {
+        toast.error('Xəta: ' + data.message);
+      }
+    } catch (err) {
+      toast.error('Server xətası');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const addQuestion = () => {
     const newQuestion: Question = {
       id: Date.now().toString(),
       questionType: 'text',
       content: 'Yeni sual',
       answerType: 'multiple_choice',
+      openEndedAnswerType: 'text',
+      openEndedNumericAnswer: '',
       options: ['Variant A', 'Variant B', 'Variant C', 'Variant D'],
       correctAnswer: 'Variant A'
     };
@@ -232,6 +279,15 @@ export default function TeacherTestEdit() {
                 onClick={() => navigate(-1)}
             >
               Ləğv et
+            </Button>
+            <Button
+                variant="outline"
+                className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={handleDelete}
+                disabled={isSaving}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Sil
             </Button>
             <Button 
                 className="bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl px-8 font-bold shadow-lg shadow-[#00D084]/20" 
@@ -458,8 +514,29 @@ export default function TeacherTestEdit() {
                       </div>
                     </div>
                 ) : (
-                    <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 text-yellow-800 text-sm font-medium">
-                        Bu açıq sualdır. Tələbələr bu sual üçün xüsusi cavab qutusu görəcəklər və siz tərəfindən ayrıca yoxlanılacaq.
+                    <div className="space-y-4 rounded-2xl border border-blue-100 bg-blue-50/50 p-4 text-sm font-medium">
+                        <label className="flex cursor-pointer items-center gap-3">
+                          <Checkbox
+                            checked={question.openEndedAnswerType === 'number'}
+                            onCheckedChange={(checked) => updateQuestionField(question.id, 'openEndedAnswerType', checked === true ? 'number' : 'text')}
+                            className="border-blue-300 data-[state=checked]:border-[#00D084] data-[state=checked]:bg-[#00D084]"
+                          />
+                          <span className="font-bold text-blue-700">Cavabı yalnız rəqəm olan sual</span>
+                        </label>
+                        <p className="text-blue-700/80">Ondalık cavablar da qəbul edilir.</p>
+                        {question.openEndedAnswerType === 'number' && (
+                          <div className="relative max-w-sm">
+                            <Input
+                              type="number"
+                              step="any"
+                              inputMode="decimal"
+                              value={question.openEndedNumericAnswer || ''}
+                              onChange={(e) => updateQuestionField(question.id, 'openEndedNumericAnswer', e.target.value)}
+                              placeholder="Məs: 3.5"
+                              className="rounded-xl h-12 border-blue-200 focus:border-[#00D084] font-medium"
+                            />
+                          </div>
+                        )}
                     </div>
                 )}
               </div>

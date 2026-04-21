@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { 
   Clock, 
@@ -121,6 +122,19 @@ export default function TestDetail() {
       ...prev,
       [qId]: answerValue
     }));
+  };
+
+  const isNumericOpenEndedQuestion = (question: any) => {
+    if (!question || question.answerType !== 'open_ended') {
+      return false;
+    }
+
+    if (question.openEndedAnswerType === 'number') {
+      return true;
+    }
+
+    const normalizedCorrectAnswer = Number(String(question.correctAnswer ?? '').replace(',', '.').trim());
+    return Number.isFinite(normalizedCorrectAnswer);
   };
 
   const formatTime = (seconds: number) => {
@@ -372,14 +386,28 @@ export default function TestDetail() {
                 })
              ) : (
                 <div className="pt-4">
-                   <label className="text-sm font-bold text-gray-700 mb-2 block">Sizin Cavabınız (Açıq sual)</label>
+                 <label className="text-sm font-bold text-gray-700 mb-2 block">
+                     {isNumericOpenEndedQuestion(question) ? 'Sizin Cavabınız (Rəqəm)' : 'Sizin Cavabınız (Açıq sual)'}
+                 </label>
+                   {isNumericOpenEndedQuestion(question) ? (
+                   <Input
+                     type="number"
+                     step="any"
+                     inputMode="decimal"
+                     className="w-full rounded-2xl border-gray-200 p-4 focus:border-[#00D084] focus:ring-[#00D084]"
+                     placeholder="Məs: 3.5"
+                     value={selectedAnswers[question._id] || ''}
+                     onChange={(e) => handleSelectAnswer(question._id, e.target.value)}
+                   />
+                 ) : (
                    <textarea
-                      rows={5}
-                      className="w-full rounded-2xl border-gray-200 p-4 focus:border-[#00D084] focus:ring-[#00D084]"
-                      placeholder="Fikrinizi bura yazın..."
-                      value={selectedAnswers[question._id] || ''}
-                      onChange={(e) => handleSelectAnswer(question._id, e.target.value)}
+                     rows={5}
+                     className="w-full rounded-2xl border-gray-200 p-4 focus:border-[#00D084] focus:ring-[#00D084]"
+                     placeholder="Fikrinizi bura yazın..."
+                     value={selectedAnswers[question._id] || ''}
+                     onChange={(e) => handleSelectAnswer(question._id, e.target.value)}
                    ></textarea>
+                 )}
                 </div>
              )}
           </div>

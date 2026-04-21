@@ -101,6 +101,7 @@ export interface Question {
   question: string;
   options: string[];
   correctAnswer: number;
+  openEndedAnswerType?: 'text' | 'number';
   order: number;
 }
 

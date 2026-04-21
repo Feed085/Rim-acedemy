@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Plus, 
   Trash2, 
@@ -26,6 +27,8 @@ interface Question {
   content: string;
   imageFile?: File;
   answerType: 'multiple_choice' | 'open_ended';
+  openEndedAnswerType?: 'text' | 'number';
+  openEndedNumericAnswer?: string;
   options: string[];
   correctAnswer: number;
 }
@@ -67,6 +70,8 @@ export default function CreateTest() {
       questionType: 'text',
       content: '',
       answerType: 'multiple_choice',
+      openEndedAnswerType: 'text',
+      openEndedNumericAnswer: '',
       options: ['', '', '', ''],
       correctAnswer: 0,
     },
@@ -80,6 +85,8 @@ export default function CreateTest() {
         questionType: 'text',
         content: '',
         answerType: 'multiple_choice',
+        openEndedAnswerType: 'text',
+        openEndedNumericAnswer: '',
         options: ['', '', '', ''],
         correctAnswer: 0,
       },
@@ -94,7 +101,7 @@ export default function CreateTest() {
     }
   };
 
-  const updateQuestion = (id: string, field: keyof Question, value: string | number) => {
+  const updateQuestion = (id: string, field: keyof Question, value: Question[keyof Question]) => {
     setQuestions(prev =>
       prev.map(q =>
         q.id === id ? { ...q, [field]: value } : q
@@ -142,6 +149,12 @@ export default function CreateTest() {
       const formattedQuestions = [];
       for (const q of questions) {
         let finalContent = q.content;
+
+        if (q.answerType === 'open_ended' && q.openEndedAnswerType === 'number' && !q.openEndedNumericAnswer?.trim()) {
+          toast.error('Rəqəm cavabı üçün dəyər daxil edin');
+          setIsSaving(false);
+          return;
+        }
         
         if (q.questionType === 'image' && q.imageFile) {
           const presignReq = await fetch(
@@ -163,8 +176,9 @@ export default function CreateTest() {
           questionType: q.questionType,
           content: finalContent,
           answerType: q.answerType,
+          openEndedAnswerType: q.answerType === 'open_ended' ? (q.openEndedAnswerType || 'text') : 'text',
           options: q.answerType === 'multiple_choice' ? q.options : [],
-          correctAnswer: q.answerType === 'multiple_choice' ? q.options[q.correctAnswer] || String.fromCharCode(65 + q.correctAnswer) : ''
+          correctAnswer: q.answerType === 'multiple_choice' ? q.options[q.correctAnswer] || String.fromCharCode(65 + q.correctAnswer) : (q.openEndedAnswerType === 'number' ? q.openEndedNumericAnswer?.trim() || '' : '')
         });
       }
 
@@ -254,6 +268,8 @@ export default function CreateTest() {
                   options: ['', '', '', ''],
                   correctAnswer: 0,
                   answerType: 'multiple_choice',
+                  openEndedAnswerType: 'text',
+                  openEndedNumericAnswer: '',
                 }]);
               }}
               className="flex-1 bg-[#00D084] hover:bg-[#00B873] rounded-xl"
@@ -534,8 +550,29 @@ export default function CreateTest() {
                        </div>
                     </div>
                   ) : (
-                    <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
-                      <p className="text-sm text-yellow-700 font-medium">Bu açıq sualdır. Tələbələr bu sual üçün xüsusi cavab qutusu görəcəklər. Tələbə cavablarını daxil etdikdən sonra siz tərəfindən ayrıca yoxlanılacaq.</p>
+                    <div className="space-y-4 rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
+                      <label className="flex cursor-pointer items-center gap-3">
+                        <Checkbox
+                          checked={question.openEndedAnswerType === 'number'}
+                          onCheckedChange={(checked) => updateQuestion(question.id, 'openEndedAnswerType', checked === true ? 'number' : 'text')}
+                          className="border-blue-300 data-[state=checked]:border-[#00D084] data-[state=checked]:bg-[#00D084]"
+                        />
+                        <span className="text-sm font-bold text-blue-700">Cavabı yalnız rəqəm olan sual</span>
+                      </label>
+                      <p className="text-sm font-medium text-blue-700/80">Onluq cavablar da qəbul edilir.</p>
+                      {question.openEndedAnswerType === 'number' && (
+                        <div className="relative max-w-sm">
+                          <Input
+                            type="number"
+                            step="any"
+                            inputMode="decimal"
+                            value={question.openEndedNumericAnswer || ''}
+                            onChange={(e) => updateQuestion(question.id, 'openEndedNumericAnswer', e.target.value)}
+                            placeholder="Məs: 3.5"
+                            className="h-12 rounded-xl border-blue-200 focus:border-[#00D084]"
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
 
