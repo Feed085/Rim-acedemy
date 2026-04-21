@@ -1084,6 +1084,8 @@ const Students = () => {
     ));
   }, [courses, tests, assignmentSearch, assignmentType, assignmentAction, selectedStudent]);
 
+  const getResourceId = (resource: { _id?: string; id?: string } | null | undefined) => resource?._id || resource?.id || '';
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -1165,38 +1167,42 @@ const Students = () => {
                 </div>
                 <div className="flex flex-col items-start gap-2 xl:items-end">
                   <div className="text-xs text-gray-500">{formatDate(student.createdAt)}</div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => openAssignment(student, 'course')}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#00D084] px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-[#00D084]/20 transition-all hover:bg-[#00B873] active:scale-95"
-                    >
-                      <UserPlus className="h-3.5 w-3.5" />
-                      Kurs ver
-                    </button>
-                    <button
-                      onClick={() => openAssignment(student, 'test')}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#0082F3] px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-[#0082F3]/20 transition-all hover:bg-[#006fd1] active:scale-95"
-                    >
-                      <FileText className="h-3.5 w-3.5" />
-                      Test ver
-                    </button>
-                  </div>
-                  <div className="flex flex-col gap-2 sm:flex-row xl:flex-col xl:items-end">
-                    <button
-                      onClick={() => openAssignment(student, 'course', 'assign')}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#00D084] px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-[#00D084]/20 transition-all hover:bg-[#00B873] active:scale-95"
-                    >
-                      <UserPlus className="h-3.5 w-3.5" />
-                      Kurs/Test ver
-                    </button>
-                    <button
-                      onClick={() => openAssignment(student, student.activeCourses.length > 0 ? 'course' : 'test', 'remove')}
-                      disabled={student.activeCourses.length === 0 && student.assignedTests.length === 0}
-                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-500 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-red-500/20 transition-all hover:bg-red-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <Undo2 className="h-3.5 w-3.5" />
-                      Geri al
-                    </button>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => openAssignment(student, 'course')}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#00D084] px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-[#00D084]/20 transition-all hover:bg-[#00B873] active:scale-95"
+                      >
+                        <UserPlus className="h-3.5 w-3.5" />
+                        Kurs ver
+                      </button>
+                      <button
+                        onClick={() => openAssignment(student, 'test')}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#0082F3] px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-[#0082F3]/20 transition-all hover:bg-[#006fd1] active:scale-95"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        Test ver
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => openAssignment(student, 'course', 'remove')}
+                        disabled={student.activeCourses.length === 0}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-amber-500 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Undo2 className="h-3.5 w-3.5 rotate-180" />
+                        Kurs geri al
+                      </button>
+                      <button
+                        onClick={() => openAssignment(student, 'test', 'remove')}
+                        disabled={student.assignedTests.length === 0}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-500 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-red-500/20 transition-all hover:bg-red-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Undo2 className="h-3.5 w-3.5" />
+                        Test geri al
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1213,25 +1219,31 @@ const Students = () => {
       <Modal
         isOpen={assignmentModalOpen}
         onClose={() => setAssignmentModalOpen(false)}
-        title={selectedStudent ? `${selectedStudent.name} üçün təyinat` : 'Təyinat'}
+        title={selectedStudent ? `${selectedStudent.name} üçün ${assignmentAction === 'assign' ? 'təyinat' : 'geri alma'}` : 'Təyinat'}
       >
         <form onSubmit={handleAssign} className="grid grid-cols-2 gap-3 sm:gap-4">
-          <div className="col-span-2 space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500 italic sm:text-xs">Tip</label>
-            <select
-              value={assignmentType}
-              onChange={(event) => {
-                const nextType = event.target.value as AssignmentMode;
-                setAssignmentType(nextType);
-                setSelectedTargetId('');
-                setAssignmentSearch('');
-              }}
-              className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white sm:rounded-2xl sm:px-4 sm:py-3"
-            >
-              <option value="course">Kurs ver</option>
-              <option value="test">Test ver</option>
-            </select>
-          </div>
+          {assignmentAction === 'assign' ? (
+            <div className="col-span-2 space-y-1.5">
+              <label className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500 italic sm:text-xs">Tip</label>
+              <select
+                value={assignmentType}
+                onChange={(event) => {
+                  const nextType = event.target.value as AssignmentMode;
+                  setAssignmentType(nextType);
+                  setSelectedTargetId('');
+                  setAssignmentSearch('');
+                }}
+                className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white sm:rounded-2xl sm:px-4 sm:py-3"
+              >
+                <option value="course">Kurs ver</option>
+                <option value="test">Test ver</option>
+              </select>
+            </div>
+          ) : (
+            <div className={`col-span-2 rounded-2xl border px-4 py-3 text-sm font-bold ${assignmentType === 'course' ? 'border-[#00D084]/20 bg-[#00D084]/5 text-[#00825a]' : 'border-[#0082F3]/20 bg-[#0082F3]/5 text-[#005cb8]'}`}>
+              {assignmentType === 'course' ? 'Kurs geri alma' : 'Test geri alma'}
+            </div>
+          )}
           <div className="col-span-2 space-y-1.5">
             <label className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500 italic sm:text-xs">
               {assignmentAction === 'assign'
@@ -1260,11 +1272,11 @@ const Students = () => {
               {assignmentType === 'course'
                 ? filteredResources.length > 0
                   ? filteredResources.map((course) => (
-                    <option key={course.id} value={course.id}>{course.title}</option>
+                    <option key={getResourceId(course)} value={getResourceId(course)}>{course.title}</option>
                   ))
                   : <option value="" disabled>{assignmentAction === 'assign' ? 'Axtarışa uyğun kurs tapılmadı' : 'Geri alınacaq kurs tapılmadı'}</option>
                 : filteredResources.map((test) => (
-                    <option key={test.id} value={test.id}>{test.title}{assignmentAction === 'assign' && test.courseTitle ? ` · ${test.courseTitle}` : ''}</option>
+                    <option key={getResourceId(test)} value={getResourceId(test)}>{test.title}{assignmentAction === 'assign' && test.courseTitle ? ` · ${test.courseTitle}` : ''}</option>
                 ))}
             </select>
           </div>
