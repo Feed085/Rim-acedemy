@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,9 +17,13 @@ export default function StudentDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [myCourses, setMyCourses] = useState<any[]>([]);
+  const [assignedTests, setAssignedTests] = useState<any[]>([]);
+  const [courseSearch, setCourseSearch] = useState('');
+  const [testSearch, setTestSearch] = useState('');
   
   const [apiStats, setApiStats] = useState({
     activeCoursesCount: 0,
+    assignedTestsCount: 0,
     completedTestsCount: 0,
     certificatesCount: 0
   });
@@ -38,10 +42,12 @@ export default function StudentDashboard() {
         if (data.success && data.data && data.data.stats) {
           setApiStats({
             activeCoursesCount: data.data.stats.activeCoursesCount,
+            assignedTestsCount: data.data.stats.assignedTestsCount ?? (data.data.assignedTests || []).length,
             completedTestsCount: data.data.stats.completedTestsCount,
             certificatesCount: data.data.stats.certificatesCount
           });
           setMyCourses(data.data.activeCourses || []);
+          setAssignedTests(data.data.assignedTests || []);
         }
       } catch (err) {
         console.error('Statistika yüklənərkən xəta baş verdi', err);
@@ -62,11 +68,56 @@ export default function StudentDashboard() {
     }
   };
 
+  const scrollToTests = () => {
+    const el = document.getElementById('my-tests-section');
+    if (el) {
+      const yOffset = -100;
+      const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  };
+
   const stats = [
     { label: 'Aktiv Kurslar', value: apiStats.activeCoursesCount.toString(), icon: BookOpen, color: '#00D084', onClick: scrollToCourses },
+    { label: 'Mənim Testlərim', value: apiStats.assignedTestsCount.toString(), icon: FileText, color: '#0082F3', onClick: scrollToTests },
     { label: 'Tamamlanan Testlər', value: apiStats.completedTestsCount.toString(), icon: FileText, color: '#0082F3', onClick: () => navigate('/dashboard/completed-tests') },
     { label: 'Sertifikatlar', value: apiStats.certificatesCount.toString(), icon: Award, color: '#F59E0B', onClick: () => navigate('/dashboard/certificates') },
   ];
+
+  const filteredCourses = useMemo(() => {
+    const query = courseSearch.trim().toLowerCase();
+
+    if (!query) {
+      return myCourses;
+    }
+
+    return myCourses.filter((course) => (
+      [course.title, course.category, course.description]
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    ));
+  }, [courseSearch, myCourses]);
+
+  const filteredTests = useMemo(() => {
+    const query = testSearch.trim().toLowerCase();
+
+    if (!query) {
+      return assignedTests;
+    }
+
+    return assignedTests.filter((test) => (
+      [
+        test.title,
+        test.course?.title || '',
+        test.instructor ? `${test.instructor.name || ''} ${test.instructor.surname || ''}` : '',
+        test.duration ? String(test.duration) : ''
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    ));
+  }, [assignedTests, testSearch]);
 
   return (
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">
@@ -100,7 +151,7 @@ export default function StudentDashboard() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {stats.map((stat) => (
             <div
               key={stat.label}
@@ -121,16 +172,25 @@ export default function StudentDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* My Courses */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-8">
             <div id="my-courses-section" className="bg-white rounded-3xl p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">
-                  {t('student.dashboard.my_courses')}
-                </h2>
+              <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {t('student.dashboard.my_courses')}
+                  </h2>
+                </div>
+                <input
+                  value={courseSearch}
+                  onChange={(event) => setCourseSearch(event.target.value)}
+                  type="text"
+                  placeholder="Kurs axtar..."
+                  className="w-full rounded-xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-sm outline-none transition-all focus:border-[#00D084] focus:bg-white sm:max-w-xs"
+                />
               </div>
 
               <div className="space-y-4">
-                {myCourses.map((course) => (
+                {filteredCourses.map((course) => (
                   <div
                     key={course._id || course.id}
                     className="flex flex-col sm:flex-row gap-4 p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors"
@@ -163,7 +223,7 @@ export default function StudentDashboard() {
                     </div>
                   </div>
                 ))}
-                {myCourses.length === 0 && (
+                 {filteredCourses.length === 0 && (
                   <div className="text-center py-12">
                      <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                         <BookOpen className="w-8 h-8 text-gray-300" />
@@ -176,6 +236,53 @@ export default function StudentDashboard() {
                      >
                        Kurslara göz at
                      </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div id="my-tests-section" className="bg-white rounded-3xl p-6 shadow-sm">
+              <div className="flex flex-col gap-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Mənim Testlərim</h2>
+                  <p className="text-sm text-gray-500 mt-1">Admin tərəfindən sizə təyin olunan testlər buradadır.</p>
+                </div>
+                <input
+                  value={testSearch}
+                  onChange={(event) => setTestSearch(event.target.value)}
+                  type="text"
+                  placeholder="Test axtar..."
+                  className="w-full rounded-xl border border-gray-100 bg-gray-50 px-4 py-2.5 text-sm outline-none transition-all focus:border-[#0082F3] focus:bg-white sm:max-w-xs"
+                />
+              </div>
+
+              <div className="space-y-4">
+                {filteredTests.map((test) => (
+                  <div
+                    key={test._id || test.id}
+                    className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-gray-50 p-4 transition-colors hover:bg-gray-100 sm:flex-row sm:items-center"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-gray-900 truncate">{test.title}</h3>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
+                        {test.course?.title ? <span>{test.course.title}</span> : null}
+                        <span>{test.instructor ? `${test.instructor.name} ${test.instructor.surname || ''}` : 'Naməlum müəllim'}</span>
+                        <span>{test.duration ? `${test.duration} dəqiqə` : 'Müddət yoxdur'}</span>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={() => navigate(`/tests/${test._id || test.id}`)}
+                      className="bg-[#0082F3] hover:bg-[#006fd1] rounded-xl text-white font-bold sm:self-start"
+                    >
+                      Testə başla
+                    </Button>
+                  </div>
+                ))}
+
+                {filteredTests.length === 0 && (
+                  <div className="text-center py-12 rounded-2xl border border-dashed border-gray-200 bg-gray-50">
+                    <FileText className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">Hazırda sizə təyin edilmiş test yoxdur.</p>
                   </div>
                 )}
               </div>

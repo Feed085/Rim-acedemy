@@ -11,6 +11,7 @@ import {
   Grid,
   LayoutDashboard,
   LogOut,
+  FileText,
   Menu,
   MoreVertical,
   Plus,
@@ -1156,13 +1157,22 @@ const Students = () => {
                 </div>
                 <div className="flex flex-col items-start gap-2 xl:items-end">
                   <div className="text-xs text-gray-500">{formatDate(student.createdAt)}</div>
-                  <button
-                    onClick={() => openAssignment(student)}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-[#00D084] px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-[#00D084]/20 transition-all hover:bg-[#00B873] active:scale-95"
-                  >
-                    <UserPlus className="h-3.5 w-3.5" />
-                    Kurs/Test ver
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => openAssignment(student, 'course')}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#00D084] px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-[#00D084]/20 transition-all hover:bg-[#00B873] active:scale-95"
+                    >
+                      <UserPlus className="h-3.5 w-3.5" />
+                      Kurs ver
+                    </button>
+                    <button
+                      onClick={() => openAssignment(student, 'test')}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-[#0082F3] px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-[#0082F3]/20 transition-all hover:bg-[#006fd1] active:scale-95"
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      Test ver
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1178,24 +1188,11 @@ const Students = () => {
       <Modal
         isOpen={assignmentModalOpen}
         onClose={() => setAssignmentModalOpen(false)}
-        title={selectedStudent ? `${selectedStudent.name} üçün təyinat` : 'Təyinat'}
+        title={selectedStudent ? `${selectedStudent.name} üçün ${assignmentType === 'course' ? 'kurs' : 'test'} təyinatı` : 'Təyinat'}
       >
         <form onSubmit={handleAssign} className="grid grid-cols-2 gap-3 sm:gap-4">
-          <div className="col-span-2 space-y-1.5">
-            <label className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500 italic sm:text-xs">Tip</label>
-            <select
-              value={assignmentType}
-              onChange={(event) => {
-                const nextType = event.target.value as AssignmentMode;
-                setAssignmentType(nextType);
-                setSelectedTargetId('');
-                setAssignmentSearch('');
-              }}
-              className="w-full rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5 text-sm font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white sm:rounded-2xl sm:px-4 sm:py-3"
-            >
-              <option value="course">Kurs ver</option>
-              <option value="test">Test ver</option>
-            </select>
+          <div className="col-span-2 rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm font-bold text-gray-700">
+            {assignmentType === 'course' ? 'Kurs ver' : 'Test ver'} bölməsindəsiniz.
           </div>
           <div className="col-span-2 space-y-1.5">
             <label className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500 italic sm:text-xs">
