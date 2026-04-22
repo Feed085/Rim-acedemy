@@ -164,7 +164,7 @@ export default function TeacherTestEdit() {
       const data = await res.json();
       if (data.success) {
         toast.success('Test silindi');
-        navigate(-1);
+        navigate('/teacher/tests', { replace: true });
       } else {
         toast.error('Xəta: ' + data.message);
       }
@@ -264,6 +264,7 @@ export default function TeacherTestEdit() {
               variant="ghost"
               onClick={() => navigate(-1)}
               className="mb-2 p-0 h-auto hover:bg-transparent text-gray-500 hover:text-gray-900 group"
+              type="button"
             >
               <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
               Geri qayıt
@@ -277,6 +278,7 @@ export default function TeacherTestEdit() {
                 variant="outline" 
                 className="rounded-xl border-gray-200" 
                 onClick={() => navigate(-1)}
+              type="button"
             >
               Ləğv et
             </Button>
@@ -284,6 +286,7 @@ export default function TeacherTestEdit() {
                 variant="outline"
                 className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                 onClick={handleDelete}
+              type="button"
                 disabled={isSaving}
             >
               <Trash2 className="w-4 h-4 mr-2" />
@@ -292,6 +295,7 @@ export default function TeacherTestEdit() {
             <Button 
                 className="bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl px-8 font-bold shadow-lg shadow-[#00D084]/20" 
                 onClick={handleSave}
+              type="button"
                 disabled={isSaving}
             >
               {isSaving ? 'Yadda saxlanılır...' : (
@@ -339,6 +343,7 @@ export default function TeacherTestEdit() {
           {test.questions.map((question: any, qIdx: number) => (
             <div key={question.id} className="bg-white rounded-3xl p-6 lg:p-8 shadow-sm border border-gray-100 relative group">
               <button 
+                type="button"
                 onClick={() => removeQuestion(question.id)}
                 className="absolute top-6 right-6 p-2 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
               >
@@ -412,16 +417,16 @@ export default function TeacherTestEdit() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                     <div className="relative aspect-video max-w-lg rounded-2xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 group cursor-pointer hover:border-[#00D084]/50 transition-colors">
+                     <div className="relative max-w-2xl rounded-2xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 group cursor-pointer hover:border-[#00D084]/50 transition-colors">
                         {question.content ? (
                           <>
-                            <img src={question.content} alt="Sual" className="w-full h-full object-cover" />
+                            <img src={question.content} alt="Sual" className="block w-full h-auto max-h-[520px] object-contain" />
                             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                <p className="text-white text-xs font-bold">Şəkli dəyişmək üçün klikləyin</p>
                             </div>
                           </>
                         ) : (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                          <div className="flex min-h-[260px] flex-col items-center justify-center p-8 text-gray-400">
                              <ImageIcon className="w-10 h-10 mb-2 opacity-20" />
                              <p className="text-sm font-bold">Sualın şəklini yükləyin</p>
                           </div>
@@ -434,8 +439,14 @@ export default function TeacherTestEdit() {
                              const file = e.target.files?.[0];
                              if (file) {
                                 const fakeUrl = URL.createObjectURL(file);
-                                updateQuestionField(question.id, 'content', fakeUrl);
-                                updateQuestionField(question.id, 'imageFile', file as any);
+                                setTest({
+                                  ...test,
+                                  questions: test.questions.map((q: any) => (
+                                    q.id === question.id
+                                      ? { ...q, content: fakeUrl, imageFile: file }
+                                      : q
+                                  ))
+                                });
                              }
                           }}
                         />
@@ -448,7 +459,8 @@ export default function TeacherTestEdit() {
                       <div className="flex items-center justify-between mb-2">
                         <label className="text-sm font-bold text-gray-700 uppercase tracking-widest text-[10px]">Variantlar</label>
                         <div className="flex items-center gap-2">
-                          <button 
+                            <button 
+                            type="button"
                             onClick={() => {
                               if (question.options.length > 2) {
                                 const newOptions = [...question.options];
@@ -466,7 +478,8 @@ export default function TeacherTestEdit() {
                             <MinusCircle className="w-5 h-5" />
                           </button>
                           <span className="text-xs font-black">{question.options.length}</span>
-                          <button 
+                            <button 
+                            type="button"
                             onClick={() => {
                               if (question.options.length < 6) {
                                 const newOptions = [...question.options, ``];
@@ -547,6 +560,7 @@ export default function TeacherTestEdit() {
         {/* Floating Actions */}
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 bg-white/80 backdrop-blur-md p-2 rounded-2xl shadow-2xl border border-white/50 flex gap-4">
              <Button 
+            type="button"
                 onClick={addQuestion}
                 className="bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-100 rounded-xl px-8 h-12 font-bold"
             >
@@ -554,6 +568,7 @@ export default function TeacherTestEdit() {
               Sual Əlavə Et
             </Button>
             <Button 
+              type="button"
                 onClick={handleSave}
                 disabled={isSaving}
                 className="bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl px-8 h-12 font-bold shadow-lg shadow-[#00D084]/20" 

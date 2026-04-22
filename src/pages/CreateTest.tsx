@@ -460,16 +460,16 @@ export default function CreateTest() {
                     />
                   ) : (
                     <div className="space-y-4">
-                       <div className="relative aspect-video max-w-lg rounded-2xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 group cursor-pointer hover:border-[#00D084]/50 transition-colors">
+                       <div className="relative max-w-2xl rounded-2xl overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 group cursor-pointer hover:border-[#00D084]/50 transition-colors">
                           {question.content && question.content.startsWith('blob:') ? (
                             <>
-                              <img src={question.content} alt="Sual" className="w-full h-full object-cover" />
+                                <img src={question.content} alt="Sual" className="block w-full h-auto max-h-[520px] object-contain" />
                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                  <p className="text-white text-xs font-bold">Şəkli dəyişmək üçün klikləyin</p>
                               </div>
                             </>
                           ) : (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                              <div className="flex min-h-[260px] flex-col items-center justify-center p-8 text-gray-400">
                                <ImageIcon className="w-10 h-10 mb-2 opacity-20" />
                                <p className="text-sm font-bold">Sualın şəklini yükləyin</p>
                             </div>
@@ -496,7 +496,7 @@ export default function CreateTest() {
                        <div className="flex items-center justify-between">
                           <label className="text-sm font-bold text-gray-700">Variantlar</label>
                           <div className="flex items-center gap-2">
-                             <button 
+                              <button 
                               type="button"
                               onClick={() => {
                                  if (question.options.length > 2) {
@@ -510,7 +510,7 @@ export default function CreateTest() {
                                 <MinusCircle className="w-5 h-5" />
                              </button>
                              <span className="text-xs font-black w-4 text-center">{question.options.length}</span>
-                             <button 
+                              <button 
                               type="button"
                               onClick={() => {
                                  if (question.options.length < 6) {
