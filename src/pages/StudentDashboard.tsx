@@ -79,7 +79,7 @@ export default function StudentDashboard() {
 
   const stats = [
     { label: 'Aktiv Kurslar', value: apiStats.activeCoursesCount.toString(), icon: BookOpen, color: '#00D084', onClick: scrollToCourses },
-    { label: 'Mənim Testlərim', value: apiStats.assignedTestsCount.toString(), icon: FileText, color: '#0082F3', onClick: scrollToTests },
+    { label: 'Mənim Testlərim', value: visibleAssignedTests.length.toString(), icon: FileText, color: '#0082F3', onClick: scrollToTests },
     { label: 'Tamamlanan Testlər', value: apiStats.completedTestsCount.toString(), icon: FileText, color: '#0082F3', onClick: () => navigate('/dashboard/completed-tests') },
     { label: 'Sertifikatlar', value: apiStats.certificatesCount.toString(), icon: Award, color: '#F59E0B', onClick: () => navigate('/dashboard/certificates') },
   ];
@@ -99,14 +99,22 @@ export default function StudentDashboard() {
     ));
   }, [courseSearch, myCourses]);
 
+  const visibleAssignedTests = useMemo(() => {
+    return assignedTests.filter((test) => {
+      const hasAttempted = Boolean(test.hasAttempted || (test.attemptCount || 0) > 0);
+      const canRetake = Boolean(test.allowRetake);
+      return !hasAttempted || canRetake;
+    });
+  }, [assignedTests]);
+
   const filteredTests = useMemo(() => {
     const query = testSearch.trim().toLowerCase();
 
     if (!query) {
-      return assignedTests;
+      return visibleAssignedTests;
     }
 
-    return assignedTests.filter((test) => (
+    return visibleAssignedTests.filter((test) => (
       [
         test.title,
         test.course?.title || '',
@@ -117,7 +125,7 @@ export default function StudentDashboard() {
         .toLowerCase()
         .includes(query)
     ));
-  }, [assignedTests, testSearch]);
+  }, [visibleAssignedTests, testSearch]);
 
   return (
     <div className="min-h-screen bg-[#F3F3F3] pt-20 lg:pt-24">

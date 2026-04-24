@@ -95,6 +95,12 @@ const getAttemptLabel = (attemptNumber: number) => {
   return `${attemptNumber}-ci cəhd`;
 };
 
+const getAttemptScopeKey = (result: any) => {
+  const testId = resolveEntityId(result?.test?._id || result?.test || '');
+  const studentId = resolveEntityId(result?.student?._id || result?.student || '');
+  return `${testId}:${studentId}`;
+};
+
 export default function TeacherTestResults() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -153,10 +159,9 @@ export default function TeacherTestResults() {
     .slice()
     .sort((left, right) => getResultTimeValue(left) - getResultTimeValue(right))
     .reduce<Array<any>>((accumulator, result) => {
-      const studentId = result.student?._id || result.student?.id || result.student?.email || result.student?.name;
+      const attemptScopeKey = getAttemptScopeKey(result);
       const previousAttempts = accumulator.filter((item) => {
-        const itemStudentId = item.student?._id || item.student?.id || item.student?.email || item.student?.name;
-        return itemStudentId === studentId;
+        return getAttemptScopeKey(item) === attemptScopeKey;
       }).length;
 
       accumulator.push({
