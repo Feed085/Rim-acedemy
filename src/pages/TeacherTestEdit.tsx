@@ -27,7 +27,7 @@ interface Question {
   content: string;
   imageFile?: File;
   answerType: 'multiple_choice' | 'open_ended';
-  openEndedAnswerType?: 'text' | 'number';
+  openEndedAnswerType?: 'text' | 'number' | 'selective';
   openEndedNumericAnswer?: string;
   options: string[];
   correctAnswer: number;
@@ -99,8 +99,8 @@ export default function TeacherTestEdit() {
       for (const q of test.questions) {
         let finalContent = q.content;
 
-        if (q.answerType === 'open_ended' && q.openEndedAnswerType === 'number' && !q.openEndedNumericAnswer?.trim()) {
-          toast.error('Rəqəm cavabı üçün dəyər daxil edin');
+        if (q.answerType === 'open_ended' && q.openEndedAnswerType !== 'text' && !q.openEndedNumericAnswer?.trim()) {
+          toast.error(q.openEndedAnswerType === 'selective' ? 'Seçməli sual üçün dəyər daxil edin' : 'Rəqəm cavabı üçün dəyər daxil edin');
           setIsSaving(false);
           return;
         }
@@ -129,7 +129,7 @@ export default function TeacherTestEdit() {
           options: q.answerType === 'multiple_choice' ? q.options : [],
           correctAnswer: q.answerType === 'multiple_choice'
             ? String(q.correctAnswer ?? 0)
-            : q.answerType === 'open_ended' && q.openEndedAnswerType === 'number'
+            : q.answerType === 'open_ended' && q.openEndedAnswerType !== 'text'
             ? q.openEndedNumericAnswer.trim()
             : q.correctAnswer
         });
@@ -553,15 +553,41 @@ export default function TeacherTestEdit() {
                     </div>
                 ) : (
                     <div className="space-y-4 rounded-2xl border border-blue-100 bg-blue-50/50 p-4 text-sm font-medium">
-                        <label className="flex cursor-pointer items-center gap-3">
-                          <Checkbox
-                            checked={question.openEndedAnswerType === 'number'}
-                            onCheckedChange={(checked) => updateQuestionField(question.id, 'openEndedAnswerType', checked === true ? 'number' : 'text')}
-                            className="border-blue-300 data-[state=checked]:border-[#00D084] data-[state=checked]:bg-[#00D084]"
-                          />
-                          <span className="font-bold text-blue-700">Cavabı yalnız rəqəm olan sual</span>
-                        </label>
-                        <p className="text-blue-700/80">Ondalık cavablar da qəbul edilir.</p>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => updateQuestionField(question.id, 'openEndedAnswerType', 'text')}
+                            className={`rounded-full px-4 py-2 text-xs font-bold transition-all ${
+                              question.openEndedAnswerType === 'text'
+                                ? 'bg-white text-blue-700 shadow-sm'
+                                : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                            }`}
+                          >
+                            Açıq sual
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateQuestionField(question.id, 'openEndedAnswerType', 'number')}
+                            className={`rounded-full px-4 py-2 text-xs font-bold transition-all ${
+                              question.openEndedAnswerType === 'number'
+                                ? 'bg-white text-blue-700 shadow-sm'
+                                : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                            }`}
+                          >
+                            Cavabı yalnız rəqəm olan sual
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => updateQuestionField(question.id, 'openEndedAnswerType', 'selective')}
+                            className={`rounded-full px-4 py-2 text-xs font-bold transition-all ${
+                              question.openEndedAnswerType === 'selective'
+                                ? 'bg-white text-blue-700 shadow-sm'
+                                : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                            }`}
+                          >
+                            Seçməli sual
+                          </button>
+                        </div>
                         {question.openEndedAnswerType === 'number' && (
                           <div className="relative max-w-sm">
                             <Input
@@ -574,6 +600,22 @@ export default function TeacherTestEdit() {
                               className="rounded-xl h-12 border-blue-200 focus:border-[#00D084] font-medium"
                             />
                           </div>
+                        )}
+                        {question.openEndedAnswerType === 'selective' && (
+                          <>
+                            <p className="text-sm font-medium text-blue-700/80">Seçməli sualları , . ilə yox 123 kimi yazın.</p>
+                            <div className="relative max-w-sm">
+                              <Input
+                                type="number"
+                                step="1"
+                                inputMode="numeric"
+                                value={question.openEndedNumericAnswer || ''}
+                                onChange={(e) => updateQuestionField(question.id, 'openEndedNumericAnswer', e.target.value)}
+                                placeholder="Məs: 123"
+                                className="rounded-xl h-12 border-blue-200 focus:border-[#00D084] font-medium"
+                              />
+                            </div>
+                          </>
                         )}
                     </div>
                 )}

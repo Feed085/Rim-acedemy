@@ -160,7 +160,7 @@ export default function TestDetail() {
       return false;
     }
 
-    if (question.openEndedAnswerType === 'number') {
+    if (question.openEndedAnswerType === 'number' || question.openEndedAnswerType === 'selective') {
       return true;
     }
 
@@ -172,6 +172,18 @@ export default function TestDetail() {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getOpenEndedQuestionLabel = (question: any) => {
+    if (question.openEndedAnswerType === 'selective') {
+      return 'Sizin Cavabınız (Seçmeli)';
+    }
+
+    if (isNumericOpenEndedQuestion(question)) {
+      return 'Sizin Cavabınız (Rəqəm)';
+    }
+
+    return 'Sizin Cavabınız (Açıq sual)';
   };
 
   // Start Screen
@@ -416,15 +428,15 @@ export default function TestDetail() {
              ) : (
                 <div className="pt-4">
                  <label className="text-sm font-bold text-gray-700 mb-2 block">
-                     {isNumericOpenEndedQuestion(question) ? 'Sizin Cavabınız (Rəqəm)' : 'Sizin Cavabınız (Açıq sual)'}
+                     {getOpenEndedQuestionLabel(question)}
                  </label>
                    {isNumericOpenEndedQuestion(question) ? (
                    <Input
                      type="number"
-                     step="any"
-                     inputMode="decimal"
+                     step={question.openEndedAnswerType === 'selective' ? '1' : 'any'}
+                     inputMode={question.openEndedAnswerType === 'selective' ? 'numeric' : 'decimal'}
                      className="w-full rounded-2xl border-gray-200 p-4 focus:border-[#00D084] focus:ring-[#00D084]"
-                     placeholder="Məs: 3.5"
+                     placeholder={question.openEndedAnswerType === 'selective' ? 'Məs: 123' : 'Məs: 3.5'}
                      value={selectedAnswers[question._id] || ''}
                      onChange={(e) => handleSelectAnswer(question._id, e.target.value)}
                    />
@@ -436,6 +448,9 @@ export default function TestDetail() {
                      value={selectedAnswers[question._id] || ''}
                      onChange={(e) => handleSelectAnswer(question._id, e.target.value)}
                    ></textarea>
+                 )}
+                 {question.openEndedAnswerType === 'selective' && (
+                   <p className="mt-2 text-xs font-medium text-blue-700">Seçməli sualları , . ilə yox 123 kimi yazın.</p>
                  )}
                 </div>
              )}

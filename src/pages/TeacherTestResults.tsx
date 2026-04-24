@@ -206,7 +206,7 @@ export default function TeacherTestResults() {
       return false;
     }
 
-    if (question.openEndedAnswerType === 'number') {
+    if (question.openEndedAnswerType === 'number' || question.openEndedAnswerType === 'selective') {
       return true;
     }
 
