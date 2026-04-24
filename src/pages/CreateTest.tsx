@@ -178,7 +178,7 @@ export default function CreateTest() {
           answerType: q.answerType,
           openEndedAnswerType: q.answerType === 'open_ended' ? (q.openEndedAnswerType || 'text') : 'text',
           options: q.answerType === 'multiple_choice' ? q.options : [],
-          correctAnswer: q.answerType === 'multiple_choice' ? q.options[q.correctAnswer] || String.fromCharCode(65 + q.correctAnswer) : (q.openEndedAnswerType === 'number' ? q.openEndedNumericAnswer?.trim() || '' : '')
+          correctAnswer: q.answerType === 'multiple_choice' ? String(q.correctAnswer ?? 0) : (q.openEndedAnswerType === 'number' ? q.openEndedNumericAnswer?.trim() || '' : '')
         });
       }
 

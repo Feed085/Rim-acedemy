@@ -21,6 +21,27 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from 'sonner';
 
+const normalizeMultipleChoiceAnswerIndex = (value: unknown) => {
+  const parsedValue = Number(String(value).trim());
+  return Number.isInteger(parsedValue) && parsedValue >= 0 ? parsedValue : null;
+};
+
+const getMultipleChoiceCorrectAnswerIndex = (question: any) => {
+  const storedIndex = normalizeMultipleChoiceAnswerIndex(question?.correctAnswer);
+  if (storedIndex !== null) {
+    return storedIndex;
+  }
+
+  if (Array.isArray(question?.options)) {
+    const fallbackIndex = question.options.findIndex((option: string) => option === question?.correctAnswer);
+    if (fallbackIndex >= 0) {
+      return fallbackIndex;
+    }
+  }
+
+  return null;
+};
+
 export default function TeacherTestResults() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -350,8 +371,10 @@ export default function TeacherTestResults() {
                            ) : (
                               <div className="grid gap-2 ml-7 mt-2">
                                 {q.options.map((option: string, optIdx: number) => {
-                                   const isSelected = studentAnsObj.answer === option;
-                                   const isActualCorrect = q.correctAnswer === option;
+                                   const selectedAnswerIndex = normalizeMultipleChoiceAnswerIndex(studentAnsObj.answer);
+                                   const isSelected = selectedAnswerIndex !== null ? selectedAnswerIndex === optIdx : studentAnsObj.answer === option;
+                                   const correctAnswerIndex = getMultipleChoiceCorrectAnswerIndex(q);
+                                   const isActualCorrect = correctAnswerIndex !== null ? correctAnswerIndex === optIdx : q.correctAnswer === option;
    
                                    return (
                                      <div 

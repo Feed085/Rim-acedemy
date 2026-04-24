@@ -15,6 +15,38 @@ import {
 import { toast } from 'sonner';
 import { API_BASE_URL } from '@/services/publicApi';
 
+const normalizeMultipleChoiceAnswerIndex = (value: unknown) => {
+  const parsedValue = Number(String(value).trim());
+  return Number.isInteger(parsedValue) && parsedValue >= 0 ? parsedValue : null;
+};
+
+const getMultipleChoiceCorrectAnswerIndex = (question: any) => {
+  const storedIndex = normalizeMultipleChoiceAnswerIndex(question?.correctAnswer);
+  if (storedIndex !== null) {
+    return storedIndex;
+  }
+
+  if (Array.isArray(question?.options)) {
+    const fallbackIndex = question.options.findIndex((option: string) => option === question?.correctAnswer);
+    if (fallbackIndex >= 0) {
+      return fallbackIndex;
+    }
+  }
+
+  return null;
+};
+
+const formatMultipleChoiceAnswer = (question: any, answer: string) => {
+  const answerIndex = normalizeMultipleChoiceAnswerIndex(answer);
+  if (answerIndex === null) {
+    return answer || 'Cavab verilməyib';
+  }
+
+  const optionText = question?.options?.[answerIndex] ?? '';
+  const optionLabel = String.fromCharCode(65 + answerIndex);
+  return optionText ? `${optionLabel}: ${optionText}` : optionLabel;
+};
+
 export default function TestDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -24,7 +56,7 @@ export default function TestDetail() {
   const [isFinished, setIsFinished] = useState(false);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   
-  // selectedAnswers => { "questionId": "verilen cavab (string)" }
+  // selectedAnswers => { "questionId": "qapalı testdə seçilən indeks" və ya açıq cavab mətnı }
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [timeLeft, setTimeLeft] = useState(0);
   
@@ -116,7 +148,6 @@ export default function TestDetail() {
     }
   };
 
-  // selectAnswer qapalı test və açıq test üçün eyni cür string alır, "Məsələn şıq, və ya açıq yazılan söz"
   const handleSelectAnswer = (qId: string, answerValue: string) => {
     setSelectedAnswers(prev => ({
       ...prev,
@@ -285,14 +316,14 @@ export default function TestDetail() {
                               <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
                               <div>
                                 <span className="font-medium block text-xs uppercase tracking-wider mb-0.5">Sizin cavabınız</span>
-                                <span>{a.answer || 'Cavab verilməyib'}</span>
+                                <span>{q.answerType === 'multiple_choice' ? formatMultipleChoiceAnswer(q, a.answer) : (a.answer || 'Cavab verilməyib')}</span>
                               </div>
                             </div>
                             <div className="flex-1 flex items-start gap-2 text-[#00D084] bg-[#00D084]/10 px-3 py-2 rounded-lg">
                               <CheckCircle className="w-4 h-4 shrink-0 mt-0.5" />
                               <div>
                                 <span className="font-medium block text-xs uppercase tracking-wider mb-0.5">Düzgün cavab</span>
-                                <span>{q.correctAnswer || 'Ekspertiza tələb olunur'}</span>
+                                <span>{q.answerType === 'multiple_choice' ? formatMultipleChoiceAnswer(q, String(getMultipleChoiceCorrectAnswerIndex(q) ?? '')) : (q.correctAnswer || 'Ekspertiza tələb olunur')}</span>
                               </div>
                             </div>
                           </div>
@@ -359,22 +390,20 @@ export default function TestDetail() {
           <div className="space-y-3">
              {question.answerType === 'multiple_choice' ? (
                 question.options.map((option: string, index: number) => {
-                   // Əgər option mətni varsa onu, yoxsa "A" kimi hərf stringini yoxlayaq
-                   const answerVal = option; 
-                   return (
+                     return (
                      <button
                        key={index}
-                       onClick={() => handleSelectAnswer(question._id, answerVal)}
+                       onClick={() => handleSelectAnswer(question._id, String(index))}
                        className={`w-full p-4 rounded-xl text-left transition-all ${
-                         selectedAnswers[question._id] === answerVal
-                           ? 'bg-[#00D084] text-white'
-                           : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                         selectedAnswers[question._id] === String(index)
+                           ? 'bg-[#0082F3] text-white'
+                           : 'bg-gray-50 text-gray-700 border border-transparent hover:bg-gray-50 hover:border-[#0082F3]'
                        }`}
                      >
                        <div className="flex items-center gap-3">
                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold ${
-                           selectedAnswers[question._id] === answerVal
-                             ? 'bg-white text-[#00D084]'
+                           selectedAnswers[question._id] === String(index)
+                             ? 'bg-white text-[#0082F3]'
                              : 'bg-white text-gray-500'
                          }`}>
                            {String.fromCharCode(65 + index)}
@@ -432,9 +461,9 @@ export default function TestDetail() {
                 onClick={() => setCurrentQuestion(idx)}
                 className={`w-8 h-8 shrink-0 rounded-lg text-sm font-medium transition-all ${
                   idx === currentQuestion
-                    ? 'bg-[#00D084] text-white'
+                    ? 'bg-[#0082F3] text-white'
                     : selectedAnswers[q._id] 
-                    ? 'bg-[#00D084]/20 text-[#00D084]'
+                    ? 'bg-[#0082F3]/20 text-[#0082F3]'
                     : 'bg-gray-200 text-gray-500'
                 }`}
               >

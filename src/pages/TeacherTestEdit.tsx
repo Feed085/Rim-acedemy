@@ -30,8 +30,24 @@ interface Question {
   openEndedAnswerType?: 'text' | 'number';
   openEndedNumericAnswer?: string;
   options: string[];
-  correctAnswer: string;
+  correctAnswer: number;
 }
+
+const getMultipleChoiceCorrectAnswerIndex = (question: any) => {
+  const storedIndex = Number(String(question?.correctAnswer ?? '').trim());
+  if (Number.isInteger(storedIndex) && storedIndex >= 0) {
+    return storedIndex;
+  }
+
+  if (Array.isArray(question?.options)) {
+    const fallbackIndex = question.options.findIndex((option: string) => option === question?.correctAnswer);
+    if (fallbackIndex >= 0) {
+      return fallbackIndex;
+    }
+  }
+
+  return 0;
+};
 
 export default function TeacherTestEdit() {
   const { id } = useParams();
@@ -54,6 +70,7 @@ export default function TeacherTestEdit() {
           const normalizedQuestions = data.data.questions.map((q: any) => ({
             ...q,
             id: q._id, // use MongoDB ID as UI ID
+            correctAnswer: q.answerType === 'multiple_choice' ? getMultipleChoiceCorrectAnswerIndex(q) : q.correctAnswer,
             openEndedAnswerType: q.openEndedAnswerType || (q.answerType === 'open_ended' && q.correctAnswer ? 'number' : 'text'),
             openEndedNumericAnswer: q.answerType === 'open_ended' ? (q.correctAnswer || '') : '',
           }));
@@ -110,7 +127,9 @@ export default function TeacherTestEdit() {
           answerType: q.answerType,
           openEndedAnswerType: q.answerType === 'open_ended' ? (q.openEndedAnswerType || 'text') : 'text',
           options: q.answerType === 'multiple_choice' ? q.options : [],
-          correctAnswer: q.answerType === 'open_ended' && q.openEndedAnswerType === 'number'
+          correctAnswer: q.answerType === 'multiple_choice'
+            ? String(q.correctAnswer ?? 0)
+            : q.answerType === 'open_ended' && q.openEndedAnswerType === 'number'
             ? q.openEndedNumericAnswer.trim()
             : q.correctAnswer
         });
@@ -184,7 +203,7 @@ export default function TeacherTestEdit() {
       openEndedAnswerType: 'text',
       openEndedNumericAnswer: '',
       options: ['Variant A', 'Variant B', 'Variant C', 'Variant D'],
-      correctAnswer: 'Variant A'
+      correctAnswer: 0
     };
     setTest({
       ...test,
@@ -218,16 +237,9 @@ export default function TeacherTestEdit() {
       questions: test.questions.map((q: any) => {
         if (q.id === id) {
           const newOptions = [...q.options];
-          const oldOptionValue = newOptions[optIndex];
           newOptions[optIndex] = value;
-          
-          // If the changed option was the correct answer, update it
-          let newCorrect = q.correctAnswer;
-          if (q.correctAnswer === oldOptionValue) {
-             newCorrect = value;
-          }
 
-          return { ...q, options: newOptions, correctAnswer: newCorrect };
+          return { ...q, options: newOptions };
         }
         return q;
       })
@@ -468,7 +480,7 @@ export default function TeacherTestEdit() {
                                 setTest({
                                   ...test,
                                   questions: test.questions.map((q: any) => 
-                                    q.id === question.id ? { ...q, options: newOptions } : q
+                                    q.id === question.id ? { ...q, options: newOptions, correctAnswer: Math.min(q.correctAnswer, newOptions.length - 1) } : q
                                   )
                                 });
                               }
@@ -500,7 +512,7 @@ export default function TeacherTestEdit() {
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {question.options.map((option: string, optIndex: number) => {
-                          const isCorrect = question.correctAnswer === option;
+                          const isCorrect = question.correctAnswer === optIndex;
                           return (
                             <div key={optIndex} className={`relative flex items-center p-3 rounded-2xl border-2 transition-all ${
                                 isCorrect 
@@ -508,7 +520,7 @@ export default function TeacherTestEdit() {
                                 : 'border-gray-50 hover:border-gray-100'
                             }`}>
                                 <button
-                                    onClick={() => updateQuestionField(question.id, 'correctAnswer', option)}
+                              onClick={() => updateQuestionField(question.id, 'correctAnswer', optIndex)}
                                     className={`mr-3 transition-colors ${
                                         isCorrect ? 'text-[#00D084]' : 'text-gray-300'
                                     }`}
