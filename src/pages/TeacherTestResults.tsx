@@ -26,6 +26,33 @@ const normalizeMultipleChoiceAnswerIndex = (value: unknown) => {
   return Number.isInteger(parsedValue) && parsedValue >= 0 ? parsedValue : null;
 };
 
+const resolveEntityId = (value: unknown) => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+
+  if (typeof value === 'object') {
+    const objectValue = value as { _id?: unknown; id?: unknown; toString?: () => string };
+    if (objectValue._id !== undefined && objectValue._id !== null) {
+      return resolveEntityId(objectValue._id);
+    }
+
+    if (objectValue.id !== undefined && objectValue.id !== null) {
+      return resolveEntityId(objectValue.id);
+    }
+
+    if (typeof objectValue.toString === 'function') {
+      return objectValue.toString();
+    }
+  }
+
+  return String(value);
+};
+
 const getMultipleChoiceCorrectAnswerIndex = (question: any) => {
   const storedIndex = normalizeMultipleChoiceAnswerIndex(question?.correctAnswer);
   if (storedIndex !== null) {
@@ -309,7 +336,7 @@ export default function TeacherTestResults() {
           
           {selectedResult && (
             <div className="py-4 space-y-6">
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <div className="bg-gray-50 rounded-2xl p-4 text-center">
                   <div className="text-2xl font-black text-[#00D084]">{selectedResult.answers.filter((a:any)=>a.isCorrect).length}</div>
                   <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Doğru</div>
@@ -322,6 +349,10 @@ export default function TeacherTestResults() {
                   <div className="text-2xl font-black text-yellow-500">{selectedResult.answers.filter((a:any)=>a.status === 'pending').length}</div>
                   <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Gözləyən</div>
                 </div>
+                <div className="bg-gray-50 rounded-2xl p-4 text-center">
+                  <div className="text-2xl font-black text-gray-600">{Math.max((test.questions || []).length - selectedResult.answers.length, 0)}</div>
+                  <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Boş</div>
+                </div>
               </div>
 
               <div className="space-y-4">
@@ -330,17 +361,25 @@ export default function TeacherTestResults() {
                 </h3>
                 <div className="space-y-3">
                   {test.questions.map((q: any, idx: number) => {
-                    const studentAnsObj = selectedResult.answers.find((a:any) => a.questionId === q._id);
-                    
-                    if (!studentAnsObj) return null;
-
-                    const isPending = studentAnsObj.status === 'pending';
-                    const isCorrect = studentAnsObj.isCorrect;
+                    const studentAnsObj = selectedResult.answers.find((a:any) => resolveEntityId(a.questionId) === resolveEntityId(q._id));
+                    const hasAnswer = Boolean(studentAnsObj);
+                    const isPending = studentAnsObj?.status === 'pending';
+                    const isCorrect = Boolean(studentAnsObj?.isCorrect);
+                    const selectedAnswerIndex = normalizeMultipleChoiceAnswerIndex(studentAnsObj?.answer);
+                    const correctAnswerIndex = getMultipleChoiceCorrectAnswerIndex(q);
+                    const answerStateLabel = !hasAnswer
+                      ? 'Cavab verilməyib'
+                      : isPending
+                        ? 'Yoxlama gözləyir'
+                        : isCorrect
+                          ? 'Doğru'
+                          : 'Yanlış';
                     
                     return (
                       <div key={q._id} className={cn(
                         "p-4 rounded-2xl border transition-all",
-                        isPending ? "bg-yellow-50/50 border-yellow-200" 
+                        !hasAnswer ? "bg-gray-50/80 border-gray-200"
+                                  : isPending ? "bg-yellow-50/50 border-yellow-200" 
                                   : isCorrect ? "bg-green-50/50 border-green-100" : "bg-red-50/50 border-red-100"
                       )}>
                         <div className="flex flex-col mb-3">
@@ -353,6 +392,14 @@ export default function TeacherTestResults() {
                                    </div>
                                 ) : q.content}
                              </div>
+                             <span className={cn(
+                               "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em]",
+                               !hasAnswer ? "bg-gray-100 text-gray-500"
+                                 : isPending ? "bg-yellow-100 text-yellow-700"
+                                 : isCorrect ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                             )}>
+                               {answerStateLabel}
+                             </span>
                            </div>
                            
                            {/* Məntiqi cavab növünə görə Rendering */}
@@ -360,15 +407,19 @@ export default function TeacherTestResults() {
                               <div className="ml-7 mt-3">
                                  <div className="bg-white p-3 rounded-lg border border-gray-100 text-sm mb-3">
                                     <span className="text-xs text-gray-400 block mb-1 uppercase font-bold">Tələbənin Cavabı:</span>
-                                    {studentAnsObj.answer}
+                                    {studentAnsObj?.answer || 'Cavab verilməyib'}
                                  </div>
                                  <div className="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-                                {isNumericOpenEndedQuestion(q) ? (
-                                  <span className={isCorrect ? "text-sm font-bold text-green-600 flex items-center gap-1" : "text-sm font-bold text-red-600 flex items-center gap-1"}>
-                                    {isCorrect ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                                    {isCorrect ? 'Avtomatik doğru' : 'Avtomatik yanlış'}
-                                  </span>
-                                ) : isPending ? (
+                                    {!hasAnswer ? (
+                                      <span className="text-sm font-bold text-gray-500 flex items-center gap-1">
+                                        <Clock className="w-4 h-4"/> Cavab verilməyib
+                                      </span>
+                                    ) : isNumericOpenEndedQuestion(q) ? (
+                                      <span className={isCorrect ? "text-sm font-bold text-green-600 flex items-center gap-1" : "text-sm font-bold text-red-600 flex items-center gap-1"}>
+                                        {isCorrect ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                                        {isCorrect ? 'Avtomatik doğru' : 'Avtomatik yanlış'}
+                                      </span>
+                                    ) : isPending ? (
                                        <span className="text-sm font-bold text-yellow-600 flex items-center gap-1">
                                           <Clock className="w-4 h-4"/> Yoxlama Gözləyir
                                        </span>
@@ -378,7 +429,7 @@ export default function TeacherTestResults() {
                                           {isCorrect ? 'Doğru Qiymətləndirildi' : 'Yanlış Qiymətləndirildi'}
                                        </span>
                                     )}
-                                    {!isNumericOpenEndedQuestion(q) && (
+                                    {!isNumericOpenEndedQuestion(q) && hasAnswer && !isPending && (
                                   <div className="flex gap-2">
                                     <Button 
                                       title="Doğru Qəbul Et"
@@ -404,10 +455,18 @@ export default function TeacherTestResults() {
                               </div>
                            ) : (
                               <div className="grid gap-2 ml-7 mt-2">
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                  <div className="rounded-lg border border-gray-100 bg-white p-3 text-sm">
+                                    <span className="mb-1 block text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Seçilən şık</span>
+                                    <span className="font-medium text-gray-900">{hasAnswer ? formatMultipleChoiceAnswer(q, studentAnsObj?.answer || '') : 'Cavab verilməyib'}</span>
+                                  </div>
+                                  <div className="rounded-lg border border-gray-100 bg-white p-3 text-sm">
+                                    <span className="mb-1 block text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Düzgün şık</span>
+                                    <span className="font-medium text-gray-900">{correctAnswerIndex !== null ? formatMultipleChoiceAnswer(q, String(correctAnswerIndex)) : 'Təyin edilməyib'}</span>
+                                  </div>
+                                </div>
                                 {q.options.map((option: string, optIdx: number) => {
-                                   const selectedAnswerIndex = normalizeMultipleChoiceAnswerIndex(studentAnsObj.answer);
-                                   const isSelected = selectedAnswerIndex !== null ? selectedAnswerIndex === optIdx : studentAnsObj.answer === option;
-                                   const correctAnswerIndex = getMultipleChoiceCorrectAnswerIndex(q);
+                                   const isSelected = selectedAnswerIndex !== null ? selectedAnswerIndex === optIdx : studentAnsObj?.answer === option;
                                    const isActualCorrect = correctAnswerIndex !== null ? correctAnswerIndex === optIdx : q.correctAnswer === option;
    
                                    return (
@@ -433,12 +492,20 @@ export default function TeacherTestResults() {
                                          {String.fromCharCode(65 + optIdx)}
                                        </div>
                                        {option}
-                                       {isSelected && (
-                                         <span className="ml-auto text-[10px] font-black uppercase opacity-60">Cavab</span>
+                                       {isActualCorrect && (
+                                         <span className="ml-auto text-[10px] font-black uppercase opacity-70">Doğru</span>
+                                       )}
+                                       {!isActualCorrect && isSelected && (
+                                         <span className="ml-auto text-[10px] font-black uppercase opacity-60">Seçilib</span>
                                        )}
                                      </div>
                                    )
                                 })}
+                                {!hasAnswer && (
+                                  <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-3 text-sm text-gray-500">
+                                    Bu sual üçün cavab göndərilməyib.
+                                  </div>
+                                )}
                               </div>
                            )}
                         </div>

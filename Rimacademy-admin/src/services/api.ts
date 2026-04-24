@@ -73,12 +73,14 @@ export const adminApi = {
     method: 'DELETE'
   }),
   getStudents: () => requestJson('/admin/students'),
+  getStudentTestResults: (studentId: string) => requestJson(`/admin/students/${studentId}/test-results`),
   assignStudentItem: (studentId: string, payload: Record<string, unknown>) => requestJson(`/admin/students/${studentId}/assignments`, {
     method: 'POST',
     body: JSON.stringify(payload)
   }),
   getCourses: () => requestJson('/admin/courses'),
   getTests: () => requestJson('/admin/tests'),
+  getTestResults: (testId: string) => requestJson(`/admin/tests/${testId}/results`),
   getCategories: () => requestJson('/admin/categories'),
   createCategory: (payload: Record<string, unknown>) => requestJson('/admin/categories', {
     method: 'POST',
@@ -94,4 +96,5 @@ export type TeachersResponse = Awaited<ReturnType<typeof adminApi.getTeachers>>;
 export type StudentsResponse = Awaited<ReturnType<typeof adminApi.getStudents>>;
 export type CoursesResponse = Awaited<ReturnType<typeof adminApi.getCourses>>;
 export type TestsResponse = Awaited<ReturnType<typeof adminApi.getTests>>;
+export type TestResultsResponse = Awaited<ReturnType<typeof adminApi.getTestResults>>;
 export type CategoriesResponse = Awaited<ReturnType<typeof adminApi.getCategories>>;

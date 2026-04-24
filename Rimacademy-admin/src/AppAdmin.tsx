@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-dom';
 import * as Dialog from '@radix-ui/react-dialog';
 import {
@@ -35,6 +35,8 @@ type ModalProps = {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  contentClassName?: string;
+  bodyClassName?: string;
 };
 
 type DashboardCard = {
@@ -119,6 +121,22 @@ type StudentItem = {
   createdAt: string;
 };
 
+type StudentTestResultItem = {
+  id: string;
+  attemptNumber: number;
+  scorePercentage: number;
+  hasPendingAnswers: boolean;
+  completedAt: string;
+  createdAt?: string;
+  answers: Array<{
+    questionId: string;
+    answer: string;
+    isCorrect: boolean;
+    status: 'graded' | 'pending';
+  }>;
+  test: any;
+};
+
 type CourseItem = {
   id: string;
   title: string;
@@ -137,6 +155,40 @@ type TestItem = {
   instructorName: string;
   duration: number;
   questionCount: number;
+  createdAt?: string;
+};
+
+type AdminTestResultItem = {
+  id: string;
+  attemptNumber: number;
+  scorePercentage: number;
+  hasPendingAnswers: boolean;
+  completedAt: string;
+  createdAt?: string;
+  answers: Array<{
+    questionId: string;
+    answer: string;
+    isCorrect: boolean;
+    status: 'graded' | 'pending';
+  }>;
+  answersByQuestionId?: Record<string, {
+    questionId: string;
+    answer: string;
+    isCorrect: boolean;
+    status: 'graded' | 'pending';
+    displayAnswer?: string;
+    selectedDisplayAnswer?: string;
+    questionIndex?: number;
+  }>;
+  student: {
+    id: string;
+    name: string;
+    surname?: string;
+    email?: string;
+    phoneNumber?: string;
+    avatar?: string;
+    educationLevel?: string;
+  };
 };
 
 type AssignmentCourseResource = {
@@ -173,6 +225,7 @@ const ADMIN_LOGO_SRC = '/rim-academy-logo.jpeg';
 
 const adminMenuItems = [
   { icon: LayoutDashboard, label: 'Panel', path: '/' },
+  { icon: FileText, label: 'Testlər', path: '/tests' },
   { icon: Users, label: 'Müəllimlər', path: '/teachers' },
   { icon: GraduationCap, label: 'Tələbələr', path: '/students' },
   { icon: Grid, label: 'Kateqoriyalar', path: '/categories' }
@@ -180,6 +233,7 @@ const adminMenuItems = [
 
 const adminRouteTitles: Record<string, string> = {
   '/': 'Panel',
+  '/tests': 'Testlər',
   '/teachers': 'Müəllimlər',
   '/students': 'Tələbələr',
   '/categories': 'Kateqoriyalar'
@@ -209,19 +263,19 @@ const loadAdminSession = (): AdminSession | null => {
   }
 };
 
-const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
+const Modal = ({ isOpen, onClose, title, children, contentClassName, bodyClassName }: ModalProps) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-2 py-2 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="flex max-h-[calc(100vh-1rem)] w-full max-w-md flex-col overflow-hidden rounded-[20px] bg-white shadow-2xl animate-in zoom-in-95 duration-200 sm:max-h-[calc(100vh-2rem)] sm:rounded-[28px]">
+      <div className={`flex max-h-[calc(100vh-1rem)] w-full flex-col overflow-hidden rounded-[20px] bg-white shadow-2xl animate-in zoom-in-95 duration-200 sm:max-h-[calc(100vh-2rem)] sm:rounded-[28px] ${contentClassName || 'max-w-md'}`}>
         <div className="flex items-center justify-between border-b border-gray-50 bg-gray-50/30 p-3 sm:p-4 lg:p-6">
           <h3 className="text-base font-black text-gray-900 sm:text-lg lg:text-xl">{title}</h3>
           <button onClick={onClose} className="rounded-lg p-1.5 transition-colors hover:bg-white">
             <X className="h-5 w-5 text-gray-400" />
           </button>
         </div>
-        <div className="p-3 sm:p-4 lg:p-6">{children}</div>
+        <div className={`flex-1 ${bodyClassName || 'overflow-y-auto p-3 sm:p-4 lg:p-6'}`}>{children}</div>
       </div>
     </div>
   );
@@ -239,6 +293,120 @@ const formatDate = (value?: string) => {
     month: '2-digit',
     year: 'numeric'
   }).format(new Date(value));
+};
+
+const formatAttemptLabel = (attemptNumber: number) => {
+  if (attemptNumber === 1) return '1-ci cəhd';
+  if (attemptNumber === 2) return '2-ci cəhd';
+  if (attemptNumber === 3) return '3-cü cəhd';
+  return `${attemptNumber}-ci cəhd`;
+};
+
+const normalizeMultipleChoiceAnswerIndex = (value: unknown) => {
+  const parsedValue = Number(String(value).trim());
+  return Number.isInteger(parsedValue) && parsedValue >= 0 ? parsedValue : null;
+};
+
+const resolveEntityId = (value: unknown) => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value);
+  }
+
+  if (typeof value === 'object' && value !== null && typeof (value as { toHexString?: () => string }).toHexString === 'function') {
+    return (value as { toHexString: () => string }).toHexString();
+  }
+
+  if (typeof value === 'object') {
+    const objectValue = value as { _id?: unknown; id?: unknown; toString?: () => string };
+    if (objectValue._id !== undefined && objectValue._id !== null) {
+      if (objectValue._id === value) {
+        return String(value);
+      }
+
+      return resolveEntityId(objectValue._id);
+    }
+
+    if (objectValue.id !== undefined && objectValue.id !== null) {
+      if (objectValue.id === value) {
+        return String(value);
+      }
+
+      return resolveEntityId(objectValue.id);
+    }
+
+    if (typeof objectValue.toString === 'function') {
+      const stringValue = objectValue.toString();
+      if (stringValue !== '[object Object]') {
+        return stringValue;
+      }
+    }
+  }
+
+  return String(value);
+};
+
+const getQuestionLookupKey = (question: any, index: number) => {
+  return resolveEntityId(question?._id ?? question?.id ?? question?.questionId ?? index);
+};
+
+const getAnswerForQuestion = (result: AdminTestResultItem, question: any, index: number) => {
+  const questionLookupKey = getQuestionLookupKey(question, index);
+  const answerFromMap = result.answersByQuestionId?.[questionLookupKey];
+
+  if (answerFromMap) {
+    return answerFromMap;
+  }
+
+  const exactAnswer = result.answers.find((item) => resolveEntityId(item.questionId) === questionLookupKey);
+  if (exactAnswer) {
+    return exactAnswer;
+  }
+
+  return result.answers[index] || null;
+};
+
+const getMultipleChoiceCorrectAnswerIndex = (question: any) => {
+  const storedIndex = normalizeMultipleChoiceAnswerIndex(question?.correctAnswer);
+  if (storedIndex !== null) {
+    return storedIndex;
+  }
+
+  if (Array.isArray(question?.options)) {
+    const fallbackIndex = question.options.findIndex((option: string) => option === question?.correctAnswer);
+    if (fallbackIndex >= 0) {
+      return fallbackIndex;
+    }
+  }
+
+  return null;
+};
+
+const formatMultipleChoiceAnswer = (question: any, answer: string) => {
+  const answerIndex = normalizeMultipleChoiceAnswerIndex(answer);
+  if (answerIndex === null) {
+    return answer || 'Cavab verilməyib';
+  }
+
+  const optionText = question?.options?.[answerIndex] ?? '';
+  const optionLabel = String.fromCharCode(65 + answerIndex);
+  return optionText ? `${optionLabel}: ${optionText}` : optionLabel;
+};
+
+const isNumericOpenEndedQuestion = (question: any) => {
+  if (!question || question.answerType !== 'open_ended') {
+    return false;
+  }
+
+  if (question.openEndedAnswerType === 'number') {
+    return true;
+  }
+
+  const normalizedCorrectAnswer = Number(String(question.correctAnswer ?? '').replace(',', '.').trim());
+  return Number.isFinite(normalizedCorrectAnswer);
 };
 
 const resolveCategoryName = (categoryId: string, categories: CategoryItem[]) => {
@@ -988,12 +1156,535 @@ const Teachers = () => {
   );
 };
 
+const Tests = () => {
+  const [tests, setTests] = useState<TestItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [selectedCourseId, setSelectedCourseId] = useState('all');
+  const [selectedTestId, setSelectedTestId] = useState('');
+  const [selectedTestData, setSelectedTestData] = useState<any | null>(null);
+  const [testResults, setTestResults] = useState<AdminTestResultItem[]>([]);
+  const [selectedTestResult, setSelectedTestResult] = useState<AdminTestResultItem | null>(null);
+  const [resultsLoading, setResultsLoading] = useState(false);
+  const [resultsError, setResultsError] = useState('');
+  const [resultsSearch, setResultsSearch] = useState('');
+  const resultsSectionRef = useRef<HTMLDivElement | null>(null);
+
+  const loadData = async () => {
+    setLoading(true);
+
+    try {
+      const response = await adminApi.getTests();
+      if (response.success) {
+        setTests(response.data || []);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Testlər alınmadı');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadTestResults = async (testId: string) => {
+    setResultsLoading(true);
+    setResultsError('');
+
+    try {
+      const response = await adminApi.getTestResults(testId);
+
+      if (response.success) {
+        const nextTestData = response.data?.test || null;
+        const nextResults = response.data?.results || [];
+        setSelectedTestData(nextTestData);
+        setTestResults(nextResults);
+        setSelectedTestResult(nextResults[0] || null);
+      } else {
+        setResultsError(response.message || 'Test nəticələri alınmadı');
+      }
+    } catch (error) {
+      setResultsError(error instanceof Error ? error.message : 'Test nəticələri alınmadı');
+    } finally {
+      setResultsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const courses = useMemo(() => {
+    const map = new Map<string, string>();
+
+    tests.forEach((test) => {
+      if (!test.courseTitle) return;
+      if (!map.has(test.courseTitle)) {
+        map.set(test.courseTitle, test.courseTitle);
+      }
+    });
+
+    return Array.from(map.entries()).map(([id, title]) => ({ id, title }));
+  }, [tests]);
+
+  const filteredTests = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return tests.filter((test) => {
+      const matchesCourse = selectedCourseId === 'all' ? true : test.courseTitle === selectedCourseId;
+      const matchesSearch = !query || [test.title, test.courseTitle, test.instructorName].some((value) => String(value || '').toLowerCase().includes(query));
+
+      return matchesCourse && matchesSearch;
+    });
+  }, [tests, search, selectedCourseId]);
+
+  const filteredTestResults = useMemo(() => {
+    const query = resultsSearch.trim().toLowerCase();
+
+    if (!query) {
+      return testResults;
+    }
+
+    return testResults.filter((result) => (
+      [
+        result.student?.name || '',
+        result.student?.surname || '',
+        result.student?.email || '',
+        formatAttemptLabel(result.attemptNumber || 1)
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    ));
+  }, [testResults, resultsSearch]);
+
+  useEffect(() => {
+    if (!filteredTests.length) {
+      setSelectedTestId('');
+      setSelectedTestData(null);
+      setTestResults([]);
+      setSelectedTestResult(null);
+      return;
+    }
+
+    if (!filteredTests.some((test) => test.id === selectedTestId)) {
+      setSelectedTestId(filteredTests[0].id);
+    }
+  }, [filteredTests, selectedTestId]);
+
+  useEffect(() => {
+    if (!selectedTestId) {
+      return;
+    }
+
+    setResultsSearch('');
+    setSelectedTestResult(null);
+    loadTestResults(selectedTestId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTestId]);
+
+  useEffect(() => {
+    if (!filteredTestResults.length) {
+      return;
+    }
+
+    const selectedVisible = selectedTestResult
+      ? filteredTestResults.some((result) => result.id === selectedTestResult.id)
+      : false;
+
+    if (!selectedVisible) {
+      setSelectedTestResult(filteredTestResults[0]);
+    }
+  }, [filteredTestResults, selectedTestResult]);
+
+  const selectedTest = selectedTestData || filteredTests.find((test) => test.id === selectedTestId) || null;
+  const totalAttempts = testResults.length;
+  const pendingAttempts = testResults.filter((result) => result.hasPendingAnswers).length;
+  const averageScore = testResults.length
+    ? Math.round(testResults.reduce((sum, result) => sum + (result.scorePercentage || 0), 0) / testResults.length)
+    : 0;
+  const uniqueStudents = new Set(testResults.map((result) => result.student?.id || result.student?.email || `${result.student?.name || ''}-${result.student?.surname || ''}`)).size;
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#00D084]">Testlər</p>
+          <h1 className="mt-2 text-3xl font-black text-gray-900">Bütün testlər və nəticələr</h1>
+          <p className="mt-1 text-gray-500">Testləri seçin, nəticələri inline görün və sual-cavabları səhifə içində izləyin.</p>
+        </div>
+        <div className="rounded-2xl bg-gray-50 px-4 py-3 text-sm font-bold text-gray-600">
+          {filteredTests.length} test
+        </div>
+      </div>
+
+      <div className="rounded-[32px] border border-gray-100 bg-white p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="relative max-w-md flex-1">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              type="text"
+              placeholder="Test, kurs və ya müəllim ilə axtar..."
+              className="w-full rounded-xl border border-gray-100 bg-white py-3 pl-12 pr-4 text-sm outline-none transition-all focus:border-[#00D084] focus:ring-0"
+            />
+          </div>
+          <div className="rounded-2xl bg-gray-50 px-4 py-3 text-sm font-bold text-gray-600">
+            {tests.length} ümumi test
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setSelectedCourseId('all')}
+          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${selectedCourseId === 'all' ? 'bg-[#00D084] text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'}`}
+        >
+          <FileText className="w-4 h-4" />
+          Hamısı
+          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${selectedCourseId === 'all' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>{tests.length}</span>
+        </button>
+        {courses.map((course) => {
+          const count = tests.filter((test) => test.courseTitle === course.id).length;
+
+          return (
+            <button
+              type="button"
+              key={course.id}
+              onClick={() => setSelectedCourseId(course.id)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${selectedCourseId === course.id ? 'bg-[#00D084] text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'}`}
+            >
+              {course.title}
+              <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${selectedCourseId === course.id ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {filteredTests.map((test) => {
+          const isSelected = selectedTestId === test.id;
+
+          return (
+            <button
+              key={test.id}
+              type="button"
+              onClick={() => {
+                setSelectedTestId(test.id);
+                resultsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              className={`rounded-3xl border p-5 text-left shadow-sm transition-all hover:shadow-md ${isSelected ? 'border-[#00D084] bg-[#00D084]/5' : 'border-gray-100 bg-white'}`}
+            >
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-[#00D084]/10 flex items-center justify-center text-[#00D084]">
+                  <FileText className="w-6 h-6" />
+                </div>
+                <span className="text-xs font-bold uppercase tracking-wider text-gray-400">{formatDate(test.createdAt)}</span>
+              </div>
+
+              <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{test.title}</h3>
+              <p className="text-sm text-gray-500 mb-4 line-clamp-2">{test.courseTitle}</p>
+
+              <div className="flex flex-wrap gap-2 text-xs text-gray-500 mb-5">
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-50 border border-gray-100">
+                  <Clock className="w-3 h-3" />
+                  {test.duration} dəq
+                </span>
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-50 border border-gray-100">
+                  <FileText className="w-3 h-3" />
+                  {test.questionCount} sual
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs font-semibold text-gray-500 truncate">{test.instructorName}</div>
+                <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${isSelected ? 'bg-[#00D084] text-white' : 'bg-gray-100 text-gray-600'}`}>
+                  {isSelected ? 'Seçildi' : 'Nəticələrə bax'}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {!loading && filteredTests.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center italic text-gray-400">
+          Uyğun test tapılmadı.
+        </div>
+      )}
+
+      <div ref={resultsSectionRef} className="rounded-[32px] border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#00D084]">Nəticələr</p>
+            <h2 className="mt-2 text-2xl font-black text-gray-900">Seçilmiş testin nəticələri</h2>
+            <p className="mt-1 text-gray-500">Aşağıda nəticələr və sual-cavablar ayrı hissələrdə göstərilir.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-3 text-sm font-bold text-gray-600 sm:grid-cols-4">
+            <div className="rounded-2xl bg-gray-50 px-4 py-3 text-center">{totalAttempts} cəhd</div>
+            <div className="rounded-2xl bg-gray-50 px-4 py-3 text-center">{uniqueStudents} tələbə</div>
+            <div className="rounded-2xl bg-gray-50 px-4 py-3 text-center">{pendingAttempts} yoxlama</div>
+            <div className="rounded-2xl bg-gray-50 px-4 py-3 text-center">{testResults.length ? `${averageScore}%` : '-'}</div>
+          </div>
+        </div>
+
+        {!selectedTest ? (
+          <div className="mt-6 rounded-2xl border border-dashed border-gray-200 p-8 text-center text-gray-500">
+            Nəticələri görmək üçün bir test seçin.
+          </div>
+        ) : resultsLoading ? (
+          <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-8 text-center text-gray-500 shadow-sm">
+            Nəticələr yüklənir...
+          </div>
+        ) : resultsError ? (
+          <div className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-5 text-sm font-semibold text-red-700">
+            {resultsError}
+          </div>
+        ) : (
+          <div className="mt-6 grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)] xl:items-start">
+            <div className="space-y-3 xl:max-h-[60vh] xl:overflow-y-auto xl:pr-1">
+              <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    value={resultsSearch}
+                    onChange={(event) => setResultsSearch(event.target.value)}
+                    type="text"
+                    placeholder="Tələbə adı ilə axtar..."
+                    className="w-full rounded-xl border border-gray-100 bg-gray-50 py-2.5 pl-10 pr-3 text-sm outline-none transition-all focus:border-[#00D084] focus:bg-white"
+                  />
+                </div>
+                <div className="mt-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.14em] text-gray-400">
+                  <span>{filteredTestResults.length} tapıldı</span>
+                  <span>{testResults.length} ümumi</span>
+                </div>
+              </div>
+
+              {filteredTestResults.map((result) => {
+                const isActive = selectedTestResult?.id === result.id;
+                const isPassed = (result.scorePercentage || 0) >= 60;
+
+                return (
+                  <button
+                    key={result.id}
+                    type="button"
+                    onClick={() => setSelectedTestResult(result)}
+                    className={`w-full rounded-2xl border p-4 text-left transition-all ${isActive ? 'border-[#0082F3] bg-[#0082F3]/5 shadow-sm' : 'border-gray-100 bg-white hover:border-[#0082F3]/40 hover:bg-gray-50'}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate font-bold text-gray-900">
+                          {result.student?.name || 'Naməlum tələbə'} {result.student?.surname || ''}
+                        </div>
+                        <div className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-[#0082F3]">
+                          {formatAttemptLabel(result.attemptNumber || 1)}
+                        </div>
+                      </div>
+                      <div className={`rounded-xl px-2.5 py-1 text-xs font-black ${result.hasPendingAnswers ? 'bg-yellow-50 text-yellow-600' : isPassed ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                        {result.hasPendingAnswers ? 'Yoxlama' : `${Math.round(result.scorePercentage || 0)}%`}
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between text-[11px] text-gray-500">
+                      <span>{result.student?.email || '-'}</span>
+                      <span>{formatDate(result.completedAt)}</span>
+                    </div>
+                  </button>
+                );
+              })}
+
+              {filteredTestResults.length === 0 && (
+                <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
+                  Axtarışa uyğun nəticə tapılmadı.
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-3xl border border-gray-100 bg-white p-4 shadow-sm sm:p-6 xl:max-h-[60vh] xl:overflow-y-auto">
+              {selectedTestResult ? (
+                <div className="space-y-5">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-[0.16em] text-[#0082F3]">
+                        {formatAttemptLabel(selectedTestResult.attemptNumber || 1)}
+                      </div>
+                      <h4 className="mt-1 text-2xl font-black text-gray-900">
+                        {selectedTestResult.student?.name || 'Naməlum tələbə'} {selectedTestResult.student?.surname || ''}
+                      </h4>
+                      <p className="mt-1 text-sm text-gray-500">
+                        {selectedTestResult.student?.email || '-'}
+                      </p>
+                    </div>
+                    <div className={`rounded-2xl px-4 py-3 text-right ${selectedTestResult.hasPendingAnswers ? 'bg-yellow-50 text-yellow-700' : (selectedTestResult.scorePercentage || 0) >= 60 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                      <div className="text-2xl font-black">
+                        {selectedTestResult.hasPendingAnswers ? 'Yoxlama' : `${Math.round(selectedTestResult.scorePercentage || 0)}%`}
+                      </div>
+                      <div className="text-xs font-bold uppercase tracking-[0.14em]">
+                        {selectedTestResult.hasPendingAnswers ? 'Gözləmədə' : 'Nəticə'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                    <div className="rounded-2xl bg-gray-50 p-4 text-center">
+                      <div className="text-2xl font-black text-[#00D084]">{selectedTestResult.answers.filter((answer) => answer.isCorrect).length}</div>
+                      <div className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Doğru</div>
+                    </div>
+                    <div className="rounded-2xl bg-gray-50 p-4 text-center">
+                      <div className="text-2xl font-black text-red-500">{selectedTestResult.answers.filter((answer) => !answer.isCorrect && answer.status === 'graded').length}</div>
+                      <div className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Yanlış</div>
+                    </div>
+                    <div className="rounded-2xl bg-gray-50 p-4 text-center">
+                      <div className="text-2xl font-black text-yellow-500">{selectedTestResult.answers.filter((answer) => answer.status === 'pending').length}</div>
+                      <div className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Gözləyən</div>
+                    </div>
+                    <div className="rounded-2xl bg-gray-50 p-4 text-center">
+                      <div className="text-2xl font-black text-gray-600">{Math.max((selectedTest?.questions || []).length - selectedTestResult.answers.length, 0)}</div>
+                      <div className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Boş</div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h5 className="text-lg font-bold text-gray-900">Sual və cavablar</h5>
+                    <div className="space-y-3">
+                        {(selectedTest?.questions || []).map((question: any, index: number) => {
+                          const answer = getAnswerForQuestion(selectedTestResult, question, index);
+                        const hasAnswer = Boolean(answer);
+                        const isSelectedQuestionCorrect = Boolean(answer?.isCorrect);
+                        const selectedAnswerIndex = normalizeMultipleChoiceAnswerIndex(answer?.answer);
+                        const correctAnswerIndex = getMultipleChoiceCorrectAnswerIndex(question);
+                        const answerStateLabel = !hasAnswer
+                          ? 'Cavab verilməyib'
+                          : answer?.status === 'pending'
+                            ? 'Yoxlama gözləyir'
+                            : isSelectedQuestionCorrect
+                              ? 'Doğru'
+                              : 'Yanlış';
+
+                        return (
+                          <div
+                            key={question._id}
+                            className={`rounded-2xl border p-4 ${!hasAnswer ? 'border-gray-200 bg-gray-50/80' : answer?.status === 'pending' ? 'border-yellow-200 bg-yellow-50/50' : isSelectedQuestionCorrect ? 'border-green-100 bg-green-50/40' : 'border-red-100 bg-red-50/40'}`}
+                          >
+                            <div className="flex gap-3">
+                              <span className="font-bold text-gray-400">{index + 1}.</span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-start justify-between gap-2">
+                                  <div className="text-sm font-medium text-gray-900">
+                                    {question.questionType === 'image' ? (
+                                      <div className="mt-2 max-w-sm overflow-hidden rounded-xl border border-gray-100">
+                                        <img src={question.content} alt="Sual" className="h-auto w-full" />
+                                      </div>
+                                    ) : question.content}
+                                  </div>
+                                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${!hasAnswer ? 'bg-gray-100 text-gray-500' : answer?.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : isSelectedQuestionCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                    {answerStateLabel}
+                                  </span>
+                                </div>
+
+                                {question.answerType === 'open_ended' ? (
+                                  <div className="mt-4 space-y-3">
+                                    <div className="rounded-xl border border-gray-100 bg-white p-3 text-sm">
+                                      <span className="mb-1 block text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Tələbənin Cavabı</span>
+                                      <span className="text-gray-900">{answer?.answer || 'Cavab verilməyib'}</span>
+                                    </div>
+                                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gray-50 p-3 text-sm">
+                                      {!hasAnswer ? (
+                                        <span className="font-bold text-gray-500">Bu sual üçün hələ cavab göndərilməyib</span>
+                                      ) : isNumericOpenEndedQuestion(question) ? (
+                                        <span className={isSelectedQuestionCorrect ? 'font-bold text-green-600' : 'font-bold text-red-600'}>
+                                          {isSelectedQuestionCorrect ? 'Avtomatik doğru' : 'Avtomatik yanlış'}
+                                        </span>
+                                      ) : (
+                                        <span className={answer?.status === 'pending' ? 'font-bold text-yellow-600' : isSelectedQuestionCorrect ? 'font-bold text-green-600' : 'font-bold text-red-600'}>
+                                          {answer?.status === 'pending' ? 'Yoxlama gözləyir' : isSelectedQuestionCorrect ? 'Doğru qiymətləndirildi' : 'Yanlış qiymətləndirildi'}
+                                        </span>
+                                      )}
+                                      {!isNumericOpenEndedQuestion(question) && answer?.status !== 'pending' && (
+                                        <span className="text-xs font-black uppercase tracking-[0.14em] text-gray-400">Manual yoxlama yoxdur</span>
+                                      )}
+                                      {answer?.status === 'pending' && (
+                                        <span className="text-xs font-black uppercase tracking-[0.14em] text-gray-400">Müəllim baxmalıdır</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="mt-4 space-y-3">
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                      <div className="rounded-xl border border-gray-100 bg-white p-3 text-sm">
+                                        <span className="mb-1 block text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Seçilən şık</span>
+                                        <span className="font-medium text-gray-900">{hasAnswer ? formatMultipleChoiceAnswer(question, answer?.answer || '') : 'Cavab verilməyib'}</span>
+                                      </div>
+                                      <div className="rounded-xl border border-gray-100 bg-white p-3 text-sm">
+                                        <span className="mb-1 block text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Düzgün şık</span>
+                                        <span className="font-medium text-gray-900">{correctAnswerIndex !== null ? formatMultipleChoiceAnswer(question, String(correctAnswerIndex)) : 'Təyin edilməyib'}</span>
+                                      </div>
+                                    </div>
+
+                                    {question.options.map((option: string, optionIndex: number) => {
+                                      const isSelected = selectedAnswerIndex !== null ? selectedAnswerIndex === optionIndex : answer?.answer === option;
+                                      const isActualCorrect = correctAnswerIndex !== null ? correctAnswerIndex === optionIndex : question.correctAnswer === option;
+                                      const optionStateClass = isActualCorrect
+                                        ? 'border-[#00D084]/20 bg-[#00D084]/10 text-[#00D084]'
+                                        : isSelected && !isSelectedQuestionCorrect
+                                          ? 'border-red-200 bg-red-100 text-red-600'
+                                          : 'border-gray-100 bg-white text-gray-500';
+
+                                      return (
+                                        <div
+                                          key={optionIndex}
+                                          className={`flex items-center gap-2 rounded-xl border p-2.5 text-xs font-medium ${optionStateClass}`}
+                                        >
+                                          <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded ${isActualCorrect ? 'bg-[#00D084] text-white' : isSelected && !isSelectedQuestionCorrect ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                                            {String.fromCharCode(65 + optionIndex)}
+                                          </div>
+                                          <span className="truncate">{option}</span>
+                                          {isActualCorrect && <span className="ml-auto text-[10px] font-black uppercase opacity-70">Doğru</span>}
+                                          {!isActualCorrect && isSelected && <span className="ml-auto text-[10px] font-black uppercase opacity-60">Seçilib</span>}
+                                        </div>
+                                      );
+                                    })}
+
+                                    {!hasAnswer && (
+                                      <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 text-sm text-gray-500">
+                                        Bu sual üçün cavab göndərilməyib.
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex min-h-[240px] items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 text-gray-500">
+                  Görmək üçün bir nəticə seçin.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const Students = () => {
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [courses, setCourses] = useState<CourseItem[]>([]);
   const [tests, setTests] = useState<TestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [studentResultsModalOpen, setStudentResultsModalOpen] = useState(false);
+  const [studentResultsLoading, setStudentResultsLoading] = useState(false);
+  const [studentResultsError, setStudentResultsError] = useState('');
+  const [selectedResultsStudent, setSelectedResultsStudent] = useState<StudentItem | null>(null);
+  const [studentResults, setStudentResults] = useState<StudentTestResultItem[]>([]);
+  const [selectedStudentResult, setSelectedStudentResult] = useState<StudentTestResultItem | null>(null);
+  const [studentResultsSearch, setStudentResultsSearch] = useState('');
   const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<StudentItem | null>(null);
   const [assignmentType, setAssignmentType] = useState<AssignmentMode>('course');
@@ -1044,6 +1735,32 @@ const Students = () => {
     setSelectedTargetId('');
     setAssignmentSearch('');
     setAssignmentModalOpen(true);
+  };
+
+  const openStudentResults = async (student: StudentItem) => {
+    setSelectedResultsStudent(student);
+    setStudentResultsModalOpen(true);
+    setStudentResultsLoading(true);
+    setStudentResultsError('');
+    setStudentResults([]);
+    setSelectedStudentResult(null);
+    setStudentResultsSearch('');
+
+    try {
+      const response = await adminApi.getStudentTestResults(student.id);
+
+      if (response.success) {
+        const resultsData = response.data?.results || [];
+        setStudentResults(resultsData);
+        setSelectedStudentResult(resultsData[0] || null);
+      } else {
+        setStudentResultsError(response.message || 'Tələbə nəticələri alınmadı');
+      }
+    } catch (error) {
+      setStudentResultsError(error instanceof Error ? error.message : 'Tələbə nəticələri alınmadı');
+    } finally {
+      setStudentResultsLoading(false);
+    }
   };
 
   const handleAssign = async (event: React.FormEvent) => {
@@ -1112,6 +1829,44 @@ const Students = () => {
       || toSearchableText(test.instructorName).includes(query)
     ));
   }, [courses, tests, assignmentSearch, assignmentType, assignmentAction, selectedStudent]);
+
+  const filteredStudentResults = useMemo(() => {
+    const query = studentResultsSearch.trim().toLowerCase();
+
+    if (!query) {
+      return studentResults;
+    }
+
+    return studentResults.filter((result) => (
+      [
+        result.test?.title || '',
+        result.test?.course?.title || '',
+        result.test?.instructor ? `${result.test.instructor.name || ''} ${result.test.instructor.surname || ''}` : '',
+        formatAttemptLabel(result.attemptNumber || 1)
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    ));
+  }, [studentResults, studentResultsSearch]);
+
+  useEffect(() => {
+    if (!studentResultsModalOpen) {
+      return;
+    }
+
+    if (filteredStudentResults.length === 0) {
+      return;
+    }
+
+    const selectedResultStillVisible = selectedStudentResult
+      ? filteredStudentResults.some((result) => result.id === selectedStudentResult.id)
+      : false;
+
+    if (!selectedResultStillVisible) {
+      setSelectedStudentResult(filteredStudentResults[0]);
+    }
+  }, [filteredStudentResults, selectedStudentResult, studentResultsModalOpen]);
 
   const getResourceId = (resource: { _id?: string; id?: string } | null | undefined) => resource?._id || resource?.id || '';
 
@@ -1212,6 +1967,13 @@ const Students = () => {
                         <FileText className="h-3.5 w-3.5" />
                         Test ver
                       </button>
+                        <Link
+                          to="/tests"
+                          className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gray-900 px-3 py-2 text-[10px] font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-gray-900/15 transition-all hover:bg-gray-800 active:scale-95"
+                        >
+                          <Clock className="h-3.5 w-3.5" />
+                          Test nəticələrini gör
+                        </Link>
                     </div>
 
                     <div className="flex flex-wrap gap-2">
@@ -1244,6 +2006,274 @@ const Students = () => {
           )}
         </div>
       </div>
+
+      <Modal
+        isOpen={studentResultsModalOpen}
+        onClose={() => setStudentResultsModalOpen(false)}
+        title={selectedResultsStudent ? `${selectedResultsStudent.name} üçün test nəticələri` : 'Test nəticələri'}
+        contentClassName="max-w-6xl"
+        bodyClassName="overflow-hidden p-3 sm:p-4 lg:p-6"
+      >
+        <div className="flex h-full min-h-0 flex-col gap-5">
+          <div className="rounded-3xl bg-gray-50 p-4 sm:p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h4 className="text-lg font-black text-gray-900">
+                  {selectedResultsStudent ? `${selectedResultsStudent.name}` : 'Tələbə'} test nəticələri
+                </h4>
+                <p className="mt-1 text-sm text-gray-500">
+                  {selectedResultsStudent?.email || ''}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-gray-600 shadow-sm">
+                {studentResults.length} nəticə
+              </div>
+            </div>
+          </div>
+
+          {studentResultsLoading ? (
+            <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center text-gray-500 shadow-sm">
+              Nəticələr yüklənir...
+            </div>
+          ) : studentResultsError ? (
+            <div className="rounded-2xl border border-red-100 bg-red-50 p-5 text-sm font-semibold text-red-700">
+              {studentResultsError}
+            </div>
+          ) : studentResults.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center text-gray-500">
+              Bu tələbə üçün nəticə tapılmadı.
+            </div>
+          ) : (
+            <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
+              <div className="min-h-0 space-y-3 overflow-y-auto pr-1 xl:pr-2">
+                <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                      value={studentResultsSearch}
+                      onChange={(event) => setStudentResultsSearch(event.target.value)}
+                      type="text"
+                      placeholder="Test adı ilə axtar..."
+                      className="w-full rounded-xl border border-gray-100 bg-gray-50 py-2.5 pl-10 pr-3 text-sm outline-none transition-all focus:border-[#0082F3] focus:bg-white"
+                    />
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-[11px] font-bold uppercase tracking-[0.14em] text-gray-400">
+                    <span>{filteredStudentResults.length} tapıldı</span>
+                    <span>{studentResults.length} ümumi</span>
+                  </div>
+                </div>
+
+                {filteredStudentResults.map((result) => {
+                  const isActive = selectedStudentResult?.id === result.id;
+                  const isPassed = (result.scorePercentage || 0) >= 60;
+
+                  return (
+                    <button
+                      key={result.id}
+                      type="button"
+                      onClick={() => setSelectedStudentResult(result)}
+                      className={`w-full rounded-2xl border p-4 text-left transition-all ${
+                        isActive
+                          ? 'border-[#0082F3] bg-[#0082F3]/5 shadow-sm'
+                          : 'border-gray-100 bg-white hover:border-[#0082F3]/40 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate font-bold text-gray-900">
+                            {result.test?.title || 'Naməlum test'}
+                          </div>
+                          <div className="mt-1 text-xs font-black uppercase tracking-[0.14em] text-[#0082F3]">
+                            {formatAttemptLabel(result.attemptNumber || 1)}
+                          </div>
+                        </div>
+                        <div className={`rounded-xl px-2.5 py-1 text-xs font-black ${result.hasPendingAnswers ? 'bg-yellow-50 text-yellow-600' : isPassed ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                          {result.hasPendingAnswers ? 'Yoxlama' : `${Math.round(result.scorePercentage || 0)}%`}
+                        </div>
+                      </div>
+                      <div className="mt-3 flex items-center justify-between text-[11px] text-gray-500">
+                        <span>{result.test?.course?.title || 'Kurs yoxdur'}</span>
+                        <span>{formatDate(result.completedAt)}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+                {filteredStudentResults.length === 0 && (
+                  <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
+                    Axtarışa uyğun test nəticəsi tapılmadı.
+                  </div>
+                )}
+              </div>
+
+              <div className="min-h-0 overflow-y-auto rounded-3xl border border-gray-100 bg-white p-4 sm:p-6 shadow-sm">
+                {selectedStudentResult ? (
+                  <div className="space-y-5">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                      <div>
+                        <div className="text-xs font-black uppercase tracking-[0.16em] text-[#0082F3]">
+                          {formatAttemptLabel(selectedStudentResult.attemptNumber || 1)}
+                        </div>
+                        <h4 className="mt-1 text-2xl font-black text-gray-900">
+                          {selectedStudentResult.test?.title || 'Naməlum test'}
+                        </h4>
+                        <p className="mt-1 text-sm text-gray-500">
+                          {selectedStudentResult.test?.course?.title || 'Kurs yoxdur'} · {selectedStudentResult.test?.instructor ? `${selectedStudentResult.test.instructor.name} ${selectedStudentResult.test.instructor.surname || ''}` : 'Naməlum müəllim'}
+                        </p>
+                      </div>
+                      <div className={`rounded-2xl px-4 py-3 text-right ${selectedStudentResult.hasPendingAnswers ? 'bg-yellow-50 text-yellow-700' : (selectedStudentResult.scorePercentage || 0) >= 60 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                        <div className="text-2xl font-black">
+                          {selectedStudentResult.hasPendingAnswers ? 'Yoxlama' : `${Math.round(selectedStudentResult.scorePercentage || 0)}%`}
+                        </div>
+                        <div className="text-xs font-bold uppercase tracking-[0.14em]">
+                          {selectedStudentResult.hasPendingAnswers ? 'Gözləmədə' : 'Nəticə'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                      <div className="rounded-2xl bg-gray-50 p-4 text-center">
+                        <div className="text-2xl font-black text-[#00D084]">{selectedStudentResult.answers.filter((answer) => answer.isCorrect).length}</div>
+                        <div className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Doğru</div>
+                      </div>
+                      <div className="rounded-2xl bg-gray-50 p-4 text-center">
+                        <div className="text-2xl font-black text-red-500">{selectedStudentResult.answers.filter((answer) => !answer.isCorrect && answer.status === 'graded').length}</div>
+                        <div className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Yanlış</div>
+                      </div>
+                      <div className="rounded-2xl bg-gray-50 p-4 text-center">
+                        <div className="text-2xl font-black text-yellow-500">{selectedStudentResult.answers.filter((answer) => answer.status === 'pending').length}</div>
+                        <div className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Gözləyən</div>
+                      </div>
+                      <div className="rounded-2xl bg-gray-50 p-4 text-center">
+                        <div className="text-2xl font-black text-gray-600">{Math.max((selectedStudentResult.test?.questions || []).length - selectedStudentResult.answers.length, 0)}</div>
+                        <div className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Boş</div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h5 className="text-lg font-bold text-gray-900">Sual və cavablar</h5>
+                      <div className="space-y-3">
+                        {(selectedStudentResult.test?.questions || []).map((question: any, index: number) => {
+                          const answer = selectedStudentResult.answers.find((item) => resolveEntityId(item.questionId) === resolveEntityId(question._id));
+                          const hasAnswer = Boolean(answer);
+                          const isSelectedQuestionCorrect = Boolean(answer?.isCorrect);
+                          const selectedAnswerIndex = normalizeMultipleChoiceAnswerIndex(answer?.answer);
+                          const correctAnswerIndex = getMultipleChoiceCorrectAnswerIndex(question);
+                          const answerStateLabel = !hasAnswer
+                            ? 'Cavab verilməyib'
+                            : answer?.status === 'pending'
+                              ? 'Yoxlama gözləyir'
+                              : isSelectedQuestionCorrect
+                                ? 'Doğru'
+                                : 'Yanlış';
+
+                          return (
+                            <div
+                              key={question._id}
+                              className={`rounded-2xl border p-4 ${!hasAnswer ? 'border-gray-200 bg-gray-50/80' : answer?.status === 'pending' ? 'border-yellow-200 bg-yellow-50/50' : isSelectedQuestionCorrect ? 'border-green-100 bg-green-50/40' : 'border-red-100 bg-red-50/40'}`}
+                            >
+                              <div className="flex gap-3">
+                                <span className="font-bold text-gray-400">{index + 1}.</span>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-start justify-between gap-2">
+                                    <div className="text-sm font-medium text-gray-900">
+                                      {question.questionType === 'image' ? (
+                                        <div className="mt-2 max-w-sm overflow-hidden rounded-xl border border-gray-100">
+                                          <img src={question.content} alt="Sual" className="h-auto w-full" />
+                                        </div>
+                                      ) : question.content}
+                                    </div>
+                                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${!hasAnswer ? 'bg-gray-100 text-gray-500' : answer?.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : isSelectedQuestionCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                      {answerStateLabel}
+                                    </span>
+                                  </div>
+
+                                  {question.answerType === 'open_ended' ? (
+                                    <div className="mt-4 space-y-3">
+                                      <div className="rounded-xl border border-gray-100 bg-white p-3 text-sm">
+                                        <span className="mb-1 block text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Tələbənin Cavabı</span>
+                                        <span className="text-gray-900">{answer?.selectedDisplayAnswer ?? answer?.displayAnswer ?? answer?.answer ?? 'Cavab verilməyib'}</span>
+                                      </div>
+                                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-gray-50 p-3 text-sm">
+                                        {!hasAnswer ? (
+                                          <span className="font-bold text-gray-500">Bu sual üçün hələ cavab göndərilməyib</span>
+                                        ) : isNumericOpenEndedQuestion(question) ? (
+                                          <span className={isSelectedQuestionCorrect ? 'font-bold text-green-600' : 'font-bold text-red-600'}>
+                                            {isSelectedQuestionCorrect ? 'Avtomatik doğru' : 'Avtomatik yanlış'}
+                                          </span>
+                                        ) : (
+                                          <span className={answer?.status === 'pending' ? 'font-bold text-yellow-600' : isSelectedQuestionCorrect ? 'font-bold text-green-600' : 'font-bold text-red-600'}>
+                                            {answer?.status === 'pending' ? 'Yoxlama gözləyir' : isSelectedQuestionCorrect ? 'Doğru qiymətləndirildi' : 'Yanlış qiymətləndirildi'}
+                                          </span>
+                                        )}
+                                        {!isNumericOpenEndedQuestion(question) && answer?.status !== 'pending' && (
+                                          <span className="text-xs font-black uppercase tracking-[0.14em] text-gray-400">Manual yoxlama yoxdur</span>
+                                        )}
+                                        {answer?.status === 'pending' && (
+                                          <span className="text-xs font-black uppercase tracking-[0.14em] text-gray-400">Müəllim baxmalıdır</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="mt-4 space-y-3">
+                                      <div className="grid gap-2 sm:grid-cols-2">
+                                        <div className="rounded-xl border border-gray-100 bg-white p-3 text-sm">
+                                          <span className="mb-1 block text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Seçilən şık</span>
+                                          <span className="font-medium text-gray-900">{hasAnswer ? (answer?.selectedDisplayAnswer ?? formatMultipleChoiceAnswer(question, answer?.answer ?? '')) : 'Cavab verilməyib'}</span>
+                                        </div>
+                                        <div className="rounded-xl border border-gray-100 bg-white p-3 text-sm">
+                                          <span className="mb-1 block text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Düzgün şık</span>
+                                          <span className="font-medium text-gray-900">{correctAnswerIndex !== null ? formatMultipleChoiceAnswer(question, String(correctAnswerIndex)) : 'Təyin edilməyib'}</span>
+                                        </div>
+                                      </div>
+
+                                      {question.options.map((option: string, optionIndex: number) => {
+                                      const isSelected = selectedAnswerIndex !== null ? selectedAnswerIndex === optionIndex : answer?.answer === option;
+                                        const isActualCorrect = correctAnswerIndex !== null ? correctAnswerIndex === optionIndex : question.correctAnswer === option;
+                                        const optionStateClass = isActualCorrect
+                                          ? 'border-[#00D084]/20 bg-[#00D084]/10 text-[#00D084]'
+                                          : isSelected && !isSelectedQuestionCorrect
+                                            ? 'border-red-200 bg-red-100 text-red-600'
+                                            : 'border-gray-100 bg-white text-gray-500';
+
+                                        return (
+                                          <div
+                                            key={optionIndex}
+                                            className={`flex items-center gap-2 rounded-xl border p-2.5 text-xs font-medium ${optionStateClass}`}
+                                          >
+                                            <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded ${isActualCorrect ? 'bg-[#00D084] text-white' : isSelected && !isSelectedQuestionCorrect ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                                              {String.fromCharCode(65 + optionIndex)}
+                                            </div>
+                                            <span className="truncate">{option}</span>
+                                            {isActualCorrect && <span className="ml-auto text-[10px] font-black uppercase opacity-70">Doğru</span>}
+                                            {!isActualCorrect && isSelected && <span className="ml-auto text-[10px] font-black uppercase opacity-60">Seçilib</span>}
+                                          </div>
+                                        );
+                                      })}
+                                      {!hasAnswer && (
+                                        <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-3 text-sm text-gray-500">
+                                          Bu sual üçün cavab göndərilməyib.
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex min-h-[240px] items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50 text-gray-500">
+                    Görmək üçün bir nəticə seçin.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
 
       <Modal
         isOpen={assignmentModalOpen}
@@ -1598,6 +2628,7 @@ export default function AppAdmin() {
       <AdminShell onLogout={handleLogout} adminUser={adminSession.user}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/tests" element={<Tests />} />
           <Route path="/teachers" element={<Teachers />} />
           <Route path="/students" element={<Students />} />
           <Route path="/categories" element={<Categories />} />
