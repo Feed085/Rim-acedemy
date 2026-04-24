@@ -97,6 +97,7 @@ export default function StudentCompletedTests() {
               const qCount = result.answers?.length || 0;
               const correctS = result.answers?.filter((a:any) => a.isCorrect).length || 0;
               const hasPending = result.hasPendingAnswers;
+              const canRetake = Boolean(result.test?.allowRetake);
 
               return (
             <div
@@ -156,13 +157,19 @@ export default function StudentCompletedTests() {
                   </div>
                 </div>
 
-                <Button
-                  onClick={() => navigate(`/tests/${result.test?._id}`)}
-                  className="w-full sm:w-auto mt-2 sm:mt-0 bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl"
-                >
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Yenidən başla
-                </Button>
+                {canRetake ? (
+                  <Button
+                    onClick={() => navigate(`/tests/${result.test?._id}`)}
+                    className="w-full sm:w-auto mt-2 sm:mt-0 bg-[#00D084] hover:bg-[#00B873] text-white rounded-xl"
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Təkrar test
+                  </Button>
+                ) : (
+                  <div className="w-full sm:w-auto mt-2 sm:mt-0 rounded-xl border border-gray-200 bg-white px-4 py-3 text-center text-sm font-semibold text-gray-500">
+                    Bu test tək dəfəlikdir
+                  </div>
+                )}
               </div>
             </div>
             );

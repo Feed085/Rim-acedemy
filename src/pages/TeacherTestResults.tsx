@@ -42,6 +42,19 @@ const getMultipleChoiceCorrectAnswerIndex = (question: any) => {
   return null;
 };
 
+const getResultTimeValue = (result: any) => {
+  const timeSource = result?.completedAt || result?.createdAt || 0;
+  const timeValue = new Date(timeSource).getTime();
+  return Number.isFinite(timeValue) ? timeValue : 0;
+};
+
+const getAttemptLabel = (attemptNumber: number) => {
+  if (attemptNumber === 1) return '1-ci cəhd';
+  if (attemptNumber === 2) return '2-ci cəhd';
+  if (attemptNumber === 3) return '3-cü cəhd';
+  return `${attemptNumber}-ci cəhd`;
+};
+
 export default function TeacherTestResults() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -95,6 +108,24 @@ export default function TeacherTestResults() {
     r.student?.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
     r.student?.surname?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const resultsWithAttemptNumbers = filteredResults
+    .slice()
+    .sort((left, right) => getResultTimeValue(left) - getResultTimeValue(right))
+    .reduce<Array<any>>((accumulator, result) => {
+      const studentId = result.student?._id || result.student?.id || result.student?.email || result.student?.name;
+      const previousAttempts = accumulator.filter((item) => {
+        const itemStudentId = item.student?._id || item.student?.id || item.student?.email || item.student?.name;
+        return itemStudentId === studentId;
+      }).length;
+
+      accumulator.push({
+        ...result,
+        attemptNumber: previousAttempts + 1
+      });
+
+      return accumulator;
+    }, []);
 
   const handleShowDetail = (result: any) => {
     setSelectedResult(result);
@@ -190,7 +221,7 @@ export default function TeacherTestResults() {
 
         {/* Results List */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredResults.map((result) => {
+          {resultsWithAttemptNumbers.map((result) => {
             const isPassed = result.scorePercentage >= 60;
             return (
                <div 
@@ -226,6 +257,9 @@ export default function TeacherTestResults() {
                        <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
                          <Clock className="w-3 h-3" />
                          <span>{new Date(result.completedAt).toLocaleDateString('az-AZ')}</span>
+                         <span className="rounded-full bg-blue-50 px-2 py-0.5 font-bold text-[#0082F3]">
+                           {getAttemptLabel(result.attemptNumber || 1)}
+                         </span>
                        </div>
                      </div>
                    </div>

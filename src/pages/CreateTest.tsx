@@ -63,6 +63,7 @@ export default function CreateTest() {
     title: '',
     courseId: '',
     duration: 30,
+    allowRetake: false,
   });
   const [questions, setQuestions] = useState<Question[]>([
     {
@@ -193,6 +194,7 @@ export default function CreateTest() {
           title: testData.title,
           course: testData.courseId,
           duration: testData.duration,
+          allowRetake: testData.allowRetake,
           questions: formattedQuestions
         })
       });
@@ -260,7 +262,7 @@ export default function CreateTest() {
             <Button
               onClick={() => {
                 setIsSaved(false);
-                setTestData({ title: '', courseId: '', duration: 30 });
+                setTestData({ title: '', courseId: '', duration: 30, allowRetake: false });
                 setQuestions([{
                   id: '1',
                   questionType: 'text',
@@ -366,6 +368,18 @@ export default function CreateTest() {
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">
                   dəqiqə
                 </span>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4">
+              <Checkbox
+                checked={testData.allowRetake}
+                onCheckedChange={(checked) => setTestData(prev => ({ ...prev, allowRetake: checked === true }))}
+                className="mt-0.5 border-[#0082F3] data-[state=checked]:border-[#0082F3] data-[state=checked]:bg-[#0082F3]"
+              />
+              <div>
+                <p className="font-semibold text-gray-900">Tələbə testi təkrar yaza bilsin</p>
+                <p className="text-sm text-gray-500">Söndürülərsə test yalnız bir dəfə yazıla bilər.</p>
               </div>
             </div>
           </div>

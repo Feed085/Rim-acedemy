@@ -74,7 +74,7 @@ export default function TeacherTestEdit() {
             openEndedAnswerType: q.openEndedAnswerType || (q.answerType === 'open_ended' && q.correctAnswer ? 'number' : 'text'),
             openEndedNumericAnswer: q.answerType === 'open_ended' ? (q.correctAnswer || '') : '',
           }));
-          setTest({ ...data.data, questions: normalizedQuestions });
+          setTest({ ...data.data, allowRetake: data.data.allowRetake ?? false, questions: normalizedQuestions });
         } else {
           toast.error('Test tapılmadı');
         }
@@ -145,6 +145,7 @@ export default function TeacherTestEdit() {
         body: JSON.stringify({
           title: test.title,
           duration: test.duration,
+          allowRetake: test.allowRetake ?? false,
           questions: formattedQuestions
         })
       });
@@ -339,6 +340,18 @@ export default function TeacherTestEdit() {
                   onChange={(e) => setTest({ ...test, duration: Number(e.target.value) })}
                   className="rounded-xl h-12 text-lg font-bold border-gray-200 focus:border-[#00D084]"
                 />
+              </div>
+           </div>
+
+           <div className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-4">
+              <Checkbox
+                checked={Boolean(test.allowRetake)}
+                onCheckedChange={(checked) => setTest({ ...test, allowRetake: checked === true })}
+                className="mt-0.5 border-[#0082F3] data-[state=checked]:border-[#0082F3] data-[state=checked]:bg-[#0082F3]"
+              />
+              <div>
+                <p className="font-semibold text-gray-900">Tələbə testi təkrar yaza bilsin</p>
+                <p className="text-sm text-gray-500">Söndürülərsə test yalnız bir dəfə yazıla bilər.</p>
               </div>
            </div>
         </div>

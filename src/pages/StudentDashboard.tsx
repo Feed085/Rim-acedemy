@@ -258,12 +258,24 @@ export default function StudentDashboard() {
 
               <div className="space-y-4">
                 {filteredTests.map((test) => (
+                  (() => {
+                    const hasAttempted = Boolean(test.hasAttempted || (test.attemptCount || 0) > 0);
+                    const canRetake = Boolean(test.allowRetake);
+                    const buttonLabel = !hasAttempted ? 'Testə başla' : canRetake ? 'Təkrar test' : 'Nəticələri gör';
+                    const buttonAction = !hasAttempted || canRetake
+                      ? () => navigate(`/tests/${test._id || test.id}`)
+                      : () => navigate('/dashboard/completed-tests');
+
+                    return (
                   <div
                     key={test._id || test.id}
                     className="flex flex-col gap-4 rounded-2xl border border-gray-100 bg-gray-50 p-4 transition-colors hover:bg-gray-100 sm:flex-row sm:items-center"
                   >
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-gray-900 truncate">{test.title}</h3>
+                      {hasAttempted && !canRetake ? (
+                        <p className="mt-1 text-xs font-semibold text-[#0082F3]">Test tamamlanıb</p>
+                      ) : null}
                       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500">
                         {test.course?.title ? <span>{test.course.title}</span> : null}
                         <span>{test.instructor ? `${test.instructor.name} ${test.instructor.surname || ''}` : 'Naməlum müəllim'}</span>
@@ -271,12 +283,14 @@ export default function StudentDashboard() {
                       </div>
                     </div>
                     <Button
-                      onClick={() => navigate(`/tests/${test._id || test.id}`)}
+                      onClick={buttonAction}
                       className="bg-[#0082F3] hover:bg-[#006fd1] rounded-xl text-white font-bold sm:self-start"
                     >
-                      Testə başla
+                      {buttonLabel}
                     </Button>
                   </div>
+                    );
+                  })()
                 ))}
 
                 {filteredTests.length === 0 && (
