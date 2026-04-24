@@ -69,6 +69,19 @@ const getMultipleChoiceCorrectAnswerIndex = (question: any) => {
   return null;
 };
 
+const formatMultipleChoiceAnswer = (question: any, answer: string) => {
+  const answerIndex = normalizeMultipleChoiceAnswerIndex(answer);
+
+  if (answerIndex === null) {
+    return answer || 'Cavab verilməyib';
+  }
+
+  const optionText = question?.options?.[answerIndex] ?? '';
+  const optionLabel = String.fromCharCode(65 + answerIndex);
+
+  return optionText ? `${optionLabel}: ${optionText}` : optionLabel;
+};
+
 const getResultTimeValue = (result: any) => {
   const timeSource = result?.completedAt || result?.createdAt || 0;
   const timeValue = new Date(timeSource).getTime();

@@ -133,6 +133,8 @@ type StudentTestResultItem = {
     answer: string;
     isCorrect: boolean;
     status: 'graded' | 'pending';
+    displayAnswer?: string;
+    selectedDisplayAnswer?: string;
   }>;
   test: any;
 };
@@ -170,6 +172,8 @@ type AdminTestResultItem = {
     answer: string;
     isCorrect: boolean;
     status: 'graded' | 'pending';
+    displayAnswer?: string;
+    selectedDisplayAnswer?: string;
   }>;
   answersByQuestionId?: Record<string, {
     questionId: string;
@@ -1527,7 +1531,7 @@ const Tests = () => {
                   <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                     <div className="rounded-2xl bg-gray-50 p-4 text-center">
                       <div className="text-2xl font-black text-[#00D084]">{selectedTestResult.answers.filter((answer) => answer.isCorrect).length}</div>
-                      <div className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Doğru</div>
+                      <div className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Düzgün</div>
                     </div>
                     <div className="rounded-2xl bg-gray-50 p-4 text-center">
                       <div className="text-2xl font-black text-red-500">{selectedTestResult.answers.filter((answer) => !answer.isCorrect && answer.status === 'graded').length}</div>
@@ -1557,8 +1561,8 @@ const Tests = () => {
                           : answer?.status === 'pending'
                             ? 'Yoxlama gözləyir'
                             : isSelectedQuestionCorrect
-                              ? 'Doğru'
-                              : 'Yanlış';
+                              ? 'Düzgün'
+                              : 'Səhv';
 
                         return (
                           <div
@@ -1592,11 +1596,11 @@ const Tests = () => {
                                         <span className="font-bold text-gray-500">Bu sual üçün hələ cavab göndərilməyib</span>
                                       ) : isNumericOpenEndedQuestion(question) ? (
                                         <span className={isSelectedQuestionCorrect ? 'font-bold text-green-600' : 'font-bold text-red-600'}>
-                                          {isSelectedQuestionCorrect ? 'Avtomatik doğru' : 'Avtomatik yanlış'}
+                                          {isSelectedQuestionCorrect ? 'Avtomatik Düzgün' : 'Avtomatik Səhv'}
                                         </span>
                                       ) : (
                                         <span className={answer?.status === 'pending' ? 'font-bold text-yellow-600' : isSelectedQuestionCorrect ? 'font-bold text-green-600' : 'font-bold text-red-600'}>
-                                          {answer?.status === 'pending' ? 'Yoxlama gözləyir' : isSelectedQuestionCorrect ? 'Doğru qiymətləndirildi' : 'Yanlış qiymətləndirildi'}
+                                          {answer?.status === 'pending' ? 'Yoxlama gözləyir' : isSelectedQuestionCorrect ? 'Düzgün qiymətləndirildi' : 'Səhv qiymətləndirildi'}
                                         </span>
                                       )}
                                       {!isNumericOpenEndedQuestion(question) && answer?.status !== 'pending' && (
@@ -1611,7 +1615,7 @@ const Tests = () => {
                                   <div className="mt-4 space-y-3">
                                     <div className="grid gap-2 sm:grid-cols-2">
                                       <div className="rounded-xl border border-gray-100 bg-white p-3 text-sm">
-                                        <span className="mb-1 block text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Seçilən şık</span>
+                                        <span className="mb-1 block text-xs font-bold uppercase tracking-[0.14em] text-gray-400">Seçilən cavab</span>
                                         <span className="font-medium text-gray-900">{hasAnswer ? formatMultipleChoiceAnswer(question, answer?.answer || '') : 'Cavab verilməyib'}</span>
                                       </div>
                                       <div className="rounded-xl border border-gray-100 bg-white p-3 text-sm">
@@ -1638,7 +1642,7 @@ const Tests = () => {
                                             {String.fromCharCode(65 + optionIndex)}
                                           </div>
                                           <span className="truncate">{option}</span>
-                                          {isActualCorrect && <span className="ml-auto text-[10px] font-black uppercase opacity-70">Doğru</span>}
+                                          {isActualCorrect && <span className="ml-auto text-[10px] font-black uppercase opacity-70">Düzgün</span>}
                                           {!isActualCorrect && isSelected && <span className="ml-auto text-[10px] font-black uppercase opacity-60">Seçilib</span>}
                                         </div>
                                       );
@@ -2133,7 +2137,7 @@ const Students = () => {
                     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                       <div className="rounded-2xl bg-gray-50 p-4 text-center">
                         <div className="text-2xl font-black text-[#00D084]">{selectedStudentResult.answers.filter((answer) => answer.isCorrect).length}</div>
-                        <div className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Doğru</div>
+                        <div className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Düzgün</div>
                       </div>
                       <div className="rounded-2xl bg-gray-50 p-4 text-center">
                         <div className="text-2xl font-black text-red-500">{selectedStudentResult.answers.filter((answer) => !answer.isCorrect && answer.status === 'graded').length}</div>
@@ -2163,8 +2167,8 @@ const Students = () => {
                             : answer?.status === 'pending'
                               ? 'Yoxlama gözləyir'
                               : isSelectedQuestionCorrect
-                                ? 'Doğru'
-                                : 'Yanlış';
+                                ? 'Düzgün'
+                                : 'Səhv';
 
                           return (
                             <div
@@ -2198,11 +2202,11 @@ const Students = () => {
                                           <span className="font-bold text-gray-500">Bu sual üçün hələ cavab göndərilməyib</span>
                                         ) : isNumericOpenEndedQuestion(question) ? (
                                           <span className={isSelectedQuestionCorrect ? 'font-bold text-green-600' : 'font-bold text-red-600'}>
-                                            {isSelectedQuestionCorrect ? 'Avtomatik doğru' : 'Avtomatik yanlış'}
+                                            {isSelectedQuestionCorrect ? 'Avtomatik düzgün' : 'Avtomatik səhv'}
                                           </span>
                                         ) : (
                                           <span className={answer?.status === 'pending' ? 'font-bold text-yellow-600' : isSelectedQuestionCorrect ? 'font-bold text-green-600' : 'font-bold text-red-600'}>
-                                            {answer?.status === 'pending' ? 'Yoxlama gözləyir' : isSelectedQuestionCorrect ? 'Doğru qiymətləndirildi' : 'Yanlış qiymətləndirildi'}
+                                            {answer?.status === 'pending' ? 'Yoxlama gözləyir' : isSelectedQuestionCorrect ? 'Düzgün qiymətləndirildi' : 'Səhv qiymətləndirildi'}
                                           </span>
                                         )}
                                         {!isNumericOpenEndedQuestion(question) && answer?.status !== 'pending' && (
@@ -2244,7 +2248,7 @@ const Students = () => {
                                               {String.fromCharCode(65 + optionIndex)}
                                             </div>
                                             <span className="truncate">{option}</span>
-                                            {isActualCorrect && <span className="ml-auto text-[10px] font-black uppercase opacity-70">Doğru</span>}
+                                            {isActualCorrect && <span className="ml-auto text-[10px] font-black uppercase opacity-70">Düzgün</span>}
                                             {!isActualCorrect && isSelected && <span className="ml-auto text-[10px] font-black uppercase opacity-60">Seçilib</span>}
                                           </div>
                                         );
