@@ -88,6 +88,14 @@ export const adminApi = {
   }),
   deleteCategory: (categoryId: string) => requestJson(`/admin/categories/${categoryId}`, {
     method: 'DELETE'
+  }),
+  getContactCourseOptions: () => requestJson('/admin/contact-course-options'),
+  createContactCourseOption: (payload: Record<string, unknown>) => requestJson('/admin/contact-course-options', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  }),
+  deleteContactCourseOption: (optionId: string) => requestJson(`/admin/contact-course-options/${optionId}`, {
+    method: 'DELETE'
   })
 };
 
@@ -98,3 +106,4 @@ export type CoursesResponse = Awaited<ReturnType<typeof adminApi.getCourses>>;
 export type TestsResponse = Awaited<ReturnType<typeof adminApi.getTests>>;
 export type TestResultsResponse = Awaited<ReturnType<typeof adminApi.getTestResults>>;
 export type CategoriesResponse = Awaited<ReturnType<typeof adminApi.getCategories>>;
+export type ContactCourseOptionsResponse = Awaited<ReturnType<typeof adminApi.getContactCourseOptions>>;

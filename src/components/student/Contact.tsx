@@ -1,12 +1,32 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { MapPin, Phone, Mail, Clock, Send, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { getPublicContactCourseOptions } from '@/services/publicApi';
 
 const WHATSAPP_PHONE = import.meta.env.VITE_WHATSAPP_PHONE || '994516278711';
+
+type CourseOption = {
+  id: string;
+  title: string;
+};
+
+const DEMO_COURSE_OPTIONS: CourseOption[] = [
+  { id: 'demo-1', title: 'Riyaziyyat' },
+  { id: 'demo-2', title: 'İngilis dili' },
+  { id: 'demo-3', title: 'Fizika' },
+  { id: 'demo-4', title: 'Kimya' },
+];
 
 export default function Contact() {
   const { t } = useTranslation();
@@ -14,22 +34,61 @@ export default function Contact() {
   const titleRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [courseOptions, setCourseOptions] = useState<CourseOption[]>(DEMO_COURSE_OPTIONS);
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
-    phone: '',
+    courseId: '',
     message: '',
   });
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCourses = async () => {
+      try {
+        const courses = await getPublicContactCourseOptions();
+
+        if (!isMounted) {
+          return;
+        }
+
+        const mappedCourses = courses
+          .map((course) => ({
+            id: course.id,
+            title: course.title,
+          }))
+          .filter((course) => course.id && course.title);
+
+        if (mappedCourses.length > 0) {
+          setCourseOptions(mappedCourses);
+        }
+      } catch (error) {
+        console.error('Public kurslar yüklənə bilmədi', error);
+      }
+    };
+
+    loadCourses();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.courseId) {
+      toast.error('Zəhmət olmasa kurs seçin');
+      return;
+    }
+
+    const selectedCourse = courseOptions.find((course) => course.id === formData.courseId);
 
     const message = [
       'Salam, RIM Academy ilə əlaqə saxlamaq istəyirəm.',
       '',
       `Ad: ${formData.name || '-'}`,
-      `Mail: ${formData.email || '-'}`,
-      `Telefon: ${formData.phone || '-'}`,
+      `Seçilən kurs: ${selectedCourse?.title || '-'}`,
       `Mesaj: ${formData.message || '-'}`,
     ].join('\n');
 
@@ -37,7 +96,7 @@ export default function Contact() {
 
     setIsSubmitted(true);
     toast.success('WhatsApp-a yönləndirilirsiniz');
-    setFormData({ name: '', email: '', phone: '', message: '' });
+    setFormData({ name: '', courseId: '', message: '' });
     window.location.href = whatsappUrl;
   };
 
@@ -48,11 +107,18 @@ export default function Contact() {
     }));
   };
 
+  const handleSelectChange = (field: 'courseId', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   const contactInfo = [
     {
       icon: MapPin,
       label: t('contact.info.address'),
-      value: 'Bakı şəhəri, Nizami rayonu, Azərbaycan küçəsi 25',
+      value: 'Naxçıvan Dövlət Universiteti',
     },
     {
       icon: Phone,
@@ -120,34 +186,30 @@ export default function Contact() {
                   className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 focus:border-[#00D084] rounded-xl h-12"
                 />
               </div>
-              
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {t('contact.form.email')}
+                    Kurs seçimi
                   </label>
-                  <Input
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="email@example.com"
-                    required
-                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 focus:border-[#00D084] rounded-xl h-12"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {t('contact.form.phone')}
-                  </label>
-                  <Input
-                    name="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="+994 50 123 45 67"
-                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 focus:border-[#00D084] rounded-xl h-12"
-                  />
+                  <Select
+                    value={formData.courseId}
+                    onValueChange={(value) => handleSelectChange('courseId', value)}
+                  >
+                    <SelectTrigger className="h-12 w-full rounded-xl border-white/20 bg-white/10 text-white shadow-none focus:ring-[#00D084]/40">
+                      <SelectValue placeholder="Kurs seçin" />
+                    </SelectTrigger>
+                    <SelectContent className="border-white/10 bg-[#111111] text-white">
+                      {courseOptions.map((course) => (
+                        <SelectItem
+                          key={course.id}
+                          value={course.id}
+                          className="text-white focus:bg-white/10 focus:text-white"
+                        >
+                          {course.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               
@@ -191,7 +253,7 @@ export default function Contact() {
             {/* Map */}
             <div className="contact-reveal relative h-56 lg:h-80 rounded-3xl overflow-hidden">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3039.428490145627!2d49.867092!3d40.409264!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDDCsDI0JzMzLjQiTiA0OcKwNTInMDEuNSJF!5e0!3m2!1sen!2s!4v1234567890"
+                src="https://www.google.com/maps?q=39.225123,45.403541&z=15&output=embed"
                 width="100%"
                 height="100%"
                 style={{ border: 0 }}

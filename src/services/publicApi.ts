@@ -82,6 +82,14 @@ export type PublicTeacherReview = {
   createdAt?: string;
 };
 
+export type PublicContactCourseOption = {
+  id: string;
+  title: string;
+  description: string;
+  order: number;
+  isActive: boolean;
+};
+
 export type PublicTeacherDetailResponse = {
   success: boolean;
   data: PublicTeacher;
@@ -274,6 +282,18 @@ export const getPublicCourses = async () => {
 export const getPublicCategories = async () => {
   const response = await requestJson<ApiResponse<any[]>>('/categories');
   return (response.data || []).map(normalizeCategory);
+};
+
+export const getPublicContactCourseOptions = async () => {
+  const response = await requestJson<ApiResponse<any[]>>('/public/contact-course-options');
+
+  return (response.data || []).map((option: any): PublicContactCourseOption => ({
+    id: normalizeId(option),
+    title: option.title || '',
+    description: option.description || '',
+    order: Number(option.order || 0),
+    isActive: Boolean(option.isActive)
+  }));
 };
 
 export const getPublicTeachers = async () => {

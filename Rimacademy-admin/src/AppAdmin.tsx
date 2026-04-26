@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Search,
   Shield,
+  ListChecks,
   Tag as TagIcon,
   Trash2,
   Undo2,
@@ -84,6 +85,14 @@ type CategoryItem = {
   description?: string;
   color?: string;
   icon?: string;
+  order?: number;
+  isActive?: boolean;
+};
+
+type ContactCourseOptionItem = {
+  id: string;
+  title: string;
+  description?: string;
   order?: number;
   isActive?: boolean;
 };
@@ -232,7 +241,8 @@ const adminMenuItems = [
   { icon: FileText, label: 'Testlər', path: '/tests' },
   { icon: Users, label: 'Müəllimlər', path: '/teachers' },
   { icon: GraduationCap, label: 'Tələbələr', path: '/students' },
-  { icon: Grid, label: 'Kateqoriyalar', path: '/categories' }
+  { icon: Grid, label: 'Kateqoriyalar', path: '/categories' },
+  { icon: ListChecks, label: 'Əlaqə seçimləri', path: '/contact-options' }
 ];
 
 const adminRouteTitles: Record<string, string> = {
@@ -240,7 +250,8 @@ const adminRouteTitles: Record<string, string> = {
   '/tests': 'Testlər',
   '/teachers': 'Müəllimlər',
   '/students': 'Tələbələr',
-  '/categories': 'Kateqoriyalar'
+  '/categories': 'Kateqoriyalar',
+  '/contact-options': 'Əlaqə seçimləri'
 };
 
 const loadAdminSession = (): AdminSession | null => {
@@ -415,6 +426,167 @@ const isNumericOpenEndedQuestion = (question: any) => {
 
 const resolveCategoryName = (categoryId: string, categories: CategoryItem[]) => {
   return categories.find((category) => category.id === categoryId)?.name || categoryId || '---';
+};
+
+const ContactCourseOptions = () => {
+  const [options, setOptions] = useState<ContactCourseOptionItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newOption, setNewOption] = useState({ title: '', description: '' });
+
+  const loadOptions = async () => {
+    setLoading(true);
+
+    try {
+      const response = await adminApi.getContactCourseOptions();
+      if (response.success) {
+        setOptions(response.data);
+      } else {
+        toast.error(response.message || 'Seçimlər alınmadı');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Seçimlər alınmadı');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadOptions();
+  }, []);
+
+  const handleAdd = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    try {
+      const response = await adminApi.createContactCourseOption({
+        title: newOption.title,
+        description: newOption.description
+      });
+
+      if (response.success) {
+        toast.success('Yeni seçim əlavə edildi');
+        setIsModalOpen(false);
+        setNewOption({ title: '', description: '' });
+        await loadOptions();
+      } else {
+        toast.error(response.message || 'Seçim əlavə edilə bilmədi');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Seçim əlavə edilə bilmədi');
+    }
+  };
+
+  const handleDelete = async (optionId: string) => {
+    try {
+      const response = await adminApi.deleteContactCourseOption(optionId);
+      if (response.success) {
+        toast.success('Seçim silindi');
+        await loadOptions();
+      } else {
+        toast.error(response.message || 'Seçim silinmədi');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Seçim silinmədi');
+    }
+  };
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#00D084]/10">
+            <ListChecks className="h-6 w-6 text-[#00D084]" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-gray-900">Əlaqə seçimləri</h1>
+            <p className="text-gray-500 font-medium">Kontakt səhifəsindəki kurs siyahısını buradan idarə et.</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="inline-flex items-center gap-2 rounded-2xl bg-black px-6 py-3 font-bold text-white shadow-lg transition-all active:scale-95 hover:bg-gray-900"
+        >
+          <Plus className="h-5 w-5" />
+          Yeni Seçim
+        </button>
+      </div>
+
+      <div className="rounded-[32px] border border-gray-100 bg-white p-4 shadow-sm sm:p-6">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {loading && (
+            <div className="rounded-2xl border border-gray-100 p-6 text-center text-gray-400 sm:col-span-2 xl:col-span-3">
+              Seçimlər yüklənir...
+            </div>
+          )}
+
+          {!loading && options.map((option) => (
+            <div key={option.id} className="rounded-2xl border border-gray-100 p-5 shadow-sm transition-colors hover:bg-gray-50/40">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="text-lg font-bold text-gray-900">{option.title}</div>
+                  <div className="mt-1 text-sm leading-6 text-gray-500">{option.description || 'Açıqlama yoxdur'}</div>
+                </div>
+                <button
+                  onClick={() => handleDelete(option.id)}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-gray-500 transition-colors hover:bg-red-50 hover:text-red-500"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Sil
+                </button>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-[#00D084]/10 px-3 py-1 text-xs font-bold text-[#00D084]">
+                  #{option.order || 0}
+                </span>
+                <span className={`rounded-full px-3 py-1 text-xs font-bold ${option.isActive ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'}`}>
+                  {option.isActive ? 'Aktiv' : 'Deaktiv'}
+                </span>
+              </div>
+            </div>
+          ))}
+
+          {!loading && options.length === 0 && (
+            <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center italic text-gray-400 sm:col-span-2 xl:col-span-3">
+              Hələ seçim yoxdur.
+            </div>
+          )}
+        </div>
+      </div>
+
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Yeni Seçim">
+        <form onSubmit={handleAdd} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Başlıq</label>
+            <input
+              required
+              value={newOption.title}
+              onChange={(event) => setNewOption((prev) => ({ ...prev, title: event.target.value }))}
+              type="text"
+              className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-bold outline-none transition-all focus:border-[#00D084] focus:bg-white"
+              placeholder="Məs: Riyaziyyat"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-gray-500 italic">Açıqlama</label>
+            <textarea
+              value={newOption.description}
+              onChange={(event) => setNewOption((prev) => ({ ...prev, description: event.target.value }))}
+              rows={3}
+              className="w-full rounded-2xl border border-gray-100 bg-gray-50 px-5 py-4 font-medium outline-none transition-all focus:border-[#00D084] focus:bg-white"
+              placeholder="Qısa izah"
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full rounded-2xl bg-[#00D084] py-5 text-lg font-black text-white shadow-xl shadow-[#00D084]/20 transition-all hover:bg-[#00B873]"
+          >
+            Yarat
+          </button>
+        </form>
+      </Modal>
+    </div>
+  );
 };
 
 const AdminBrand = ({ compact = false, onNavigate }: { compact?: boolean; onNavigate?: () => void }) => (
@@ -2636,6 +2808,7 @@ export default function AppAdmin() {
           <Route path="/teachers" element={<Teachers />} />
           <Route path="/students" element={<Students />} />
           <Route path="/categories" element={<Categories />} />
+          <Route path="/contact-options" element={<ContactCourseOptions />} />
         </Routes>
       </AdminShell>
     </BrowserRouter>
