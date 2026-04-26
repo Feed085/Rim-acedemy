@@ -222,7 +222,6 @@ export default function Contact() {
                   value={formData.message}
                   onChange={handleChange}
                   placeholder="Mesajınızı yazın..."
-                  required
                   rows={5}
                   className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 focus:border-[#00D084] rounded-xl resize-none"
                 />
